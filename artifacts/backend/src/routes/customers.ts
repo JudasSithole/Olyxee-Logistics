@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, customersTable, ordersTable, auditLogsTable } from "@workspace/db";
+import { db, customersTable, ordersTable, auditLogsTable } from "@workspace/database";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";

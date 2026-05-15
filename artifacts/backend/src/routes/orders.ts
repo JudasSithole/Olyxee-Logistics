@@ -7,7 +7,7 @@ import {
   emailNotificationsTable,
   auditLogsTable,
   businessesTable,
-} from "@workspace/db";
+} from "@workspace/database";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId } from "../lib/id";

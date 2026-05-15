@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, auditLogsTable } from "@workspace/db";
+import { db, auditLogsTable } from "@workspace/database";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 

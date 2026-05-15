@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, businessesTable, auditLogsTable } from "@workspace/db";
+import { db, businessesTable, auditLogsTable } from "@workspace/database";
 import { eq } from "drizzle-orm";
 import { UpdateBusinessBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";

@@ -4,7 +4,7 @@
   "files": [],
   "references": [
     {
-      "path": "./lib/db"
+      "path": "./lib/database"
     },
     {
       "path": "./lib/api-client-react"

@@ -16,7 +16,7 @@ src/
 - **Add a new endpoint** → create or edit a file in `src/routes/`
 - **Auth check on protected routes** → `src/middlewares/` + `src/lib/auth.ts`
 - **Required env vars** → declared in `src/lib/env.ts`
-- **Database access** → uses `@workspace/db` (lives in `../../lib/db`)
+- **Database access** → uses `@workspace/database` (lives in `../../lib/db`)
 - **API contract** → defined in `../../lib/api-spec/openapi.yaml`
 
 See `../../PROJECT_STRUCTURE.md` for the full project map.

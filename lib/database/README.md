@@ -12,13 +12,13 @@ src/
 
 - **Add or change a table** → edit a file in `src/schema/`, then run:
   ```bash
-  pnpm --filter @workspace/db run push
+  pnpm --filter @workspace/database run push
   ```
   This applies the change to the Replit Postgres database.
 
-- **Query the database from the backend** → import from `@workspace/db`:
+- **Query the database from the backend** → import from `@workspace/database`:
   ```ts
-  import { db, customers } from "@workspace/db";
+  import { db, customers } from "@workspace/database";
   const rows = await db.select().from(customers);
   ```
 

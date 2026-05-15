@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/api-server",
+  "name": "@workspace/backend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "@workspace/api-zod": "workspace:*",
-    "@workspace/db": "workspace:*",
+    "@workspace/database": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
     "drizzle-orm": "catalog:",

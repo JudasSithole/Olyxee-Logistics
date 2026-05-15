@@ -18,11 +18,11 @@ This project is a **monorepo**: one repo that holds several small projects ("art
 
 ## The four pieces, mapped to where they live
 
-### 1. Frontend → `artifacts/olyxee-admin/`
+### 1. Frontend → `artifacts/frontend/`
 The React + Vite website. This is what users see.
 
 ```
-artifacts/olyxee-admin/src/
+artifacts/frontend/src/
 ├── pages/        ← one file per screen (login, dashboard, customers…)
 ├── components/   ← reusable UI pieces (buttons, layouts, sidebar)
 ├── contexts/     ← app-wide state (e.g. who is logged in)
@@ -32,11 +32,11 @@ artifacts/olyxee-admin/src/
 └── main.tsx      ← the entry point that boots the app
 ```
 
-### 2. Backend → `artifacts/api-server/`
+### 2. Backend → `artifacts/backend/`
 The Express server. Receives HTTP requests, talks to the database, returns JSON.
 
 ```
-artifacts/api-server/src/
+artifacts/backend/src/
 ├── routes/        ← one file per feature (auth, customers, orders…)
 │                    each file says "when this URL is called, do this"
 ├── middlewares/   ← code that runs before routes (auth check, logging…)
@@ -48,23 +48,23 @@ artifacts/api-server/src/
 ### 3. Authentication → split across two places (this is normal)
 Auth is a flow, so it touches both sides:
 
-- **Frontend side** — `artifacts/olyxee-admin/src/`
+- **Frontend side** — `artifacts/frontend/src/`
   - `pages/login.tsx`         → the login screen
   - `contexts/auth-context.tsx` → keeps track of the logged-in user
   - `lib/supabase.ts`         → the Supabase client (reads `VITE_SUPABASE_*` env vars)
 
-- **Backend side** — `artifacts/api-server/src/`
+- **Backend side** — `artifacts/backend/src/`
   - `routes/auth.ts`          → auth-related endpoints (e.g. check-email)
   - `lib/auth.ts`             → verifies the user's token on every request
   - `middlewares/`            → the auth check that runs before protected routes
 
 Auth itself is provided by **Supabase** (a hosted service). We do not store passwords ourselves.
 
-### 4. The Engine (database) → `lib/db/`
+### 4. The Engine (database) → `lib/database/`
 Everything about data storage lives here.
 
 ```
-lib/db/
+lib/database/
 ├── src/schema/   ← the tables (businesses, customers, orders, …)
 ├── src/index.ts  ← the database client both the backend and scripts use
 └── drizzle.config.ts ← config for migrations
@@ -72,33 +72,33 @@ lib/db/
 
 To apply schema changes to the database, run:
 ```bash
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/database run push
 ```
 
 ## How a request flows (so the layout makes sense)
 
-1. The user clicks "Customers" in **frontend** (`artifacts/olyxee-admin/src/pages/customers.tsx`).
+1. The user clicks "Customers" in **frontend** (`artifacts/frontend/src/pages/customers.tsx`).
 2. The page calls a typed function from **`lib/api-client-react`** (auto-generated SDK).
-3. The browser sends an HTTP request to the **backend** (`artifacts/api-server/src/routes/customers.ts`).
-4. A **middleware** verifies the user's Supabase token (`artifacts/api-server/src/lib/auth.ts`).
-5. The route reads/writes data through **the engine** (`lib/db`).
+3. The browser sends an HTTP request to the **backend** (`artifacts/backend/src/routes/customers.ts`).
+4. A **middleware** verifies the user's Supabase token (`artifacts/backend/src/lib/auth.ts`).
+5. The route reads/writes data through **the engine** (`lib/database`).
 6. JSON comes back, the page renders the list.
 
 ## Where to make changes
 
 | You want to… | Edit here |
 |---|---|
-| Change how a screen looks | `artifacts/olyxee-admin/src/pages/` or `components/` |
-| Add a new API endpoint | `artifacts/api-server/src/routes/` (and update `lib/api-spec/openapi.yaml`) |
-| Change the login UI | `artifacts/olyxee-admin/src/pages/login.tsx` |
-| Add or change a database table | `lib/db/src/schema/`, then `pnpm --filter @workspace/db run push` |
-| Change colors / theme | `artifacts/olyxee-admin/src/index.css` and Tailwind config |
+| Change how a screen looks | `artifacts/frontend/src/pages/` or `components/` |
+| Add a new API endpoint | `artifacts/backend/src/routes/` (and update `lib/api-spec/openapi.yaml`) |
+| Change the login UI | `artifacts/frontend/src/pages/login.tsx` |
+| Add or change a database table | `lib/database/src/schema/`, then `pnpm --filter @workspace/database run push` |
+| Change colors / theme | `artifacts/frontend/src/index.css` and Tailwind config |
 
 ## Running the project
 
 The Replit workspace already runs everything for you via workflows:
-- `artifacts/olyxee-admin: web` → the frontend
-- `artifacts/api-server: API Server` → the backend
+- `artifacts/frontend: web` → the frontend
+- `artifacts/backend: API Server` → the backend
 
 You don't need to run `pnpm dev` at the root. Use the **Workflows** panel to restart pieces if needed.
 

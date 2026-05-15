@@ -1,4 +1,4 @@
-import { db, usersTable, businessesTable } from "@workspace/db";
+import { db, usersTable, businessesTable } from "@workspace/database";
 import { eq } from "drizzle-orm";
 import type { Request, Response, NextFunction } from "express";
 import { generateId } from "./id";
