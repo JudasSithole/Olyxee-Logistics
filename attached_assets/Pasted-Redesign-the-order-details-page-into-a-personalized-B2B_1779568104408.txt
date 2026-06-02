@@ -1,0 +1,193 @@
+Redesign the order details page into a personalized B2B logistics operations control page.
+
+Current problem:
+The page feels generic, static, and transactional. It looks like a basic admin order page. We need it to feel like an enterprise B2B logistics operating system for managing client deliveries, communication, tracking, and execution.
+
+Goal:
+Make the page feel personalized, professional, enterprise-grade, and operationally intelligent.
+
+Required changes:
+
+1. Rename the main update section
+Change "Update Order Status" to:
+"Operations Control"
+
+Subtitle:
+"Manage delivery execution, customer communication, and tracking updates from one place."
+
+2. Add proper delivery workflow statuses
+Replace the current "FROM Created →" UI with a horizontal stepper:
+
+Created
+Packed
+Collected
+In Transit
+At Hub
+Out for Delivery
+Delivered
+
+The current status should be highlighted.
+Completed statuses should look completed.
+Future statuses should be grey.
+Blocked or failed statuses should support red/error styling.
+
+Each status should be clickable as the next order status.
+
+3. Fix the primary action button
+The "Save & send email" button currently looks disabled.
+Make it visually active, high contrast, and clearly clickable.
+
+Button text:
+"Update status and notify customer"
+
+4. Add Delivery Intelligence card
+Add a right-side card called:
+"Delivery Intelligence"
+
+Include:
+- Delivery health: Healthy / At Risk / Delayed
+- ETA confidence percentage
+- Last activity time
+- Risk detection message
+- SLA status
+
+Use realistic placeholder logic if backend data does not exist yet.
+
+5. Improve the Customer card
+Make it feel personalized and B2B-aware.
+
+Instead of only raw customer fields, show:
+- Customer name
+- Company or division
+- Preferred communication channel
+- Last customer interaction
+- Delivery priority
+- Customer phone and email
+
+Example:
+Tshepi Moeng
+Nokia Procurement Division
+Preferred Communication: WhatsApp + Email
+Last Interaction: Confirmation email sent
+Delivery Priority: High
+
+6. Add Account Context card
+Since this is B2B, add company-level context.
+
+Card title:
+"Account Context"
+
+Fields:
+- Account: Nokia South Africa
+- Active deliveries
+- Orders this month
+- Account manager
+- SLA tier
+
+Use placeholder values if not available.
+
+7. Improve tracking link card
+Make it compact and useful.
+
+Include:
+- Tracking link
+- Copy button
+- Open tracking page button
+- Last viewed status if available
+
+8. Separate customer note and internal note
+Current note field is unclear.
+
+Add two sections:
+- Customer Update: message that will be emailed to the customer
+- Internal Ops Note: private note visible only to internal team
+
+Make this clear in the UI.
+
+9. Add communication templates
+Under Customer Update, add quick template buttons:
+
+Package collected
+In transit
+Out for delivery
+Delivery delayed
+Delivered
+Need customer confirmation
+
+Clicking a template should populate the customer update textarea.
+
+10. Improve the delivery timeline
+Replace the basic timeline with an operational activity feed.
+
+Each item should show:
+- status/event name
+- timestamp
+- actor/source
+- note/message
+
+Example events:
+Order created
+Tracking link generated
+Confirmation email sent
+Assigned to Johannesburg Hub
+
+Use existing timeline data if available, otherwise generate safe placeholder events from the current order state.
+
+11. Add shipment visibility section
+Add a large card called:
+"Shipment Visibility"
+
+For now, use a clean placeholder map panel if no live map API exists.
+
+Show:
+- Current location
+- Estimated delivery
+- Route status
+- Driver assignment status
+
+12. Improve layout
+Use this structure:
+
+Top:
+Order number, current status, customer/account name, ETA, priority, resend email button.
+
+Main left column:
+- Operations Control
+- Shipment Visibility
+- Activity Timeline
+- Email History
+
+Right column:
+- Delivery Intelligence
+- Customer Profile
+- Account Context
+- Tracking Link
+- Order Details
+
+13. Design direction
+Keep it clean, serious, and B2B.
+Use strong typography, better spacing, clear hierarchy, subtle borders, and professional cards.
+Do not make it playful.
+Do not overuse colors.
+Use status colors only where meaningful.
+
+14. Preserve existing functionality
+Do not break:
+- order loading
+- status updates
+- email sending
+- resend email
+- tracking link copy
+- timeline/history
+- routing/navigation
+
+15. Implementation instructions
+Find the current order details page/component and update it directly.
+Reuse existing data models where possible.
+If a field does not exist yet, add safe fallback placeholder values.
+Avoid large backend changes unless necessary.
+Keep TypeScript strict and fix any type errors.
+Ensure the page builds successfully.
+
+Expected result:
+The page should no longer feel like a basic order admin screen. It should feel like a personalized B2B logistics operations cockpit that helps the operator understand the delivery, customer, account, next action, communication, and risk at a glance.

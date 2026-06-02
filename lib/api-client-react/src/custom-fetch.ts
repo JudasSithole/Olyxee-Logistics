@@ -360,7 +360,13 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // Always send cookies for relative URLs (web app session auth).
+  // Absolute URLs with an explicit `credentials` in `init` keep that value.
+  const url = resolveUrl(input);
+  const isRelative = url.startsWith("/");
+  const credentials = init.credentials ?? (isRelative ? "include" : undefined);
+
+  const response = await fetch(input, { ...init, method, headers, credentials });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
