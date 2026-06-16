@@ -96,9 +96,11 @@ export default function OnboardingPage() {
       toast.success("Welcome aboard");
       setLocation("/dashboard");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not save your business details",
-      );
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message ?? "Could not save your business details";
+      toast.error(msg);
     }
   }
 
