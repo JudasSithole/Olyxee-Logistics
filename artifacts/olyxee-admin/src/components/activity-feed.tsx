@@ -4,7 +4,8 @@
 // instead of raw `UPDATE_ORDER_STATUS` codes + JSON blobs.
 
 import { useState } from "react";
-import { useListAuditLogs } from "@workspace/api-client-react";
+import { useAuditLogs } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,15 +33,15 @@ const PAGE_SIZE = 25;
 export function ActivityFeed() {
   const [entityType, setEntityType] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const { user } = useAuth();
 
-  const { data, isLoading } = useListAuditLogs({
-    entityType: entityType !== "all" ? entityType : undefined,
-    page,
-    limit: PAGE_SIZE,
-  });
+  const { data, isLoading } = useAuditLogs(user?.businessId, { limit: PAGE_SIZE, page });
 
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const logs = (data?.logs ?? []).filter(
+    (l) => entityType === "all" || l.entity_type === entityType,
+  );
 
   return (
     <div className="p-4 space-y-4">
@@ -79,7 +80,7 @@ export function ActivityFeed() {
             </li>
           ))}
         </ul>
-      ) : !data?.data.length ? (
+      ) : !logs.length ? (
         <div className="border bg-muted/10 px-6 py-12 text-center">
           <History className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm font-medium">Nothing's happened here yet</p>
@@ -90,9 +91,9 @@ export function ActivityFeed() {
       ) : (
         <>
           <ul className="space-y-1.5">
-            {data.data.map((log) => {
+            {logs.map((log) => {
               const { title, detail, tone } = humanizeAudit(log);
-              const when = formatWhen(log.createdAt);
+              const when = formatWhen(log.created_at);
               const { icon: Icon, ring } = TONE_STYLES[tone];
               return (
                 <li
@@ -114,7 +115,7 @@ export function ActivityFeed() {
                   <time
                     className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
                     title={when.absolute}
-                    dateTime={log.createdAt}
+                    dateTime={log.created_at}
                   >
                     {when.relative}
                   </time>

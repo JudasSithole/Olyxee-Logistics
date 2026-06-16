@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/layout";
 import { ThemeProvider, useTheme } from "@/contexts/theme-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
-import { useGetBusiness } from "@workspace/api-client-react";
+import { useBusiness } from "@/hooks/use-supabase-queries";
 import { Spinner } from "@/components/ui/spinner";
 
 import LandingPage from "@/pages/landing";
@@ -40,10 +40,10 @@ function Protected({
   skipOnboardingGuard?: boolean;
   withLayout?: boolean;
 }) {
-  const { status } = useAuth();
-  const businessQuery = useGetBusiness({
-    query: { enabled: status === "authenticated" } as never,
-  });
+  const { status, user } = useAuth();
+  const businessQuery = useBusiness(
+    status === "authenticated" ? user?.businessId : null,
+  );
 
   // Pre-auth check is usually instant (cookie/session resolves on first tick).
   // Render nothing instead of a full white viewport so a quick check doesn't
@@ -72,9 +72,8 @@ function Protected({
         </AppLayout>
       );
     }
-    if (businessQuery.data && !businessQuery.data.onboardingCompleted) {
-      // Step 1: choose business type; Step 2: fill in workspace details.
-      if (!businessQuery.data.industry) {
+    if (businessQuery.data && !businessQuery.data.onboarding_completed) {
+      if (!businessQuery.data.business_type) {
         return <Redirect to="/business-type" />;
       }
       return <Redirect to="/onboarding" />;
