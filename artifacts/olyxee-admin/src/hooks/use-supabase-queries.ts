@@ -370,24 +370,37 @@ export function useDashboardStats(businessId: string | null | undefined) {
     enabled: !!businessId,
     queryFn: async () => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
 
-      const [ordersRes, customersRes, statusRes] = await Promise.all([
-        // Total + recent orders
+      const [ordersRes, customersRes, statusRes, totalOrdersRes, emailsTodayRes] = await Promise.all([
+        // Orders last 30 days
         supabase
           .from("orders")
-          .select("id, created_at, current_status", { count: "exact" })
+          .select("id", { count: "exact", head: true })
           .eq("business_id", businessId!)
           .gte("created_at", thirtyDaysAgo),
         // Total customers
         supabase
           .from("customers")
-          .select("id", { count: "exact" })
+          .select("id", { count: "exact", head: true })
           .eq("business_id", businessId!),
-        // Status breakdown
+        // Status breakdown (all orders)
         supabase
           .from("orders")
           .select("current_status")
           .eq("business_id", businessId!),
+        // Total orders ever
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", businessId!),
+        // Emails sent today
+        supabase
+          .from("notification_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", businessId!)
+          .gte("sent_at", todayStart.toISOString()),
       ]);
 
       const statusBreakdown: Record<string, number> = {};
@@ -399,6 +412,11 @@ export function useDashboardStats(businessId: string | null | undefined) {
         ordersLast30Days: ordersRes.count ?? 0,
         totalCustomers: customersRes.count ?? 0,
         statusBreakdown,
+        totalOrders: totalOrdersRes.count ?? 0,
+        activeDeliveries: (statusBreakdown["In transit"] ?? 0) + (statusBreakdown["Out for delivery"] ?? 0),
+        delayedOrders: statusBreakdown["Delayed"] ?? 0,
+        deliveredOrders: statusBreakdown["Delivered"] ?? 0,
+        emailsSentToday: emailsTodayRes.count ?? 0,
       };
     },
   });
