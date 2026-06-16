@@ -50,10 +50,14 @@ export default function LoginPage() {
           ? await signIn(email, password)
           : await signUp({ email, password, fullName, businessName });
       if (result.error) {
-        setError(result.error);
+        setError(typeof result.error === "string" ? result.error : JSON.stringify(result.error));
         return;
       }
-      setLocation(mode === "signup" ? "/onboarding" : "/dashboard");
+      if (mode === "signup") {
+        setLocation("/onboarding");
+        return;
+      }
+      setLocation("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
