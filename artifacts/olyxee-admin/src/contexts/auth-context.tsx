@@ -1,15 +1,12 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
-import type { Profile } from "../lib/database.types";
+import { apiFetch, ApiError } from "../lib/api";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -24,7 +21,6 @@ export interface AuthUser {
 interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
-  session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (args: {
     email: string;
@@ -36,139 +32,146 @@ interface AuthContextValue {
   updateProfile: (args: {
     name?: string;
     email?: string;
+    currentPassword?: string;
     newPassword?: string;
   }) => Promise<{ error: string | null }>;
   requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
-  resetPassword: (args: { password: string }) => Promise<{ error: string | null }>;
+  resetPassword: (args: { password: string; token?: string }) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function profileToAuthUser(profile: Profile): AuthUser {
+interface ApiAuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  businessId: string;
+}
+
+function toAuthUser(u: ApiAuthUser): AuthUser {
   return {
-    id: profile.id,
-    email: profile.email,
-    name: profile.full_name,
-    role: profile.role,
-    businessId: profile.business_id ?? "",
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: (u.role as AuthUser["role"]) ?? "staff",
+    businessId: u.businessId ?? "",
   };
+}
+
+function errMessage(e: unknown): string {
+  if (e instanceof ApiError) return e.message;
+  if (e instanceof Error) return e.message;
+  return "Something went wrong. Please try again.";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error || !data) return null;
-    return data as Profile;
-  }, []);
-
   useEffect(() => {
-    // Check existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      setSession(s);
-      if (s?.user) {
-        const profile = await loadProfile(s.user.id);
-        if (profile) {
-          setUser(profileToAuthUser(profile));
-          setStatus("authenticated");
-          return;
-        }
-      }
-      setUser(null);
-      setStatus("unauthenticated");
-    });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, s) => {
-        setSession(s);
-        if (s?.user && event !== "SIGNED_OUT") {
-          const profile = await loadProfile(s.user.id);
-          if (profile) {
-            setUser(profileToAuthUser(profile));
-            setStatus("authenticated");
-            return;
-          }
-        }
+    let cancelled = false;
+    apiFetch<{ user: ApiAuthUser }>("/api/auth/me")
+      .then((data) => {
+        if (cancelled) return;
+        setUser(toAuthUser(data.user));
+        setStatus("authenticated");
+      })
+      .catch(() => {
+        if (cancelled) return;
         setUser(null);
-        setStatus(event === "SIGNED_OUT" ? "unauthenticated" : "loading");
-      },
-    );
-
-    return () => subscription.unsubscribe();
-  }, [loadProfile]);
+        setStatus("unauthenticated");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
-      session,
       signIn: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return { error: error.message };
-        return { error: null };
+        try {
+          const data = await apiFetch<{ user: ApiAuthUser }>("/api/auth/login", {
+            method: "POST",
+            body: { email, password },
+          });
+          setUser(toAuthUser(data.user));
+          setStatus("authenticated");
+          return { error: null };
+        } catch (e) {
+          return { error: errMessage(e) };
+        }
       },
       signUp: async ({ email, password, fullName, businessName }) => {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName, business_name: businessName },
-          },
-        });
-        if (error) return { error: error.message };
-        return { error: null };
+        try {
+          const data = await apiFetch<{ user: ApiAuthUser }>("/api/auth/signup", {
+            method: "POST",
+            body: { email, password, fullName, businessName },
+          });
+          setUser(toAuthUser(data.user));
+          setStatus("authenticated");
+          return { error: null };
+        } catch (e) {
+          return { error: errMessage(e) };
+        }
       },
       signOut: async () => {
-        await supabase.auth.signOut();
+        try {
+          await apiFetch("/api/auth/logout", { method: "POST" });
+        } catch {
+          // Ignore — clear local state regardless.
+        }
+        setUser(null);
+        setStatus("unauthenticated");
       },
       requestPasswordReset: async (email) => {
-        const redirectTo = `${window.location.origin}/reset-password`;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-        if (error) return { error: error.message };
-        return { error: null };
-      },
-      resetPassword: async ({ password }) => {
-        const { error } = await supabase.auth.updateUser({ password });
-        if (error) return { error: error.message };
-        return { error: null };
-      },
-      updateProfile: async ({ name, email, newPassword }) => {
-        // Update auth email / password
-        const authUpdates: { email?: string; password?: string } = {};
-        if (email) authUpdates.email = email;
-        if (newPassword) authUpdates.password = newPassword;
-        if (Object.keys(authUpdates).length > 0) {
-          const { error } = await supabase.auth.updateUser(authUpdates);
-          if (error) return { error: error.message };
+        try {
+          await apiFetch("/api/auth/forgot-password", {
+            method: "POST",
+            body: { email },
+          });
+          return { error: null };
+        } catch (e) {
+          return { error: errMessage(e) };
         }
-        // Update profile row
-        if (name || email) {
-          const currentUser = (await supabase.auth.getUser()).data.user;
-          if (!currentUser) return { error: "Not authenticated" };
-          const updates: { full_name?: string; email?: string } = {};
-          if (name) updates.full_name = name;
-          if (email) updates.email = email;
-          const { error } = await supabase
-            .from("profiles")
-            .update(updates)
-            .eq("id", currentUser.id);
-          if (error) return { error: error.message };
-          // Refresh local user
-          const profile = await loadProfile(currentUser.id);
-          if (profile) setUser(profileToAuthUser(profile));
+      },
+      resetPassword: async ({ password, token }) => {
+        const resolvedToken =
+          token ??
+          (typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("token") ?? ""
+            : "");
+        try {
+          await apiFetch("/api/auth/reset-password", {
+            method: "POST",
+            body: { token: resolvedToken, password },
+          });
+          return { error: null };
+        } catch (e) {
+          return { error: errMessage(e) };
         }
-        return { error: null };
+      },
+      updateProfile: async ({ name, email, currentPassword, newPassword }) => {
+        try {
+          const body: Record<string, unknown> = {};
+          if (name !== undefined) body.name = name;
+          if (email !== undefined) body.email = email;
+          if (currentPassword !== undefined) body.currentPassword = currentPassword;
+          if (newPassword !== undefined) body.newPassword = newPassword;
+          const data = await apiFetch<{ user: ApiAuthUser }>("/api/auth/me", {
+            method: "PUT",
+            body,
+          });
+          if (data?.user) setUser(toAuthUser(data.user));
+          return { error: null };
+        } catch (e) {
+          return { error: errMessage(e) };
+        }
       },
     }),
-    [status, user, session, loadProfile],
+    [status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

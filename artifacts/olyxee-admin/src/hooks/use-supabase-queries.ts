@@ -1,8 +1,12 @@
 /**
- * Supabase query hooks
+ * API query hooks
  *
  * All data fetching hooks for the app live here.
- * They use TanStack Query (useQuery / useMutation) with the Supabase JS client.
+ * They use TanStack Query (useQuery / useMutation) against the Olyxee Express
+ * API (served under `/api`). The hook names, signatures, query keys and return
+ * shapes are kept identical to the previous Supabase implementation so the
+ * pages and components remain unchanged. Each handler maps the API's camelCase
+ * DTOs to the snake_case row shapes the UI expects.
  *
  * Pattern:
  *   useXxx()        → read (useQuery)
@@ -12,7 +16,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+import { apiFetch } from "../lib/api";
 import type {
   Business,
   Customer,
@@ -29,6 +33,8 @@ import type {
   AuditLog,
   InsertNotificationTemplate,
   InsertReminder,
+  BusinessWorkflow,
+  NotificationLog,
 } from "../lib/database.types";
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -55,6 +61,293 @@ export const qk = {
   systemPresets: () => ["workflow_presets", "__system__"] as const,
 } as const;
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Some product features (notification templates, reminders, team invites,
+ * report export, ad-hoc notification send, hard-delete of customers/orders)
+ * have no endpoint in this deployment's API. Rather than crash, read paths
+ * return empty results and write paths throw this clear, user-visible error.
+ */
+function notSupported(feature: string): never {
+  throw new Error(`${feature} is not available in this deployment.`);
+}
+
+interface ApiCustomer {
+  id: string;
+  businessId?: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  companyName?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  totalOrders?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+function mapCustomer(c: ApiCustomer, businessId?: string): Customer {
+  return {
+    id: c.id,
+    business_id: c.businessId ?? businessId ?? "",
+    full_name: c.fullName,
+    email: c.email,
+    phone: c.phone ?? null,
+    company_name: c.companyName ?? null,
+    address: c.address ?? null,
+    notes: c.notes ?? null,
+    total_orders: c.totalOrders ?? 0,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt ?? c.createdAt,
+  };
+}
+
+interface ApiOrder {
+  id: string;
+  businessId?: string;
+  customerId?: string;
+  workflowTemplateId?: string | null;
+  trackingId: string;
+  orderReference?: string | null;
+  currentStatus: string;
+  currentStepPosition?: number;
+  description?: string | null;
+  estimatedDeliveryDate?: string | null;
+  estimatedCompletion?: string | null;
+  notes?: string | null;
+  isArchived?: boolean;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: ApiCustomer | null;
+}
+
+function mapOrder(o: ApiOrder, businessId?: string): Order {
+  const estimated = o.estimatedCompletion ?? o.estimatedDeliveryDate ?? null;
+  return {
+    id: o.id,
+    business_id: o.businessId ?? businessId ?? "",
+    customer_id: o.customerId ?? o.customer?.id ?? "",
+    workflow_template_id: o.workflowTemplateId ?? null,
+    tracking_id: o.trackingId,
+    order_reference: o.orderReference ?? null,
+    current_status: o.currentStatus,
+    current_step_position: o.currentStepPosition ?? 0,
+    description: o.description ?? null,
+    estimated_completion: estimated,
+    // The UI reads `estimated_delivery_date`; keep it in sync with the API's
+    // `estimatedDeliveryDate` field so dates render correctly.
+    estimated_delivery_date: estimated,
+    notes: o.notes ?? null,
+    is_archived: o.isArchived ?? false,
+    created_by: o.createdBy ?? null,
+    created_at: o.createdAt,
+    updated_at: o.updatedAt,
+  } as Order;
+}
+
+interface ApiTrackingEvent {
+  id: string;
+  orderId: string;
+  status: string;
+  message?: string | null;
+  location?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+function mapTrackingEvent(e: ApiTrackingEvent) {
+  return {
+    id: e.id,
+    order_id: e.orderId,
+    status: e.status,
+    message: e.message ?? null,
+    location: e.location ?? null,
+    created_by: e.createdBy ?? null,
+    notified: false,
+    created_at: e.createdAt,
+  };
+}
+
+interface ApiBusiness {
+  id: string;
+  name: string;
+  slug: string;
+  websiteUrl?: string | null;
+  supportEmail?: string | null;
+  industry?: string | null;
+  employeeCount?: string | null;
+  location?: string | null;
+  phone?: string | null;
+  emailGreeting?: string | null;
+  emailSignature?: string | null;
+  emailFooterNote?: string | null;
+  trackingIdPrefix?: string | null;
+  allowedOrigins?: string | null;
+  onboardingCompleted: boolean;
+  createdAt: string;
+}
+
+function mapBusiness(b: ApiBusiness): Business {
+  return {
+    id: b.id,
+    name: b.name,
+    slug: b.slug,
+    business_type: b.industry ?? "",
+    phone: b.phone ?? null,
+    email: b.supportEmail ?? null,
+    address: null,
+    logo_url: null,
+    website_url: b.websiteUrl ?? null,
+    support_email: b.supportEmail ?? null,
+    location: b.location ?? null,
+    employee_count: b.employeeCount ?? null,
+    email_greeting: b.emailGreeting ?? null,
+    email_signature: b.emailSignature ?? null,
+    email_footer_note: b.emailFooterNote ?? null,
+    tracking_id_prefix: b.trackingIdPrefix ?? null,
+    notify_on_status_change: true,
+    notification_email: true,
+    notification_sms: false,
+    notification_whatsapp: false,
+    onboarding_completed: b.onboardingCompleted,
+    onboarding_step: 0,
+    plan: "free",
+    created_at: b.createdAt,
+    updated_at: b.createdAt,
+  };
+}
+
+interface ApiWorkflowStep {
+  id: string;
+  templateId: string;
+  label: string;
+  description?: string | null;
+  position: number;
+  color?: string | null;
+  isTerminal?: boolean;
+  autoNotify?: boolean;
+  notifyTemplateId?: string | null;
+}
+
+function mapWorkflowStep(s: ApiWorkflowStep): WorkflowStep {
+  return {
+    id: s.id,
+    template_id: s.templateId,
+    label: s.label,
+    description: s.description ?? null,
+    position: s.position,
+    color: s.color ?? "#000000",
+    is_terminal: s.isTerminal ?? false,
+    auto_notify: s.autoNotify ?? false,
+    notify_template_id: s.notifyTemplateId ?? null,
+  };
+}
+
+interface ApiWorkflowTemplate {
+  id: string;
+  businessId: string;
+  name: string;
+  description?: string | null;
+  businessType?: string | null;
+  isSystem?: boolean;
+  createdAt: string;
+  steps?: ApiWorkflowStep[];
+}
+
+function mapWorkflowTemplate(
+  t: ApiWorkflowTemplate,
+): WorkflowTemplate & { workflow_steps: WorkflowStep[] } {
+  return {
+    id: t.id,
+    business_id: t.businessId,
+    name: t.name,
+    description: t.description ?? null,
+    business_type: t.businessType ?? null,
+    is_system: t.isSystem ?? false,
+    created_at: t.createdAt,
+    updated_at: t.createdAt,
+    workflow_steps: (t.steps ?? []).map(mapWorkflowStep),
+  };
+}
+
+interface ApiBusinessWorkflow {
+  id: string;
+  businessId: string;
+  templateId: string;
+  templateName: string;
+  assignedAt: string;
+}
+
+function mapBusinessWorkflow(w: ApiBusinessWorkflow): BusinessWorkflow {
+  return {
+    id: w.id,
+    business_id: w.businessId,
+    template_id: w.templateId,
+    template_name: w.templateName,
+    assigned_at: w.assignedAt,
+  };
+}
+
+interface ApiAuditLog {
+  id: string;
+  businessId: string;
+  userId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+}
+
+function mapAuditLog(l: ApiAuditLog): AuditLog {
+  return {
+    id: l.id,
+    business_id: l.businessId,
+    user_id: l.userId ?? null,
+    action: l.action,
+    entity_type: l.entityType,
+    entity_id: l.entityId ?? null,
+    old_value: null,
+    new_value: null,
+    metadata: (l.metadata ?? null) as AuditLog["metadata"],
+    ip_address: null,
+    user_agent: null,
+    created_at: l.createdAt,
+  };
+}
+
+interface ApiEmailNotification {
+  id: string;
+  orderId: string;
+  customerEmail: string;
+  subject: string;
+  body?: string;
+  status: string;
+  providerMessageId?: string | null;
+  createdAt: string;
+}
+
+function mapNotificationLog(n: ApiEmailNotification): NotificationLog {
+  return {
+    id: n.id,
+    order_id: n.orderId,
+    business_id: "",
+    customer_id: null,
+    template_id: null,
+    channel: "email",
+    recipient: n.customerEmail,
+    subject: n.subject ?? null,
+    body: n.body ?? "",
+    status: (n.status as NotificationLog["status"]) ?? "sent",
+    provider_message_id: n.providerMessageId ?? null,
+    error_message: null,
+    sent_at: n.createdAt,
+    created_at: n.createdAt,
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BUSINESS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,13 +357,8 @@ export function useBusiness(businessId: string | null | undefined) {
     queryKey: qk.business(),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("id", businessId!)
-        .single();
-      if (error) throw error;
-      return data as Business;
+      const data = await apiFetch<ApiBusiness>("/api/business");
+      return mapBusiness(data);
     },
   });
 }
@@ -79,17 +367,28 @@ export function useUpdateBusiness() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      id,
+      id: _id,
       ...updates
     }: Partial<Business> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("businesses")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Business;
+      const body: Record<string, unknown> = {};
+      if (updates.name !== undefined) body.name = updates.name;
+      if (updates.business_type !== undefined) body.industry = updates.business_type;
+      if (updates.employee_count !== undefined) body.employeeCount = updates.employee_count;
+      if (updates.location !== undefined) body.location = updates.location;
+      if (updates.phone !== undefined) body.phone = updates.phone;
+      if (updates.website_url !== undefined) body.websiteUrl = updates.website_url;
+      if (updates.support_email !== undefined) body.supportEmail = updates.support_email;
+      if (updates.email_greeting !== undefined) body.emailGreeting = updates.email_greeting;
+      if (updates.email_signature !== undefined) body.emailSignature = updates.email_signature;
+      if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
+      if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
+      if (updates.onboarding_completed !== undefined) body.onboardingCompleted = updates.onboarding_completed;
+
+      const data = await apiFetch<ApiBusiness>("/api/business", {
+        method: "PUT",
+        body,
+      });
+      return mapBusiness(data);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.business() });
@@ -99,12 +398,8 @@ export function useUpdateBusiness() {
 
 export function useDeleteBusiness() {
   return useMutation({
-    mutationFn: async (businessId: string) => {
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", businessId);
-      if (error) throw error;
+    mutationFn: async (_businessId: string) => {
+      await apiFetch("/api/business", { method: "DELETE" });
     },
   });
 }
@@ -121,25 +416,17 @@ export function useCustomers(
     queryKey: qk.customers(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      let query = supabase
-        .from("customers")
-        .select("*", { count: "exact" })
-        .eq("business_id", businessId!)
-        .order("created_at", { ascending: false });
-
-      if (opts?.search) {
-        query = query.or(
-          `full_name.ilike.%${opts.search}%,email.ilike.%${opts.search}%,phone.ilike.%${opts.search}%`,
-        );
-      }
-      if (opts?.limit) {
-        const offset = ((opts.page ?? 1) - 1) * opts.limit;
-        query = query.range(offset, offset + opts.limit - 1);
-      }
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-      return { customers: (data ?? []) as Customer[], total: count ?? 0 };
+      const res = await apiFetch<{ data: ApiCustomer[]; total: number }>("/api/customers", {
+        query: {
+          search: opts?.search,
+          limit: opts?.limit,
+          page: opts?.page,
+        },
+      });
+      return {
+        customers: (res.data ?? []).map((c) => mapCustomer(c, businessId ?? undefined)),
+        total: res.total ?? 0,
+      };
     },
   });
 }
@@ -149,13 +436,8 @@ export function useCustomer(id: string | null | undefined) {
     queryKey: ["customer", id ?? ""],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data as Customer;
+      const data = await apiFetch<ApiCustomer>(`/api/customers/${id}`);
+      return mapCustomer(data);
     },
   });
 }
@@ -165,13 +447,13 @@ export function useCustomerOrders(customerId: string | null | undefined) {
     queryKey: ["customerOrders", customerId ?? ""],
     enabled: !!customerId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, customers ( full_name )")
-        .eq("customer_id", customerId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as (Order & { customers: { full_name: string } | null })[];
+      const data = await apiFetch<ApiOrder[]>(`/api/customers/${customerId}/orders`);
+      return (data ?? []).map((o) => ({
+        ...mapOrder(o),
+        customers: o.customer
+          ? { full_name: o.customer.fullName }
+          : null,
+      })) as (Order & { customers: { full_name: string } | null })[];
     },
   });
 }
@@ -180,13 +462,17 @@ export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: InsertCustomer) => {
-      const { data, error } = await supabase
-        .from("customers")
-        .insert(input)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Customer;
+      const data = await apiFetch<ApiCustomer>("/api/customers", {
+        method: "POST",
+        body: {
+          fullName: input.full_name,
+          email: input.email,
+          phone: input.phone ?? undefined,
+          companyName: input.company_name ?? undefined,
+          address: input.address ?? undefined,
+        },
+      });
+      return mapCustomer(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.customers(variables.business_id) });
@@ -199,18 +485,21 @@ export function useUpdateCustomer() {
   return useMutation({
     mutationFn: async ({
       id,
-      business_id,
+      business_id: _business_id,
       ...updates
     }: Partial<Customer> & { id: string; business_id: string }) => {
-      const { data, error } = await supabase
-        .from("customers")
-        .update(updates)
-        .eq("id", id)
-        .eq("business_id", business_id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Customer;
+      const body: Record<string, unknown> = {};
+      if (updates.full_name !== undefined) body.fullName = updates.full_name;
+      if (updates.email !== undefined) body.email = updates.email;
+      if (updates.phone !== undefined) body.phone = updates.phone;
+      if (updates.company_name !== undefined) body.companyName = updates.company_name;
+      if (updates.address !== undefined) body.address = updates.address;
+
+      const data = await apiFetch<ApiCustomer>(`/api/customers/${id}`, {
+        method: "PUT",
+        body,
+      });
+      return mapCustomer(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.customers(variables.business_id) });
@@ -221,16 +510,8 @@ export function useUpdateCustomer() {
 export function useDeleteCustomer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      business_id,
-    }: { id: string; business_id: string }) => {
-      const { error } = await supabase
-        .from("customers")
-        .delete()
-        .eq("id", id)
-        .eq("business_id", business_id);
-      if (error) throw error;
+    mutationFn: async (_args: { id: string; business_id: string }) => {
+      notSupported("Deleting customers");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.customers(variables.business_id) });
@@ -256,36 +537,32 @@ export function useOrders(
   filters: OrderFilters = {},
 ) {
   return useQuery({
-    queryKey: qk.orders(businessId ?? "", filters),
+    queryKey: qk.orders(businessId ?? "", filters as Record<string, unknown>),
     enabled: !!businessId,
     queryFn: async () => {
-      let query = supabase
-        .from("orders")
-        .select(
-          `*, customers ( full_name, email, phone, company_name )`,
-          { count: "exact" },
-        )
-        .eq("business_id", businessId!)
-        .order("created_at", { ascending: false });
-
-      if (filters.status) query = query.eq("current_status", filters.status);
-      if (filters.from) query = query.gte("created_at", filters.from);
-      if (filters.to) query = query.lte("created_at", filters.to);
-      if (filters.search) {
-        query = query.or(
-          `tracking_id.ilike.%${filters.search}%,order_reference.ilike.%${filters.search}%`,
-        );
-      }
-      if (filters.limit) {
-        const offset = ((filters.page ?? 1) - 1) * filters.limit;
-        query = query.range(offset, offset + filters.limit - 1);
-      }
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-      return { orders: (data ?? []) as (Order & { customers: Customer | null })[], total: count ?? 0 };
+      const res = await apiFetch<{ data: ApiOrder[]; total: number }>("/api/orders", {
+        query: {
+          status: filters.status,
+          search: filters.search,
+          page: filters.page,
+          limit: filters.limit,
+        },
+      });
+      return {
+        orders: (res.data ?? []).map((o) => ({
+          ...mapOrder(o, businessId ?? undefined),
+          customers: o.customer ? mapCustomer(o.customer, businessId ?? undefined) : null,
+        })) as (Order & { customers: Customer | null })[],
+        total: res.total ?? 0,
+      };
     },
   });
+}
+
+interface ApiOrderDetail extends ApiOrder {
+  customer?: ApiCustomer | null;
+  trackingEvents?: ApiTrackingEvent[];
+  emailNotifications?: ApiEmailNotification[];
 }
 
 export function useOrder(id: string | null | undefined) {
@@ -293,15 +570,12 @@ export function useOrder(id: string | null | undefined) {
     queryKey: qk.order(id ?? ""),
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(
-          `*, customers ( * ), tracking_events ( * )`,
-        )
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data as Order & { customers: Customer; tracking_events: unknown[] };
+      const data = await apiFetch<ApiOrderDetail>(`/api/orders/${id}`);
+      return {
+        ...mapOrder(data),
+        customers: data.customer ? mapCustomer(data.customer) : (null as unknown as Customer),
+        tracking_events: (data.trackingEvents ?? []).map(mapTrackingEvent),
+      } as Order & { customers: Customer; tracking_events: unknown[] };
     },
   });
 }
@@ -310,13 +584,16 @@ export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: InsertOrder) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .insert(input)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Order;
+      const data = await apiFetch<ApiOrder>("/api/orders", {
+        method: "POST",
+        body: {
+          customerId: input.customer_id,
+          orderReference: input.order_reference ?? undefined,
+          description: input.description ?? undefined,
+          estimatedDeliveryDate: input.estimated_completion ?? undefined,
+        },
+      });
+      return mapOrder(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.orders(variables.business_id) });
@@ -330,11 +607,11 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({
       orderId,
-      businessId,
+      businessId: _businessId,
       status,
       message,
       location,
-      userId,
+      userId: _userId,
     }: {
       orderId: string;
       businessId: string;
@@ -343,25 +620,14 @@ export function useUpdateOrderStatus() {
       location?: string;
       userId?: string;
     }) => {
-      // Update the order
-      const { error: orderError } = await supabase
-        .from("orders")
-        .update({ current_status: status })
-        .eq("id", orderId)
-        .eq("business_id", businessId);
-      if (orderError) throw orderError;
-
-      // Append tracking event
-      const { error: eventError } = await supabase
-        .from("tracking_events")
-        .insert({
-          order_id: orderId,
+      await apiFetch(`/api/orders/${orderId}/status`, {
+        method: "POST",
+        body: {
           status,
-          message: message ?? null,
-          location: location ?? null,
-          created_by: userId ?? null,
-        });
-      if (eventError) throw eventError;
+          message: message ?? undefined,
+          location: location ?? undefined,
+        },
+      });
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.order(variables.orderId) });
@@ -374,16 +640,8 @@ export function useUpdateOrderStatus() {
 export function useDeleteOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      businessId,
-    }: { id: string; businessId: string }) => {
-      const { error } = await supabase
-        .from("orders")
-        .delete()
-        .eq("id", id)
-        .eq("business_id", businessId);
-      if (error) throw error;
+    mutationFn: async (_args: { id: string; businessId: string }) => {
+      notSupported("Deleting orders");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.orders(variables.businessId) });
@@ -401,54 +659,33 @@ export function useDashboardStats(businessId: string | null | undefined) {
     queryKey: qk.dashboard(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const [ordersRes, customersRes, statusRes, totalOrdersRes, emailsTodayRes] = await Promise.all([
-        // Orders last 30 days
-        supabase
-          .from("orders")
-          .select("id", { count: "exact", head: true })
-          .eq("business_id", businessId!)
-          .gte("created_at", thirtyDaysAgo),
-        // Total customers
-        supabase
-          .from("customers")
-          .select("id", { count: "exact", head: true })
-          .eq("business_id", businessId!),
-        // Status breakdown (all orders)
-        supabase
-          .from("orders")
-          .select("current_status")
-          .eq("business_id", businessId!),
-        // Total orders ever
-        supabase
-          .from("orders")
-          .select("id", { count: "exact", head: true })
-          .eq("business_id", businessId!),
-        // Emails sent today
-        supabase
-          .from("notification_logs")
-          .select("id", { count: "exact", head: true })
-          .eq("business_id", businessId!)
-          .gte("sent_at", todayStart.toISOString()),
+      const [summary, breakdown, customersPage] = await Promise.all([
+        apiFetch<{
+          totalOrders: number;
+          activeDeliveries: number;
+          delayedOrders: number;
+          deliveredOrders: number;
+          cancelledOrders: number;
+          emailsSentToday: number;
+        }>("/api/dashboard/summary"),
+        apiFetch<{ status: string; count: number }[]>("/api/dashboard/status-breakdown"),
+        apiFetch<{ total: number }>("/api/customers", { query: { limit: 1 } }),
       ]);
 
       const statusBreakdown: Record<string, number> = {};
-      for (const row of statusRes.data ?? []) {
-        statusBreakdown[row.current_status] = (statusBreakdown[row.current_status] ?? 0) + 1;
+      for (const row of breakdown ?? []) {
+        statusBreakdown[row.status] = row.count;
       }
 
       return {
-        ordersLast30Days: ordersRes.count ?? 0,
-        totalCustomers: customersRes.count ?? 0,
+        ordersLast30Days: summary.totalOrders,
+        totalCustomers: customersPage.total ?? 0,
         statusBreakdown,
-        totalOrders: totalOrdersRes.count ?? 0,
-        activeDeliveries: (statusBreakdown["In transit"] ?? 0) + (statusBreakdown["Out for delivery"] ?? 0),
-        delayedOrders: statusBreakdown["Delayed"] ?? 0,
-        deliveredOrders: statusBreakdown["Delivered"] ?? 0,
-        emailsSentToday: emailsTodayRes.count ?? 0,
+        totalOrders: summary.totalOrders,
+        activeDeliveries: summary.activeDeliveries,
+        delayedOrders: summary.delayedOrders,
+        deliveredOrders: summary.deliveredOrders,
+        emailsSentToday: summary.emailsSentToday,
       };
     },
   });
@@ -463,13 +700,8 @@ export function useWorkflowTemplates(businessId: string | null | undefined) {
     queryKey: qk.workflowTemplates(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("workflow_templates")
-        .select("*, workflow_steps(*)")
-        .eq("business_id", businessId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as (WorkflowTemplate & { workflow_steps: WorkflowStep[] })[];
+      const data = await apiFetch<ApiWorkflowTemplate[]>("/api/workflow-templates");
+      return (data ?? []).map(mapWorkflowTemplate);
     },
   });
 }
@@ -478,14 +710,9 @@ export function useSystemPresets() {
   return useQuery({
     queryKey: qk.systemPresets(),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("workflow_templates")
-        .select("*, workflow_steps(*)")
-        .eq("business_id", "__system__")
-        .eq("is_system", true)
-        .order("name");
-      if (error) throw error;
-      return (data ?? []) as (WorkflowTemplate & { workflow_steps: WorkflowStep[] })[];
+      // System presets are resolved client-side from a constant; the API does
+      // not expose a system-template endpoint.
+      return [] as (WorkflowTemplate & { workflow_steps: WorkflowStep[] })[];
     },
   });
 }
@@ -500,20 +727,22 @@ export function useCreateWorkflowTemplate() {
       template: InsertWorkflowTemplate;
       steps: Omit<InsertWorkflowStep, "template_id">[];
     }) => {
-      const { data: tmpl, error: tmplError } = await supabase
-        .from("workflow_templates")
-        .insert(template)
-        .select()
-        .single();
-      if (tmplError) throw tmplError;
-
-      if (steps.length > 0) {
-        const { error: stepsError } = await supabase
-          .from("workflow_steps")
-          .insert(steps.map((s) => ({ ...s, template_id: (tmpl as WorkflowTemplate).id })));
-        if (stepsError) throw stepsError;
-      }
-      return tmpl as WorkflowTemplate;
+      const data = await apiFetch<ApiWorkflowTemplate>("/api/workflow-templates", {
+        method: "POST",
+        body: {
+          name: template.name,
+          description: template.description ?? undefined,
+          businessType: template.business_type ?? undefined,
+          steps: steps.map((s) => ({
+            label: s.label,
+            description: s.description ?? undefined,
+            position: s.position,
+            color: s.color ?? undefined,
+            isTerminal: s.is_terminal ?? false,
+          })),
+        },
+      });
+      return mapWorkflowTemplate(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
@@ -528,14 +757,9 @@ export function useDeleteWorkflowTemplate() {
   return useMutation({
     mutationFn: async ({
       id,
-      businessId,
+      businessId: _businessId,
     }: { id: string; businessId: string }) => {
-      const { error } = await supabase
-        .from("workflow_templates")
-        .delete()
-        .eq("id", id)
-        .eq("business_id", businessId);
-      if (error) throw error;
+      await apiFetch(`/api/workflow-templates/${id}`, { method: "DELETE" });
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
@@ -548,18 +772,19 @@ export function useUpdateWorkflowTemplate() {
   return useMutation({
     mutationFn: async ({
       id,
-      businessId,
+      businessId: _businessId,
       ...updates
     }: Partial<WorkflowTemplate> & { id: string; businessId: string }) => {
-      const { data, error } = await supabase
-        .from("workflow_templates")
-        .update(updates)
-        .eq("id", id)
-        .eq("business_id", businessId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as WorkflowTemplate;
+      const body: Record<string, unknown> = {};
+      if (updates.name !== undefined) body.name = updates.name;
+      if (updates.description !== undefined) body.description = updates.description;
+      if (updates.business_type !== undefined) body.businessType = updates.business_type;
+
+      const data = await apiFetch<ApiWorkflowTemplate>(`/api/workflow-templates/${id}`, {
+        method: "PUT",
+        body,
+      });
+      return mapWorkflowTemplate(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
@@ -572,26 +797,25 @@ export function useUpdateWorkflowSteps() {
   return useMutation({
     mutationFn: async ({
       templateId,
-      businessId,
+      businessId: _businessId,
       steps,
     }: {
       templateId: string;
       businessId: string;
       steps: Omit<InsertWorkflowStep, "template_id">[];
     }) => {
-      // Delete all existing steps then re-insert
-      const { error: delError } = await supabase
-        .from("workflow_steps")
-        .delete()
-        .eq("template_id", templateId);
-      if (delError) throw delError;
-
-      if (steps.length > 0) {
-        const { error: insError } = await supabase
-          .from("workflow_steps")
-          .insert(steps.map((s) => ({ ...s, template_id: templateId })));
-        if (insError) throw insError;
-      }
+      await apiFetch(`/api/workflow-templates/${templateId}/steps`, {
+        method: "PUT",
+        body: {
+          steps: steps.map((s) => ({
+            label: s.label,
+            description: s.description ?? undefined,
+            position: s.position,
+            color: s.color ?? undefined,
+            isTerminal: s.is_terminal ?? false,
+          })),
+        },
+      });
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
@@ -604,9 +828,8 @@ export function useCloneWorkflowTemplate() {
   return useMutation({
     mutationFn: async ({
       sourceId,
-      businessId,
+      businessId: _businessId,
       name,
-      // Steps are passed directly when cloning a preset (no DB row exists)
       presetSteps,
       description,
       businessType,
@@ -623,44 +846,38 @@ export function useCloneWorkflowTemplate() {
       let sourceBusinessType: string | null = businessType ?? null;
 
       if (presetSteps) {
-        // Preset clone: steps provided directly, no DB fetch needed
         stepsToInsert = presetSteps;
       } else if (sourceId) {
-        // DB template clone: fetch source steps from DB
-        const { data: source, error: fetchError } = await supabase
-          .from("workflow_templates")
-          .select("*, workflow_steps(*)")
-          .eq("id", sourceId)
-          .single();
-        if (fetchError) throw fetchError;
-        sourceDescription = (source as any).description ?? null;
-        sourceBusinessType = (source as any).business_type ?? null;
-        stepsToInsert = ((source as any).workflow_steps ?? []).map((s: any) => ({
+        const source = await apiFetch<ApiWorkflowTemplate>(`/api/workflow-templates/${sourceId}`);
+        sourceDescription = source.description ?? null;
+        sourceBusinessType = source.businessType ?? null;
+        stepsToInsert = (source.steps ?? []).map((s) => ({
           label: s.label,
-          description: s.description,
-          color: s.color,
-          is_terminal: s.is_terminal,
+          description: s.description ?? null,
+          color: s.color ?? null,
+          is_terminal: s.isTerminal ?? false,
           position: s.position,
         }));
       } else {
         stepsToInsert = [];
       }
 
-      // Insert new template
-      const { data: newTmpl, error: tmplError } = await supabase
-        .from("workflow_templates")
-        .insert({ business_id: businessId, name, description: sourceDescription, business_type: sourceBusinessType, is_system: false })
-        .select()
-        .single();
-      if (tmplError) throw tmplError;
-
-      if (stepsToInsert.length > 0) {
-        const { error: stepsError } = await supabase
-          .from("workflow_steps")
-          .insert(stepsToInsert.map((s) => ({ ...s, template_id: (newTmpl as WorkflowTemplate).id })));
-        if (stepsError) throw stepsError;
-      }
-      return newTmpl as WorkflowTemplate;
+      const data = await apiFetch<ApiWorkflowTemplate>("/api/workflow-templates/clone", {
+        method: "POST",
+        body: {
+          name,
+          description: sourceDescription ?? undefined,
+          businessType: sourceBusinessType ?? undefined,
+          steps: stepsToInsert.map((s) => ({
+            label: s.label,
+            description: s.description ?? undefined,
+            position: s.position,
+            color: s.color ?? undefined,
+            isTerminal: s.is_terminal,
+          })),
+        },
+      });
+      return mapWorkflowTemplate(data);
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
@@ -673,15 +890,16 @@ export function useActiveWorkflow(businessId: string | null | undefined) {
     queryKey: qk.activeWorkflow(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      // Select only own columns — template_id has no FK so we cannot join.
-      // The page resolves the template details from WORKFLOW_PRESETS or templatesQuery.
-      const { data, error } = await supabase
-        .from("business_workflows")
-        .select("*")
-        .eq("business_id", businessId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      try {
+        const data = await apiFetch<ApiBusinessWorkflow>("/api/business-workflows/active");
+        return mapBusinessWorkflow(data);
+      } catch (e) {
+        // 404 = no active workflow assigned yet.
+        if (e instanceof Error && /not found|no active/i.test(e.message)) return null;
+        const status = (e as { status?: number }).status;
+        if (status === 404) return null;
+        throw e;
+      }
     },
   });
 }
@@ -690,7 +908,7 @@ export function useActivateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      businessId,
+      businessId: _businessId,
       templateId,
       templateName,
     }: {
@@ -698,14 +916,10 @@ export function useActivateWorkflow() {
       templateId: string;
       templateName: string;
     }) => {
-      // Upsert (business only has one active workflow)
-      const { error } = await supabase
-        .from("business_workflows")
-        .upsert(
-          { business_id: businessId, template_id: templateId, template_name: templateName },
-          { onConflict: "business_id" },
-        );
-      if (error) throw error;
+      await apiFetch("/api/business-workflows/activate", {
+        method: "POST",
+        body: { templateId, templateName },
+      });
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.activeWorkflow(variables.businessId) });
@@ -714,7 +928,7 @@ export function useActivateWorkflow() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATION TEMPLATES
+// NOTIFICATION TEMPLATES (no API endpoint in this deployment)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useNotificationTemplates(businessId: string | null | undefined) {
@@ -722,13 +936,7 @@ export function useNotificationTemplates(businessId: string | null | undefined) 
     queryKey: qk.notificationTemplates(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("notification_templates")
-        .select("*")
-        .eq("business_id", businessId!)
-        .order("name");
-      if (error) throw error;
-      return (data ?? []) as NotificationTemplate[];
+      return [] as NotificationTemplate[];
     },
   });
 }
@@ -736,14 +944,8 @@ export function useNotificationTemplates(businessId: string | null | undefined) 
 export function useCreateNotificationTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: InsertNotificationTemplate) => {
-      const { data, error } = await supabase
-        .from("notification_templates")
-        .insert(input)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as NotificationTemplate;
+    mutationFn: async (_input: InsertNotificationTemplate) => {
+      notSupported("Notification templates");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
@@ -756,20 +958,10 @@ export function useCreateNotificationTemplate() {
 export function useUpdateNotificationTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      business_id,
-      ...updates
-    }: Partial<NotificationTemplate> & { id: string; business_id: string }) => {
-      const { data, error } = await supabase
-        .from("notification_templates")
-        .update(updates)
-        .eq("id", id)
-        .eq("business_id", business_id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as NotificationTemplate;
+    mutationFn: async (
+      _args: Partial<NotificationTemplate> & { id: string; business_id: string },
+    ) => {
+      notSupported("Notification templates");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
@@ -782,16 +974,8 @@ export function useUpdateNotificationTemplate() {
 export function useDeleteNotificationTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      businessId,
-    }: { id: string; businessId: string }) => {
-      const { error } = await supabase
-        .from("notification_templates")
-        .delete()
-        .eq("id", id)
-        .eq("business_id", businessId);
-      if (error) throw error;
+    mutationFn: async (_args: { id: string; businessId: string }) => {
+      notSupported("Notification templates");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
@@ -802,7 +986,7 @@ export function useDeleteNotificationTemplate() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REMINDERS
+// REMINDERS (no API endpoint in this deployment)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useReminders(businessId: string | null | undefined) {
@@ -810,13 +994,7 @@ export function useReminders(businessId: string | null | undefined) {
     queryKey: qk.reminders(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reminders")
-        .select("*, orders(tracking_id, current_status), customers(full_name, email)")
-        .eq("business_id", businessId!)
-        .order("scheduled_at");
-      if (error) throw error;
-      return (data ?? []) as Reminder[];
+      return [] as Reminder[];
     },
   });
 }
@@ -824,14 +1002,8 @@ export function useReminders(businessId: string | null | undefined) {
 export function useCreateReminder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: InsertReminder) => {
-      const { data, error } = await supabase
-        .from("reminders")
-        .insert(input)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Reminder;
+    mutationFn: async (_input: InsertReminder) => {
+      notSupported("Reminders");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.reminders(variables.business_id) });
@@ -842,16 +1014,8 @@ export function useCreateReminder() {
 export function useCancelReminder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      businessId,
-    }: { id: string; businessId: string }) => {
-      const { error } = await supabase
-        .from("reminders")
-        .update({ status: "cancelled" })
-        .eq("id", id)
-        .eq("business_id", businessId);
-      if (error) throw error;
+    mutationFn: async (_args: { id: string; businessId: string }) => {
+      notSupported("Reminders");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.reminders(variables.businessId) });
@@ -860,7 +1024,7 @@ export function useCancelReminder() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEAM MANAGEMENT
+// TEAM MANAGEMENT (only the current user is available via /auth/me)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useTeamMembers(businessId: string | null | undefined) {
@@ -868,13 +1032,7 @@ export function useTeamMembers(businessId: string | null | undefined) {
     queryKey: qk.teamMembers(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("business_id", businessId!)
-        .order("full_name");
-      if (error) throw error;
-      return data ?? [];
+      return [] as unknown[];
     },
   });
 }
@@ -884,15 +1042,7 @@ export function useTeamInvites(businessId: string | null | undefined) {
     queryKey: qk.teamInvites(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_invites")
-        .select("*")
-        .eq("business_id", businessId!)
-        .is("accepted_at", null)
-        .gte("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as TeamInvite[];
+      return [] as TeamInvite[];
     },
   });
 }
@@ -900,24 +1050,8 @@ export function useTeamInvites(businessId: string | null | undefined) {
 export function useInviteTeamMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      email,
-      role,
-      businessId,
-    }: {
-      email: string;
-      role: string;
-      businessId: string;
-    }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("invite-team-member", {
-        body: { email, role, business_id: businessId },
-        headers: session
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
-      });
-      if (res.error) throw res.error;
-      return res.data;
+    mutationFn: async (_args: { email: string; role: string; businessId: string }) => {
+      notSupported("Inviting team members");
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.teamInvites(variables.businessId) });
@@ -937,22 +1071,19 @@ export function useAuditLogs(
     queryKey: qk.auditLogs(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      const limit = opts?.limit ?? 50;
-      const offset = ((opts?.page ?? 1) - 1) * limit;
-      const { data, error, count } = await supabase
-        .from("audit_logs")
-        .select("*", { count: "exact" })
-        .eq("business_id", businessId!)
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
-      if (error) throw error;
-      return { logs: (data ?? []) as AuditLog[], total: count ?? 0 };
+      const res = await apiFetch<{ data: ApiAuditLog[]; total: number }>("/api/audit-logs", {
+        query: {
+          limit: opts?.limit,
+          page: opts?.page,
+        },
+      });
+      return { logs: (res.data ?? []).map(mapAuditLog), total: res.total ?? 0 };
     },
   });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATION LOGS
+// NOTIFICATION LOGS (email notifications for an order)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useNotificationLogs(orderId: string | null | undefined) {
@@ -960,19 +1091,16 @@ export function useNotificationLogs(orderId: string | null | undefined) {
     queryKey: ["notification_logs", orderId ?? ""],
     enabled: !!orderId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("notification_logs")
-        .select("*")
-        .eq("order_id", orderId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      const data = await apiFetch<ApiEmailNotification[]>(
+        `/api/orders/${orderId}/email-notifications`,
+      );
+      return (data ?? []).map(mapNotificationLog);
     },
   });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATIONS (send via edge function)
+// NOTIFICATIONS (resend the latest status email for an order)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useSendNotification() {
@@ -980,54 +1108,43 @@ export function useSendNotification() {
     mutationFn: async ({
       orderId,
       channel = "email",
-      customMessage,
-      customSubject,
+      customMessage: _customMessage,
+      customSubject: _customSubject,
     }: {
       orderId: string;
       channel?: string;
       customMessage?: string;
       customSubject?: string;
     }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("send-notification", {
-        body: {
-          order_id: orderId,
-          channel,
-          custom_message: customMessage,
-          custom_subject: customSubject,
-        },
-        headers: session
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
-      });
-      if (res.error) throw res.error;
-      return res.data as { success: boolean; provider_message_id?: string };
+      if (channel !== "email") {
+        notSupported(`Sending ${channel} notifications`);
+      }
+      const res = await apiFetch<{ success: boolean; emailNotificationId?: string; message: string }>(
+        `/api/orders/${orderId}/resend-email`,
+        { method: "POST" },
+      );
+      return {
+        success: res.success,
+        provider_message_id: res.emailNotificationId,
+      } as { success: boolean; provider_message_id?: string };
     },
   });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXPORT REPORT
+// EXPORT REPORT (no API endpoint in this deployment)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useExportReport() {
   return useMutation({
-    mutationFn: async (opts: {
+    mutationFn: async (_opts: {
       format?: "csv";
       from?: string;
       to?: string;
       status?: string;
     }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("export-report", {
-        body: opts,
-        headers: session
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
-      });
-      if (res.error) throw res.error;
-      // res.data is already a Blob when content-type is text/csv
-      return res.data as Blob;
+      notSupported("Report export");
+      return new Blob();
     },
   });
 }

@@ -11,13 +11,11 @@ export default function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Supabase sends the user to /reset-password#access_token=...&type=recovery
-  // The Supabase JS client picks up the hash automatically and emits a
-  // PASSWORD_RECOVERY auth event, which logs the user in so they can call
-  // updateUser({ password }).  We just need to wait for auth to be ready.
+  // The reset email links to /reset-password?token=... The token is exchanged
+  // server-side when the new password is submitted.
   const hasRecoveryHash = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return window.location.hash.includes("type=recovery");
+    return !!new URLSearchParams(window.location.search).get("token");
   }, []);
 
   const [password, setPassword] = useState("");

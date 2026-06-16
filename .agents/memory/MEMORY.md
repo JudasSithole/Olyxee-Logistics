@@ -1,0 +1,2 @@
+- [Demo account auth](demo-account-auth.md) — demo user is hardcoded, not in DB; every auth endpoint needs the same demo bypass requireAuth has.
+- [olyxee architecture](olyxee-architecture.md) — Vite SPA (olyxee-admin) + Express API (api-server) over /api, cookie-session auth; migrated off Supabase.

@@ -313,6 +313,13 @@ router.put("/auth/me", async (req, res) => {
     return;
   }
 
+  // Demo session is fully hardcoded and has no database row — mirror the
+  // bypass in requireAuth so the profile page doesn't 401. Updates are a no-op.
+  if (payload.userId === DEMO_USER_ID) {
+    res.json({ user: DEMO_USER });
+    return;
+  }
+
   const parsed = UpdateMeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -392,6 +399,14 @@ router.get("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
+  // Demo session is fully hardcoded and has no database row — mirror the
+  // bypass in requireAuth so session restore works on refresh.
+  if (payload.userId === DEMO_USER_ID) {
+    res.json({ user: DEMO_USER });
+    return;
+  }
+
   const user = await db.query.usersTable.findFirst({
     where: eq(usersTable.id, payload.userId),
   });
