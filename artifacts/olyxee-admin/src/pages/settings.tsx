@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw, History, Trash2, ShieldAlert,
-  Code2, Copy, Download, Globe, Tag,
+  Code2, Copy, Download, Globe, Tag, GitBranch, ExternalLink,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -487,6 +487,7 @@ const NAV_ITEMS = [
   { id: "identity", label: "Brand & Identity", icon: Building2 },
   { id: "integrations", label: "Integrations", icon: Code2 },
   { id: "appearance", label: "Appearance", icon: SunMoon },
+  { id: "workflows", label: "Workflows", icon: GitBranch },
   { id: "activity", label: "Activity", icon: History },
   { id: "danger", label: "Danger zone", icon: ShieldAlert },
 ] as const;
@@ -967,6 +968,33 @@ export default function SettingsPage() {
                   muted="bg-zinc-700"
                 />
               </div>
+            </div>
+          </SectionShell>
+        </TabsContent>
+
+        {/* ─── Workflows ────────────────────────────────────────────── */}
+        <TabsContent value="workflows" className="mt-6 focus-visible:outline-none">
+          <SectionShell
+            icon={GitBranch}
+            title="Workflow Templates"
+            description="Define and assign the steps your team follows for every order."
+          >
+            <div className="px-4 py-6 flex flex-col items-center gap-4 text-center">
+              <GitBranch className="h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Manage your workflow templates</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                  Create custom workflows, clone system presets, and assign an active template to
+                  control the order statuses shown to your team.
+                </p>
+              </div>
+              <a
+                href="/workflows"
+                className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-2 hover:text-muted-foreground transition-colors"
+              >
+                Open Workflows
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
             </div>
           </SectionShell>
         </TabsContent>

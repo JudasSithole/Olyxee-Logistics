@@ -6,6 +6,7 @@ import dashboardRouter from "./dashboard";
 import customersRouter from "./customers";
 import ordersRouter from "./orders";
 import auditRouter from "./audit";
+import workflowTemplatesRouter from "./workflow-templates";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(dashboardRouter);
 router.use(customersRouter);
 router.use(ordersRouter);
 router.use(auditRouter);
+router.use(workflowTemplatesRouter);
 
 export default router;

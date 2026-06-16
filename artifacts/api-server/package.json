@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "dev": "pnpm run build && node --env-file=.env --enable-source-maps ./dist/index.mjs",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build:vercel": "echo 'Vercel disabled — deploy via Replit' && exit 0"
+    "build:vercel": "echo 'Vercel disabled — deploy via Replit' && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
@@ -35,6 +37,9 @@
     "esbuild": "^0.27.3",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13",
-    "thread-stream": "3.1.0"
+    "thread-stream": "3.1.0",
+    "vitest": "^3.2.4",
+    "supertest": "^7.1.0",
+    "@types/supertest": "^6.0.3"
   }
 }

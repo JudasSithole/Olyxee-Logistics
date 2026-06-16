@@ -20,6 +20,7 @@ import CustomersPage from "@/pages/customers";
 import CustomerDetailPage from "@/pages/customer-detail";
 import OrdersPage from "@/pages/orders";
 import OrderDetailPage from "@/pages/order-detail";
+import WorkflowsPage from "@/pages/workflows";
 import SettingsPage from "@/pages/settings";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
@@ -76,6 +77,24 @@ function Protected({
       if (!businessQuery.data.industry) {
         return <Redirect to="/business-type" />;
       }
+      return <Redirect to="/onboarding" />;
+    }
+  }
+
+  if (!withLayout) return <Component />;
+  return (
+    <AppLayout>
+      <Component />
+    </AppLayout>
+  );
+}
+
+function PublicOnly({ component: Component }: { component: React.ComponentType }) {
+  const { status } = useAuth();
+  // Same reasoning as Protected: auth check is fast, render nothing rather
+  // than flashing a blank white screen that looks broken.
+  if (status === "loading") {
+    return null;
   }
   if (status === "authenticated") {
     return <Redirect to="/dashboard" />;
@@ -108,6 +127,7 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
+      <Route path="/workflows" component={() => <Protected component={WorkflowsPage} />} />
       {/* Legacy /audit-logs URL — bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">
         {() => {

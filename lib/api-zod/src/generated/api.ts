@@ -494,4 +494,43 @@ export const ListAuditLogsResponse = zod.object({
   "limit": zod.number()
 })
 
+// ─── Workflow Template Engine ─────────────────────────────────────────────────
+
+const WorkflowStepInputSchema = zod.object({
+  label: zod.string().min(1).max(100),
+  description: zod.string().max(500).optional(),
+  position: zod.number().int().min(0),
+  color: zod.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  isTerminal: zod.boolean().default(false),
+});
+
+export const CreateWorkflowTemplateBody = zod.object({
+  name: zod.string().min(1).max(100),
+  description: zod.string().max(500).optional(),
+  businessType: zod.string().optional(),
+  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
+});
+
+export const UpdateWorkflowTemplateBody = zod.object({
+  name: zod.string().min(1).max(100).optional(),
+  description: zod.string().max(500).nullish(),
+  businessType: zod.string().nullish(),
+});
+
+export const CloneWorkflowTemplateBody = zod.object({
+  name: zod.string().min(1).max(100),
+  description: zod.string().max(500).optional(),
+  businessType: zod.string().optional(),
+  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
+});
+
+export const UpdateWorkflowStepsBody = zod.object({
+  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
+});
+
+export const ActivateWorkflowBody = zod.object({
+  templateId: zod.string().min(1),
+  templateName: zod.string().min(1),
+});
+
 

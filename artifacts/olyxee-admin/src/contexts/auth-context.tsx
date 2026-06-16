@@ -7,6 +7,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
+import type { Profile } from "../lib/database.types";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -14,13 +17,14 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "owner" | "admin" | "staff";
+  role: "owner" | "admin" | "manager" | "staff";
   businessId: string;
 }
 
 interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
+  session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (args: {
     email: string;
@@ -29,140 +33,142 @@ interface AuthContextValue {
     businessName: string;
   }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  // Update current user's profile. Any field can be omitted. Password change
-  // requires both `currentPassword` and `newPassword`.
   updateProfile: (args: {
     name?: string;
     email?: string;
-    currentPassword?: string;
     newPassword?: string;
   }) => Promise<{ error: string | null }>;
   requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
-  resetPassword: (args: {
-    token: string;
-    password: string;
-  }) => Promise<{ error: string | null }>;
+  resetPassword: (args: { password: string }) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const API_BASE = `${import.meta.env.BASE_URL.replace(/\/+$/, "")}/api`.replace(
-  /\/{2,}/g,
-  "/",
-);
-
-async function sendJson<T>(
-  path: string,
-  body?: unknown,
-  method: "POST" | "PUT" = "POST",
-): Promise<{ ok: true; data: T } | { ok: false; error: string; status: number }> {
-  try {
-    const res = await fetch(`${API_BASE}${path}`, {
-      method,
-      credentials: "include",
-      headers: body ? { "content-type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const ct = res.headers.get("content-type") ?? "";
-    const isJson = ct.includes("application/json");
-    const payload = isJson ? await res.json().catch(() => null) : null;
-    if (!res.ok) {
-      const err =
-        (payload && typeof payload === "object" && "error" in payload
-          ? String((payload as { error: unknown }).error)
-          : null) ?? `Request failed (${res.status})`;
-      return { ok: false, error: err, status: res.status };
-    }
-    return { ok: true, data: (payload ?? {}) as T };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Network error",
-      status: 0,
-    };
-  }
+function profileToAuthUser(profile: Profile): AuthUser {
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.full_name,
+    role: profile.role,
+    businessId: profile.business_id ?? "",
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { user: AuthUser };
-        setUser(data.user);
-        setStatus("authenticated");
-        return;
-      }
-    } catch {
-      // fall through
-    }
-    setUser(null);
-    setStatus("unauthenticated");
+  const loadProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    if (error || !data) return null;
+    return data as Profile;
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    // Check existing session on mount
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      setSession(s);
+      if (s?.user) {
+        const profile = await loadProfile(s.user.id);
+        if (profile) {
+          setUser(profileToAuthUser(profile));
+          setStatus("authenticated");
+          return;
+        }
+      }
+      setUser(null);
+      setStatus("unauthenticated");
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, s) => {
+        setSession(s);
+        if (s?.user && event !== "SIGNED_OUT") {
+          const profile = await loadProfile(s.user.id);
+          if (profile) {
+            setUser(profileToAuthUser(profile));
+            setStatus("authenticated");
+            return;
+          }
+        }
+        setUser(null);
+        setStatus(event === "SIGNED_OUT" ? "unauthenticated" : "loading");
+      },
+    );
+
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
+      session,
       signIn: async (email, password) => {
-        const result = await sendJson<{ user: AuthUser }>("/auth/login", {
-          email,
-          password,
-        });
-        if (!result.ok) return { error: result.error };
-        setUser(result.data.user);
-        setStatus("authenticated");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return { error: error.message };
         return { error: null };
       },
       signUp: async ({ email, password, fullName, businessName }) => {
-        const result = await sendJson<{ user: AuthUser }>("/auth/signup", {
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          fullName,
-          businessName,
+          options: {
+            data: { full_name: fullName, business_name: businessName },
+          },
         });
-        if (!result.ok) return { error: result.error };
-        setUser(result.data.user);
-        setStatus("authenticated");
+        if (error) return { error: error.message };
         return { error: null };
       },
       signOut: async () => {
-        await sendJson("/auth/logout");
-        setUser(null);
-        setStatus("unauthenticated");
+        await supabase.auth.signOut();
       },
       requestPasswordReset: async (email) => {
-        const result = await sendJson<{ ok: true }>("/auth/forgot-password", { email });
-        if (!result.ok) return { error: result.error };
+        const redirectTo = `${window.location.origin}/reset-password`;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) return { error: error.message };
         return { error: null };
       },
-      resetPassword: async ({ token, password }) => {
-        const result = await sendJson<{ ok: true }>("/auth/reset-password", {
-          token,
-          password,
-        });
-        if (!result.ok) return { error: result.error };
+      resetPassword: async ({ password }) => {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) return { error: error.message };
         return { error: null };
       },
-      updateProfile: async (args) => {
-        const result = await sendJson<{ user: AuthUser }>("/auth/me", args, "PUT");
-        if (!result.ok) return { error: result.error };
-        // Refresh the local user so the sidebar + anywhere using useAuth
-        // sees the new name/email immediately without a page reload.
-        setUser(result.data.user);
+      updateProfile: async ({ name, email, newPassword }) => {
+        // Update auth email / password
+        const authUpdates: { email?: string; password?: string } = {};
+        if (email) authUpdates.email = email;
+        if (newPassword) authUpdates.password = newPassword;
+        if (Object.keys(authUpdates).length > 0) {
+          const { error } = await supabase.auth.updateUser(authUpdates);
+          if (error) return { error: error.message };
+        }
+        // Update profile row
+        if (name || email) {
+          const currentUser = (await supabase.auth.getUser()).data.user;
+          if (!currentUser) return { error: "Not authenticated" };
+          const updates: { full_name?: string; email?: string } = {};
+          if (name) updates.full_name = name;
+          if (email) updates.email = email;
+          const { error } = await supabase
+            .from("profiles")
+            .update(updates)
+            .eq("id", currentUser.id);
+          if (error) return { error: error.message };
+          // Refresh local user
+          const profile = await loadProfile(currentUser.id);
+          if (profile) setUser(profileToAuthUser(profile));
+        }
         return { error: null };
       },
     }),
-    [status, user],
+    [status, user, session, loadProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -153,7 +153,7 @@ export function BusinessTypeSelector({
                 type="button"
                 role="option"
                 aria-selected={selected}
-                onClick={() => onChange(type.value)}
+                onClick={() => { if (!selected) onChange(type.value); }}
                 className={cn(
                   "group relative flex flex-col items-start gap-3 rounded-lg border p-4 text-left transition-all",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",

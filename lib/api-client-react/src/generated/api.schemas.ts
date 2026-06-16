@@ -300,3 +300,70 @@ page?: number;
 limit?: number;
 };
 
+// ─── Workflow Template Engine ─────────────────────────────────────────────────
+
+export interface WorkflowStep {
+  id: string;
+  templateId: string;
+  label: string;
+  description?: string | null;
+  position: number;
+  color?: string | null;
+  isTerminal: boolean;
+}
+
+export interface WorkflowTemplateWithSteps {
+  id: string;
+  businessId: string;
+  name: string;
+  description?: string | null;
+  businessType?: string | null;
+  createdAt: string;
+  steps: WorkflowStep[];
+}
+
+export interface WorkflowStepInput {
+  label: string;
+  description?: string;
+  position: number;
+  color?: string;
+  isTerminal: boolean;
+}
+
+export interface WorkflowTemplateCreate {
+  name: string;
+  description?: string;
+  businessType?: string;
+  steps: WorkflowStepInput[];
+}
+
+export interface WorkflowTemplateUpdate {
+  name?: string;
+  description?: string | null;
+  businessType?: string | null;
+}
+
+export interface WorkflowTemplateClone {
+  name: string;
+  description?: string;
+  businessType?: string;
+  steps: WorkflowStepInput[];
+}
+
+export interface WorkflowStepsUpdate {
+  steps: WorkflowStepInput[];
+}
+
+export interface BusinessWorkflowActive {
+  id: string;
+  businessId: string;
+  templateId: string;
+  templateName: string;
+  assignedAt: string;
+}
+
+export interface ActivateWorkflowInput {
+  templateId: string;
+  templateName: string;
+}
+
