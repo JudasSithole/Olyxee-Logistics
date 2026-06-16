@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
 
           <Button
             type="submit"
-            disabled={submitting || !token}
+            disabled={submitting || !hasRecoveryHash}
             className="w-full h-11 bg-[hsl(220,20%,10%)] hover:bg-[hsl(220,20%,20%)] text-white font-medium text-[15px] gap-2"
             data-testid="button-reset"
           >
