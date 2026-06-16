@@ -13,6 +13,7 @@ import LandingPage from "@/pages/landing";
 import ContactPage from "@/pages/contact";
 import LoginPage from "@/pages/login";
 import ResetPasswordPage from "@/pages/reset-password";
+import BusinessTypePage from "@/pages/business-type";
 import OnboardingPage from "@/pages/onboarding";
 import DashboardPage from "@/pages/dashboard";
 import CustomersPage from "@/pages/customers";
@@ -71,24 +72,10 @@ function Protected({
       );
     }
     if (businessQuery.data && !businessQuery.data.onboardingCompleted) {
-      return <Redirect to="/onboarding" />;
-    }
-  }
-
-  if (!withLayout) return <Component />;
-  return (
-    <AppLayout>
-      <Component />
-    </AppLayout>
-  );
-}
-
-function PublicOnly({ component: Component }: { component: React.ComponentType }) {
-  const { status } = useAuth();
-  // Same reasoning as Protected: auth check is fast, render nothing rather
-  // than flashing a blank white screen that looks broken.
-  if (status === "loading") {
-    return null;
+      // Step 1: choose business type; Step 2: fill in workspace details.
+      if (!businessQuery.data.industry) {
+        return <Redirect to="/business-type" />;
+      }
   }
   if (status === "authenticated") {
     return <Redirect to="/dashboard" />;
@@ -104,6 +91,12 @@ function AppRoutes() {
       <Route path="/login" component={() => <PublicOnly component={LoginPage} />} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/signup"><Redirect to="/login" /></Route>
+      <Route
+        path="/business-type"
+        component={() => (
+          <Protected component={BusinessTypePage} skipOnboardingGuard withLayout={false} />
+        )}
+      />
       <Route
         path="/onboarding"
         component={() => (

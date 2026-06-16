@@ -8,8 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw, History, Trash2, ShieldAlert,
-  Code2, Copy, Download, Globe,
+  Code2, Copy, Download, Globe, Tag,
 } from "lucide-react";
+import {
+  BusinessTypeSelector,
+  BUSINESS_TYPES,
+} from "@/components/business-type-selector";
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -917,6 +921,12 @@ export default function SettingsPage() {
             />
           </div>
 
+          {/* Business Type — persists server-side independently of the
+              theme save bar (same pattern as Tracking). */}
+          <div className="mt-8">
+            <BusinessTypeSection />
+          </div>
+
           {/* Tracking section persists server-side (separate from the theme
               form's save bar). */}
           <div className="mt-8">
@@ -1216,6 +1226,105 @@ function EmailCustomizationSection({
                 <Check className="h-4 w-4" />
               )}
               Save email wording
+            </Button>
+          </div>
+        </>
+      )}
+    </SectionShell>
+  );
+}
+
+// ─── Business type section ────────────────────────────────────────────────────
+// Lets users change their industry / business type from Settings without going
+// back through onboarding. Self-contained: persists to the API independently of
+// the theme save bar so the user doesn't lose theme edits by saving here.
+function BusinessTypeSection() {
+  const { data: business, isLoading, refetch } = useGetBusiness();
+  const updateMutation = useUpdateBusiness();
+
+  const [selected, setSelected] = useState<string>("");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (business && !loaded) {
+      setSelected(business.industry ?? "");
+      setLoaded(true);
+    }
+  }, [business, loaded]);
+
+  const dirty = loaded && selected !== (business?.industry ?? "");
+
+  const handleSave = () => {
+    if (!selected) {
+      toast.error("Please choose a business type before saving.");
+      return;
+    }
+    updateMutation.mutate(
+      { data: { industry: selected } },
+      {
+        onSuccess: () => {
+          toast.success("Business type saved");
+          refetch();
+        },
+        onError: () => toast.error("Could not save business type"),
+      },
+    );
+  };
+
+  const handleReset = () => {
+    setSelected(business?.industry ?? "");
+  };
+
+  const currentLabel =
+    BUSINESS_TYPES.find((t) => t.value === (business?.industry ?? ""))?.label ??
+    business?.industry ??
+    "Not set";
+
+  return (
+    <SectionShell
+      icon={Tag}
+      title="Business Type"
+      description="The industry that best describes your business."
+      action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
+    >
+      {isLoading && !loaded ? (
+        <div
+          className="px-4 py-8 flex items-center justify-center"
+          role="status"
+          aria-label="Loading business type"
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
+          <SectionRow
+            hint={`Current: ${currentLabel}`}
+          >
+            <BusinessTypeSelector
+              value={selected}
+              onChange={setSelected}
+              compact
+            />
+          </SectionRow>
+
+          <div className="px-4 py-3 flex items-center justify-end border-t border-border/60">
+            <Button
+              size="sm"
+              disabled={!dirty || updateMutation.isPending || !selected}
+              onClick={handleSave}
+              className="gap-1.5"
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Save business type
+                </>
+              )}
             </Button>
           </div>
         </>
