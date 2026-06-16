@@ -11,12 +11,13 @@ export default function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Read ?token=... from the URL. We use window.location.search rather than a
-  // route param so the link in the email can stay simple.
-  const token = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const params = new URLSearchParams(window.location.search);
-    return params.get("token") ?? "";
+  // Supabase sends the user to /reset-password#access_token=...&type=recovery
+  // The Supabase JS client picks up the hash automatically and emits a
+  // PASSWORD_RECOVERY auth event, which logs the user in so they can call
+  // updateUser({ password }).  We just need to wait for auth to be ready.
+  const hasRecoveryHash = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.location.hash.includes("type=recovery");
   }, []);
 
   const [password, setPassword] = useState("");
@@ -26,8 +27,8 @@ export default function ResetPasswordPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (!token) setError("This reset link is missing its token. Request a new one.");
-  }, [token]);
+    if (!hasRecoveryHash) setError("This reset link is invalid or has already been used. Request a new one.");
+  }, [hasRecoveryHash]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -41,7 +42,7 @@ export default function ResetPasswordPage() {
       return;
     }
     setSubmitting(true);
-    const result = await resetPassword({ token, password });
+    const result = await resetPassword({ password });
     setSubmitting(false);
     if (result.error) {
       setError(result.error);
@@ -87,7 +88,7 @@ export default function ResetPasswordPage() {
               placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={!token}
+              disabled={!hasRecoveryHash}
               className="h-11 bg-white border-[hsl(220,13%,82%)] focus-visible:border-[hsl(220,20%,10%)] focus-visible:ring-0"
               data-testid="input-new-password"
             />
@@ -106,7 +107,7 @@ export default function ResetPasswordPage() {
               placeholder="Re-enter your new password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              disabled={!token}
+              disabled={!hasRecoveryHash}
               className="h-11 bg-white border-[hsl(220,13%,82%)] focus-visible:border-[hsl(220,20%,10%)] focus-visible:ring-0"
               data-testid="input-confirm-password"
             />
