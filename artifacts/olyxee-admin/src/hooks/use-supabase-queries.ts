@@ -97,6 +97,18 @@ export function useUpdateBusiness() {
   });
 }
 
+export function useDeleteBusiness() {
+  return useMutation({
+    mutationFn: async (businessId: string) => {
+      const { error } = await supabase
+        .from("businesses")
+        .delete()
+        .eq("id", businessId);
+      if (error) throw error;
+    },
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CUSTOMERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -481,6 +493,108 @@ export function useDeleteWorkflowTemplate() {
   });
 }
 
+export function useUpdateWorkflowTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      businessId,
+      ...updates
+    }: Partial<WorkflowTemplate> & { id: string; businessId: string }) => {
+      const { data, error } = await supabase
+        .from("workflow_templates")
+        .update(updates)
+        .eq("id", id)
+        .eq("business_id", businessId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as WorkflowTemplate;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
+export function useUpdateWorkflowSteps() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      templateId,
+      businessId,
+      steps,
+    }: {
+      templateId: string;
+      businessId: string;
+      steps: Omit<InsertWorkflowStep, "template_id">[];
+    }) => {
+      // Delete all existing steps then re-insert
+      const { error: delError } = await supabase
+        .from("workflow_steps")
+        .delete()
+        .eq("template_id", templateId);
+      if (delError) throw delError;
+
+      if (steps.length > 0) {
+        const { error: insError } = await supabase
+          .from("workflow_steps")
+          .insert(steps.map((s) => ({ ...s, template_id: templateId })));
+        if (insError) throw insError;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
+export function useCloneWorkflowTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      sourceId,
+      businessId,
+      name,
+    }: { sourceId: string; businessId: string; name: string }) => {
+      // Fetch source template + steps
+      const { data: source, error: fetchError } = await supabase
+        .from("workflow_templates")
+        .select("*, workflow_steps(*)")
+        .eq("id", sourceId)
+        .single();
+      if (fetchError) throw fetchError;
+
+      // Insert new template
+      const { data: newTmpl, error: tmplError } = await supabase
+        .from("workflow_templates")
+        .insert({ business_id: businessId, name, description: (source as any).description, business_type: (source as any).business_type, is_system: false })
+        .select()
+        .single();
+      if (tmplError) throw tmplError;
+
+      const sourceSteps = (source as any).workflow_steps ?? [];
+      if (sourceSteps.length > 0) {
+        const { error: stepsError } = await supabase
+          .from("workflow_steps")
+          .insert(sourceSteps.map((s: any) => ({
+            template_id: (newTmpl as WorkflowTemplate).id,
+            label: s.label,
+            description: s.description,
+            color: s.color,
+            is_terminal: s.is_terminal,
+            position: s.position,
+          })));
+        if (stepsError) throw stepsError;
+      }
+      return newTmpl as WorkflowTemplate;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
 export function useActiveWorkflow(businessId: string | null | undefined) {
   return useQuery({
     queryKey: qk.activeWorkflow(businessId ?? ""),
@@ -758,6 +872,26 @@ export function useAuditLogs(
         .range(offset, offset + limit - 1);
       if (error) throw error;
       return { logs: (data ?? []) as AuditLog[], total: count ?? 0 };
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATION LOGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useNotificationLogs(orderId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["notification_logs", orderId ?? ""],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notification_logs")
+        .select("*")
+        .eq("order_id", orderId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 }

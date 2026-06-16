@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useListCustomers, useCreateCustomer } from "@workspace/api-client-react";
+import { useCustomers, useCreateCustomer } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ function CustomerAvatar({ name, size = "sm" }: { name: string; size?: "sm" | "lg
   );
 }
 
-function CreateCustomerDialog({ onSuccess }: { onSuccess: () => void }) {
+function CreateCustomerDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", companyName: "", address: "" });
   const createMutation = useCreateCustomer();
@@ -33,7 +34,7 @@ function CreateCustomerDialog({ onSuccess }: { onSuccess: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(
-      { data: { fullName: form.fullName, email: form.email, phone: form.phone || undefined, companyName: form.companyName || undefined, address: form.address || undefined } },
+      { business_id: businessId, full_name: form.fullName, email: form.email, phone: form.phone || undefined, company_name: form.companyName || undefined, address: form.address || undefined },
       {
         onSuccess: () => {
           toast.success("Customer created successfully");
@@ -100,6 +101,7 @@ function triToParam(v: TriFilter): boolean | undefined {
 
 export default function CustomersPage() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [querySearch, setQuerySearch] = useState("");
@@ -107,13 +109,10 @@ export default function CustomersPage() {
   const [hasPhone, setHasPhone] = useState<TriFilter>("any");
   const [sort, setSort] = useState<SortValue>("newest");
 
-  const { data, isLoading, refetch } = useListCustomers({
+  const { data, isLoading, refetch } = useCustomers(user?.businessId, {
     search: querySearch || undefined,
-    hasCompany: triToParam(hasCompany),
-    hasPhone: triToParam(hasPhone),
-    sort,
-    page,
     limit: 20,
+    page,
   });
 
   // Any time a filter that's part of the query changes, jump back to page 1
@@ -148,7 +147,7 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total customers</p>
         </div>
-        <CreateCustomerDialog onSuccess={() => refetch()} />
+        <CreateCustomerDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
       </div>
 
       <Card>
@@ -220,7 +219,7 @@ export default function CustomersPage() {
                 </div>
               ))}
             </div>
-          ) : !data?.data.length ? (
+          ) : !data?.customers.length ? (
             <EmptyState
               icon={<Users className="h-12 w-12" />}
               title="No customers found"
@@ -240,23 +239,23 @@ export default function CustomersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.data.map((customer) => (
+                  {data.customers.map((customer) => (
                     <TableRow
                       key={customer.id}
                       className="cursor-pointer hover:bg-muted/40 group"
                       onClick={() => navigate(`/customers/${customer.id}`)}
                     >
                       <TableCell>
-                        <CustomerAvatar name={customer.fullName} />
+                        <CustomerAvatar name={customer.full_name} />
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {customer.fullName}
+                        {customer.full_name}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.companyName ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.company_name ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{customer.phone ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(customer.createdAt), "MMM d, yyyy")}
+                        {format(new Date(customer.created_at), "MMM d, yyyy")}
                       </TableCell>
                     </TableRow>
                   ))}

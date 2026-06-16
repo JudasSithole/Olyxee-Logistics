@@ -19,7 +19,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useGetBusiness, useUpdateBusiness, useDeleteBusiness } from "@workspace/api-client-react";
+import { useBusiness, useUpdateBusiness, useDeleteBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import {
   AlertDialog,
@@ -498,7 +498,7 @@ const NAV_ITEMS = [
 // clicks. After a successful delete we sign out client-side and bounce home.
 function DangerZone({ businessName }: { businessName: string }) {
   const [, setLocation] = useLocation();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const deleteMutation = useDeleteBusiness();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -509,7 +509,7 @@ function DangerZone({ businessName }: { businessName: string }) {
 
   async function handleDelete() {
     try {
-      await deleteMutation.mutateAsync();
+      await deleteMutation.mutateAsync(user!.businessId);
       toast.success("Business deleted");
       // Cookie is cleared server-side; clear client-side auth state too so the
       // protected routes stop hitting /business with a now-invalid session.
@@ -1067,11 +1067,10 @@ function EmailCustomizationSection({
   onDirtyChange,
 }: {
   businessName: string;
-  // Lets the parent extend its beforeunload guard to cover unsaved email
-  // wording. We notify on every transition rather than every keystroke.
   onDirtyChange?: (dirty: boolean) => void;
 }) {
-  const { data: business, isLoading, refetch } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business, isLoading, refetch } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
 
   const [form, setForm] = useState({
@@ -1084,9 +1083,9 @@ function EmailCustomizationSection({
   useEffect(() => {
     if (business && !loaded) {
       setForm({
-        emailGreeting: business.emailGreeting ?? "",
-        emailSignature: business.emailSignature ?? "",
-        emailFooterNote: business.emailFooterNote ?? "",
+        emailGreeting: business.email_greeting ?? "",
+        emailSignature: business.email_signature ?? "",
+        emailFooterNote: business.email_footer_note ?? "",
       });
       setLoaded(true);
     }
@@ -1094,9 +1093,9 @@ function EmailCustomizationSection({
 
   const dirty =
     loaded &&
-    (form.emailGreeting !== (business?.emailGreeting ?? "") ||
-      form.emailSignature !== (business?.emailSignature ?? "") ||
-      form.emailFooterNote !== (business?.emailFooterNote ?? ""));
+    (form.emailGreeting !== (business?.email_greeting ?? "") ||
+      form.emailSignature !== (business?.email_signature ?? "") ||
+      form.emailFooterNote !== (business?.email_footer_note ?? ""));
 
   // Surface dirty state to the parent so the page-level beforeunload guard
   // can fire when email wording has unsaved changes too.
@@ -1107,11 +1106,10 @@ function EmailCustomizationSection({
   const handleSave = () => {
     updateMutation.mutate(
       {
-        data: {
-          emailGreeting: form.emailGreeting.trim() ? form.emailGreeting : null,
-          emailSignature: form.emailSignature.trim() ? form.emailSignature : null,
-          emailFooterNote: form.emailFooterNote.trim() ? form.emailFooterNote : null,
-        },
+        id: user!.businessId,
+        email_greeting: form.emailGreeting.trim() ? form.emailGreeting : null,
+        email_signature: form.emailSignature.trim() ? form.emailSignature : null,
+        email_footer_note: form.emailFooterNote.trim() ? form.emailFooterNote : null,
       },
       {
         onSuccess: () => {
@@ -1125,9 +1123,9 @@ function EmailCustomizationSection({
 
   const handleReset = () => {
     setForm({
-      emailGreeting: business?.emailGreeting ?? "",
-      emailSignature: business?.emailSignature ?? "",
-      emailFooterNote: business?.emailFooterNote ?? "",
+      emailGreeting: business?.email_greeting ?? "",
+      emailSignature: business?.email_signature ?? "",
+      emailFooterNote: business?.email_footer_note ?? "",
     });
   };
 
@@ -1267,7 +1265,8 @@ function EmailCustomizationSection({
 // back through onboarding. Self-contained: persists to the API independently of
 // the theme save bar so the user doesn't lose theme edits by saving here.
 function BusinessTypeSection() {
-  const { data: business, isLoading, refetch } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business, isLoading, refetch } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
 
   const [selected, setSelected] = useState<string>("");
@@ -1275,12 +1274,12 @@ function BusinessTypeSection() {
 
   useEffect(() => {
     if (business && !loaded) {
-      setSelected(business.industry ?? "");
+      setSelected(business.business_type ?? "");
       setLoaded(true);
     }
   }, [business, loaded]);
 
-  const dirty = loaded && selected !== (business?.industry ?? "");
+  const dirty = loaded && selected !== (business?.business_type ?? "");
 
   const handleSave = () => {
     if (!selected) {
@@ -1288,7 +1287,7 @@ function BusinessTypeSection() {
       return;
     }
     updateMutation.mutate(
-      { data: { industry: selected } },
+      { id: user!.businessId, business_type: selected },
       {
         onSuccess: () => {
           toast.success("Business type saved");
@@ -1300,12 +1299,12 @@ function BusinessTypeSection() {
   };
 
   const handleReset = () => {
-    setSelected(business?.industry ?? "");
+    setSelected(business?.business_type ?? "");
   };
 
   const currentLabel =
-    BUSINESS_TYPES.find((t) => t.value === (business?.industry ?? ""))?.label ??
-    business?.industry ??
+    BUSINESS_TYPES.find((t) => t.value === (business?.business_type ?? ""))?.label ??
+    business?.business_type ??
     "Not set";
 
   return (
@@ -1371,24 +1370,21 @@ function BusinessTypeSection() {
 // Self-contained like EmailCustomizationSection so it persists independently
 // of the theme save bar at the top of the page.
 function TrackingCustomizationSection() {
-  const { data: business, isLoading, refetch } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business, isLoading, refetch } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
 
   const [form, setForm] = useState({
     trackingIdPrefix: "",
-    allowedOrigins: "",
   });
   const [loaded, setLoaded] = useState(false);
-  // Local validation: prefix must be 3–5 A–Z when present. Empty is allowed
-  // (server falls back to "OLY") so users can clear it.
   const prefixValid =
     form.trackingIdPrefix === "" || /^[A-Z]{3,5}$/.test(form.trackingIdPrefix);
 
   useEffect(() => {
     if (business && !loaded) {
       setForm({
-        trackingIdPrefix: business.trackingIdPrefix ?? "",
-        allowedOrigins: business.allowedOrigins ?? "",
+        trackingIdPrefix: business.tracking_id_prefix ?? "",
       });
       setLoaded(true);
     }
@@ -1396,8 +1392,7 @@ function TrackingCustomizationSection() {
 
   const dirty =
     loaded &&
-    (form.trackingIdPrefix !== (business?.trackingIdPrefix ?? "") ||
-      form.allowedOrigins !== (business?.allowedOrigins ?? ""));
+    form.trackingIdPrefix !== (business?.tracking_id_prefix ?? "");
 
   const handleSave = () => {
     if (!prefixValid) {
@@ -1415,12 +1410,8 @@ function TrackingCustomizationSection() {
     ).join(",");
     updateMutation.mutate(
       {
-        data: {
-          trackingIdPrefix: form.trackingIdPrefix
-            ? form.trackingIdPrefix
-            : null,
-          allowedOrigins: normalizedOrigins ? normalizedOrigins : null,
-        },
+        id: user!.businessId,
+        tracking_id_prefix: form.trackingIdPrefix ? form.trackingIdPrefix : null,
       },
       {
         onSuccess: () => {
@@ -1435,8 +1426,7 @@ function TrackingCustomizationSection() {
 
   const handleReset = () => {
     setForm({
-      trackingIdPrefix: business?.trackingIdPrefix ?? "",
-      allowedOrigins: business?.allowedOrigins ?? "",
+      trackingIdPrefix: business?.tracking_id_prefix ?? "",
     });
   };
 
@@ -1864,14 +1854,12 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function IntegrationsSection() {
-  const { data: business } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
   const { businessName, primaryColor } = useTheme();
 
-  // Align the example to the current business: use its saved tracking prefix,
-  // and if none is set yet, derive one from the business name (first letters)
-  // rather than a hardcoded brand.
   const prefix = (
-    business?.trackingIdPrefix?.trim() ||
+    business?.tracking_id_prefix?.trim() ||
     (businessName || "").replace(/[^A-Za-z]/g, "").slice(0, 3) ||
     "TRK"
   ).toUpperCase();
@@ -1890,12 +1878,12 @@ function IntegrationsSection() {
   // / dev domain can't leak in. If neither exists the field keeps its placeholder.
   // Syncing stops the moment the user edits the field so we never clobber input.
   const autoBase = useMemo(() => {
-    const site = business?.websiteUrl?.trim();
+    const site = business?.website_url?.trim();
     if (site) {
       const withProto = /^https?:\/\//i.test(site) ? site : `https://${site}`;
       return withProto.replace(/\/+$/, "");
     }
-    const email = business?.supportEmail?.trim();
+    const email = business?.support_email?.trim();
     const domain = email && email.includes("@") ? email.split("@")[1]?.trim() : "";
     if (domain && domain.includes(".")) {
       return `https://${domain.replace(/\/+$/, "")}`;

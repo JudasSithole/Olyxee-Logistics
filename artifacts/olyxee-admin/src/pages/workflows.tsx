@@ -30,27 +30,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  useGetWorkflowTemplates,
+  useWorkflowTemplates,
   useCreateWorkflowTemplate,
   useUpdateWorkflowTemplate,
   useDeleteWorkflowTemplate,
   useCloneWorkflowTemplate,
   useUpdateWorkflowSteps,
-  useGetActiveWorkflow,
+  useActiveWorkflow,
   useActivateWorkflow,
-  getGetWorkflowTemplatesQueryKey,
-  getGetActiveWorkflowQueryKey,
-} from "@workspace/api-client-react";
-import type { WorkflowTemplateWithSteps, WorkflowStepInput } from "@workspace/api-client-react";
+  useSystemPresets,
+  useBusiness,
+  qk,
+} from "@/hooks/use-supabase-queries";
+import type { WorkflowTemplate, WorkflowStep } from "@/lib/database.types";
+import { useAuth } from "@/contexts/auth-context";
 import {
   WORKFLOW_PRESETS,
   findPreset,
   type WorkflowPreset,
   type PresetStep,
 } from "@/lib/workflow-presets";
-import { useGetBusiness } from "@workspace/api-client-react";
 
-// ─── Step color palette ───────────────────────────────────────────────────────
+type WorkflowTemplateWithSteps = WorkflowTemplate & { workflow_steps: WorkflowStep[] };
+type WorkflowStepInput = { label: string; description?: string | null; color?: string | null; is_terminal: boolean; position: number; };
 
 const STEP_COLORS = [
   { label: "Indigo",  hex: "#6366f1" },
@@ -80,12 +82,12 @@ function presetStepToEditable(s: PresetStep): EditableStep {
   return { label: s.label, description: s.description, color: s.color, isTerminal: s.isTerminal, position: s.position };
 }
 
-function dbStepToEditable(s: WorkflowStepInput & { color?: string | null; description?: string | null }): EditableStep {
+function dbStepToEditable(s: WorkflowStepInput): EditableStep {
   return {
     label: s.label,
     description: s.description ?? "",
     color: s.color ?? "#6366f1",
-    isTerminal: s.isTerminal,
+    isTerminal: s.is_terminal,
     position: s.position,
   };
 }

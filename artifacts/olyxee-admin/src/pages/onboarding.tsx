@@ -1,10 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import {
-  useGetBusiness,
-  useUpdateBusiness,
-} from "@workspace/api-client-react";
+import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +30,8 @@ const EMPLOYEE_RANGES = [
 
 export default function OnboardingPage() {
   const [, setLocation] = useLocation();
-  const { data: business, isLoading } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business, isLoading } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
   const theme = useTheme();
 
@@ -56,11 +55,11 @@ export default function OnboardingPage() {
       name: business.name ?? f.name,
       tagline: theme.businessTagline || f.tagline,
       logoUrl: theme.logoUrl || f.logoUrl,
-      industry: business.industry ?? f.industry,
-      employeeCount: business.employeeCount ?? f.employeeCount,
+      industry: business.business_type ?? f.industry,
+      employeeCount: business.employee_count ?? f.employeeCount,
       location: business.location ?? f.location,
       phone: business.phone ?? f.phone,
-      websiteUrl: business.websiteUrl ?? f.websiteUrl,
+      websiteUrl: business.website_url ?? f.websiteUrl,
     }));
   }, [business, theme.businessTagline, theme.logoUrl]);
 
@@ -77,15 +76,14 @@ export default function OnboardingPage() {
     e.preventDefault();
     try {
       await updateMutation.mutateAsync({
-        data: {
-          name: form.name,
-          industry: form.industry,
-          employeeCount: form.employeeCount,
-          location: form.location,
-          phone: form.phone,
-          websiteUrl: form.websiteUrl,
-          onboardingCompleted: true,
-        },
+        id: user!.businessId,
+        name: form.name,
+        business_type: form.industry,
+        employee_count: form.employeeCount,
+        location: form.location,
+        phone: form.phone,
+        website_url: form.websiteUrl,
+        onboarding_completed: true,
       });
       // Branding is stored on-device (localStorage) via the theme context, so
       // push the in-form values out so the sidebar / browser tab / favicon
