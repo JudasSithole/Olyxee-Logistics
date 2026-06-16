@@ -571,11 +571,30 @@ function CloneDialog({
   async function handleClone() {
     if (!cloneName.trim()) return;
     try {
-      await cloneMutation.mutateAsync({
-        sourceId: source.id ?? "",
-        businessId,
-        name: cloneName.trim(),
-      });
+      if (source.id) {
+        // DB template: fetch steps from DB
+        await cloneMutation.mutateAsync({
+          sourceId: source.id,
+          businessId,
+          name: cloneName.trim(),
+        });
+      } else {
+        // System preset: steps are already in memory, pass them directly
+        const presetSteps = source.steps.map((s: any) => ({
+          label: s.label,
+          description: s.description ?? null,
+          color: s.color ?? "#6366f1",
+          is_terminal: s.isTerminal ?? s.is_terminal ?? false,
+          position: s.position,
+        }));
+        await cloneMutation.mutateAsync({
+          businessId,
+          name: cloneName.trim(),
+          presetSteps,
+          description: null,
+          businessType: source.businessType ?? null,
+        });
+      }
       toast.success("Template cloned");
       onClose();
     } catch {
@@ -629,14 +648,22 @@ export default function WorkflowsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
 
-  const activeTemplateId = activeQuery.data?.template_id;
+  const activeTemplateId = (activeQuery.data as any)?.template_id as string | undefined;
 
   // Resolve the active template display info
   const activePreset = activeTemplateId ? findPreset(activeTemplateId) : null;
   const activeDbTemplate = activeTemplateId && !activePreset
     ? templatesQuery.data?.find((t) => t.id === activeTemplateId)
     : null;
-  const activeSteps = activePreset?.steps ?? activeDbTemplate?.workflow_steps ?? [];
+  // Normalize DB steps (is_terminal) to the shape StepTimeline expects (isTerminal)
+  const activeSteps: Array<{ label: string; color?: string | null; isTerminal: boolean; position: number }> =
+    activePreset?.steps ??
+    (activeDbTemplate?.workflow_steps ?? []).map((s) => ({
+      label: s.label,
+      color: s.color,
+      isTerminal: s.is_terminal,
+      position: s.position,
+    }));
   const activeName = activePreset?.name ?? activeDbTemplate?.name ?? (activeQuery.data as any)?.template_name;
 
   // Auto-suggest preset for this business's industry on first visit
@@ -847,7 +874,7 @@ export default function WorkflowsPage() {
                 name={tpl.name}
                 description={tpl.description}
                 businessType={tpl.business_type}
-                steps={tpl.workflow_steps}
+                steps={tpl.workflow_steps.map((s) => ({ label: s.label, color: s.color, isTerminal: s.is_terminal, position: s.position }))}
                 isActive={activeTemplateId === tpl.id}
                 isPreset={false}
                 activating={activatingId === tpl.id}

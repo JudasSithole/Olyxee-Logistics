@@ -606,35 +606,58 @@ export function useCloneWorkflowTemplate() {
       sourceId,
       businessId,
       name,
-    }: { sourceId: string; businessId: string; name: string }) => {
-      // Fetch source template + steps
-      const { data: source, error: fetchError } = await supabase
-        .from("workflow_templates")
-        .select("*, workflow_steps(*)")
-        .eq("id", sourceId)
-        .single();
-      if (fetchError) throw fetchError;
+      // Steps are passed directly when cloning a preset (no DB row exists)
+      presetSteps,
+      description,
+      businessType,
+    }: {
+      sourceId?: string;
+      businessId: string;
+      name: string;
+      presetSteps?: Array<{ label: string; description?: string | null; color?: string | null; is_terminal: boolean; position: number }>;
+      description?: string | null;
+      businessType?: string | null;
+    }) => {
+      let stepsToInsert: Array<{ label: string; description?: string | null; color?: string | null; is_terminal: boolean; position: number }>;
+      let sourceDescription: string | null = description ?? null;
+      let sourceBusinessType: string | null = businessType ?? null;
+
+      if (presetSteps) {
+        // Preset clone: steps provided directly, no DB fetch needed
+        stepsToInsert = presetSteps;
+      } else if (sourceId) {
+        // DB template clone: fetch source steps from DB
+        const { data: source, error: fetchError } = await supabase
+          .from("workflow_templates")
+          .select("*, workflow_steps(*)")
+          .eq("id", sourceId)
+          .single();
+        if (fetchError) throw fetchError;
+        sourceDescription = (source as any).description ?? null;
+        sourceBusinessType = (source as any).business_type ?? null;
+        stepsToInsert = ((source as any).workflow_steps ?? []).map((s: any) => ({
+          label: s.label,
+          description: s.description,
+          color: s.color,
+          is_terminal: s.is_terminal,
+          position: s.position,
+        }));
+      } else {
+        stepsToInsert = [];
+      }
 
       // Insert new template
       const { data: newTmpl, error: tmplError } = await supabase
         .from("workflow_templates")
-        .insert({ business_id: businessId, name, description: (source as any).description, business_type: (source as any).business_type, is_system: false })
+        .insert({ business_id: businessId, name, description: sourceDescription, business_type: sourceBusinessType, is_system: false })
         .select()
         .single();
       if (tmplError) throw tmplError;
 
-      const sourceSteps = (source as any).workflow_steps ?? [];
-      if (sourceSteps.length > 0) {
+      if (stepsToInsert.length > 0) {
         const { error: stepsError } = await supabase
           .from("workflow_steps")
-          .insert(sourceSteps.map((s: any) => ({
-            template_id: (newTmpl as WorkflowTemplate).id,
-            label: s.label,
-            description: s.description,
-            color: s.color,
-            is_terminal: s.is_terminal,
-            position: s.position,
-          })));
+          .insert(stepsToInsert.map((s) => ({ ...s, template_id: (newTmpl as WorkflowTemplate).id })));
         if (stepsError) throw stepsError;
       }
       return newTmpl as WorkflowTemplate;
@@ -650,9 +673,11 @@ export function useActiveWorkflow(businessId: string | null | undefined) {
     queryKey: qk.activeWorkflow(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
+      // Select only own columns — template_id has no FK so we cannot join.
+      // The page resolves the template details from WORKFLOW_PRESETS or templatesQuery.
       const { data, error } = await supabase
         .from("business_workflows")
-        .select("*, workflow_templates(*, workflow_steps(*))")
+        .select("*")
         .eq("business_id", businessId!)
         .maybeSingle();
       if (error) throw error;
