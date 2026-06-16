@@ -1,9 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "wouter";
-import {
-  useGetDashboardSummary, useGetRecentOrders,
-  useGetStatusBreakdown, useListOrders,
-} from "@workspace/api-client-react";
+import { useDashboardStats, useOrders } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
@@ -46,9 +44,9 @@ function LiveClock() {
 // is the whole interaction so the widget stays compact and obvious.
 type OrderSummary = {
   id: string;
-  trackingId: string;
-  currentStatus: string;
-  customer?: { fullName: string } | null;
+  tracking_id: string;
+  current_status: string;
+  customers?: { full_name: string } | null;
 };
 
 // We only care about one thing visually in the cell: does this day have any
@@ -68,7 +66,7 @@ function DayCell({
   isTodayCell: boolean;
 }) {
   const total = orders.length;
-  const attentionCount = orders.filter((o) => needsAttention(o.currentStatus)).length;
+  const attentionCount = orders.filter((o) => needsAttention(o.current_status)).length;
 
   // Plain, decorative-only cell when empty — no hover popover to avoid noise.
   if (total === 0) {
@@ -147,12 +145,12 @@ function DayCell({
             <Link key={o.id} href={`/orders/${o.id}`}>
               <div className="group flex items-center gap-2 px-3 py-2 hover:bg-muted/60 transition-colors cursor-pointer">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-mono font-semibold truncate">{o.trackingId}</p>
-                  {o.customer?.fullName && (
-                    <p className="text-[10px] text-muted-foreground truncate">{o.customer.fullName}</p>
+                  <p className="text-xs font-mono font-semibold truncate">{o.tracking_id}</p>
+                  {o.customers?.full_name && (
+                    <p className="text-[10px] text-muted-foreground truncate">{o.customers.full_name}</p>
                   )}
                 </div>
-                <StatusBadge status={o.currentStatus} />
+                <StatusBadge status={o.current_status} />
                 <ArrowRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-foreground transition-colors flex-shrink-0" />
               </div>
             </Link>
@@ -301,18 +299,21 @@ function KpiCard({
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
-  const { data: recentOrders, isLoading: loadingOrders } = useGetRecentOrders();
-  const { data: statusBreakdown, isLoading: loadingBreakdown } = useGetStatusBreakdown();
-  const { data: allOrders } = useListOrders({ limit: 300 });
+  const { user } = useAuth();
+  const { data: summary, isLoading: loadingSummary } = useDashboardStats(user?.businessId);
+  const { data: recentOrdersData, isLoading: loadingOrders } = useOrders(user?.businessId, { limit: 8 });
+  const { data: allOrders } = useOrders(user?.businessId, { limit: 300 });
+
+  const recentOrders = recentOrdersData?.orders;
+  const statusBreakdown = summary?.statusBreakdown;
 
   const ordersByDate = useMemo(() => {
     const map = new Map<string, OrderSummary[]>();
-    for (const o of allOrders?.data ?? []) {
-      if (!o.estimatedDeliveryDate) continue;
-      const key = format(new Date(o.estimatedDeliveryDate), "yyyy-MM-dd");
+    for (const o of allOrders?.orders ?? []) {
+      if (!o.estimated_delivery_date) continue;
+      const key = format(new Date(o.estimated_delivery_date), "yyyy-MM-dd");
       const existing = map.get(key) ?? [];
-      map.set(key, [...existing, o]);
+      map.set(key, [...existing, o as unknown as OrderSummary]);
     }
     return map;
   }, [allOrders]);
@@ -397,12 +398,12 @@ export default function DashboardPage() {
                   <Link key={order.id} href={`/orders/${order.id}`}>
                     <div className="flex items-center justify-between p-3 border hover:bg-muted/40 transition-colors cursor-pointer">
                       <div>
-                        <p className="font-mono font-semibold text-sm">{order.trackingId}</p>
+                        <p className="font-mono font-semibold text-sm">{order.tracking_id}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {order.customer.fullName} · {format(new Date(order.createdAt), "MMM d, h:mm a")}
+                          {order.customers?.full_name} · {format(new Date(order.created_at), "MMM d, h:mm a")}
                         </p>
                       </div>
-                      <StatusBadge status={order.currentStatus} />
+                      <StatusBadge status={order.current_status} />
                     </div>
                   </Link>
                 ))}
@@ -428,20 +429,20 @@ export default function DashboardPage() {
           <CardTitle className="text-base">Status Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingBreakdown ? (
+          {loadingSummary ? (
             <div className="flex gap-4">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 flex-1" />)}
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
-              {statusBreakdown?.map(item => (
+              {statusBreakdown && Object.entries(statusBreakdown).map(([status, count]) => (
                 <Link
-                  key={item.status}
-                  href={`/orders?status=${encodeURIComponent(item.status)}`}
+                  key={status}
+                  href={`/orders?status=${encodeURIComponent(status)}`}
                   className="flex items-center gap-3 border px-4 py-2.5 flex-1 min-w-[160px] hover:bg-muted/40 hover:border-muted-foreground/30 transition-colors"
                 >
-                  <StatusBadge status={item.status} />
-                  <span className="text-lg font-bold ml-auto">{item.count}</span>
+                  <StatusBadge status={status} />
+                  <span className="text-lg font-bold ml-auto">{count}</span>
                 </Link>
               ))}
             </div>

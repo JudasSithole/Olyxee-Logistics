@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
-import { useGetCustomer, useGetCustomerOrders, useUpdateCustomer } from "@workspace/api-client-react";
+import { useCustomer, useCustomerOrders, useUpdateCustomer } from "@/hooks/use-supabase-queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,15 +18,15 @@ const AVATAR = `${import.meta.env.BASE_URL}avatar-placeholder.png`;
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: customer, isLoading, refetch } = useGetCustomer(id ?? "");
-  const { data: orders, isLoading: ordersLoading } = useGetCustomerOrders(id ?? "");
+  const { data: customer, isLoading, refetch } = useCustomer(id ?? "");
+  const { data: orders, isLoading: ordersLoading } = useCustomerOrders(id ?? "");
   const updateMutation = useUpdateCustomer();
   const [editOpen, setEditOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", companyName: "", address: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", company_name: "", address: "" });
 
   const openEdit = () => {
     if (customer) {
-      setForm({ fullName: customer.fullName, email: customer.email, phone: customer.phone ?? "", companyName: customer.companyName ?? "", address: customer.address ?? "" });
+      setForm({ full_name: customer.full_name, email: customer.email, phone: customer.phone ?? "", company_name: customer.company_name ?? "", address: customer.address ?? "" });
       setEditOpen(true);
     }
   };
@@ -34,7 +34,7 @@ export default function CustomerDetailPage() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(
-      { customerId: id!, data: { fullName: form.fullName, email: form.email, phone: form.phone || undefined, companyName: form.companyName || undefined, address: form.address || undefined } },
+      { id: id!, full_name: form.full_name, email: form.email, phone: form.phone || undefined, company_name: form.company_name || undefined, address: form.address || undefined },
       {
         onSuccess: () => { toast.success("Customer updated"); setEditOpen(false); refetch(); },
         onError: () => toast.error("Failed to update customer"),
@@ -89,15 +89,15 @@ export default function CustomerDetailPage() {
         <div className="flex items-center gap-5">
           {/* Avatar */}
           <div className="h-20 w-20 flex-shrink-0 border bg-muted overflow-hidden">
-            <img src={AVATAR} alt={customer.fullName} className="h-full w-full object-cover opacity-60" />
+            <img src={AVATAR} alt={customer.full_name} className="h-full w-full object-cover opacity-60" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{customer.fullName}</h1>
-            {customer.companyName && (
-              <p className="text-muted-foreground text-sm mt-0.5">{customer.companyName}</p>
+            <h1 className="text-2xl font-bold tracking-tight">{customer.full_name}</h1>
+            {customer.company_name && (
+              <p className="text-muted-foreground text-sm mt-0.5">{customer.company_name}</p>
             )}
             <p className="text-muted-foreground text-xs mt-1">
-              Customer since {format(new Date(customer.createdAt), "MMMM d, yyyy")}
+              Customer since {format(new Date(customer.created_at), "MMMM d, yyyy")}
             </p>
           </div>
         </div>
@@ -111,10 +111,10 @@ export default function CustomerDetailPage() {
           <SheetContent className="w-[400px]">
             <SheetHeader><SheetTitle>Edit Customer</SheetTitle></SheetHeader>
             <form onSubmit={handleUpdate} className="mt-6 space-y-4">
-              <div className="space-y-2"><Label>Full Name *</Label><Input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required /></div>
+              <div className="space-y-2"><Label>Full Name *</Label><Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} required /></div>
               <div className="space-y-2"><Label>Email *</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required /></div>
               <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
-              <div className="space-y-2"><Label>Company</Label><Input value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Company</Label><Input value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} /></div>
               <div className="space-y-2"><Label>Address</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
               <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
@@ -141,10 +141,10 @@ export default function CustomerDetailPage() {
                 <span>{customer.phone}</span>
               </div>
             )}
-            {customer.companyName && (
+            {customer.company_name && (
               <div className="flex items-center gap-3 text-sm">
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span>{customer.companyName}</span>
+                <span>{customer.company_name}</span>
               </div>
             )}
             {customer.address && (
@@ -197,16 +197,16 @@ export default function CustomerDetailPage() {
                   <TableRow key={order.id} className="cursor-pointer hover:bg-muted/40">
                     <TableCell>
                       <Link href={`/orders/${order.id}`} className="font-mono font-semibold text-sm hover:text-primary transition-colors">
-                        {order.trackingId}
+                        {order.tracking_id}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{order.orderReference ?? "—"}</TableCell>
-                    <TableCell><StatusBadge status={order.currentStatus} /></TableCell>
+                    <TableCell className="text-muted-foreground">{order.order_reference ?? "—"}</TableCell>
+                    <TableCell><StatusBadge status={order.current_status} /></TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {order.estimatedDeliveryDate ? format(new Date(order.estimatedDeliveryDate), "MMM d, yyyy") : "—"}
+                      {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(order.createdAt), "MMM d, yyyy")}
+                      {format(new Date(order.created_at), "MMM d, yyyy")}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -97,6 +97,18 @@ export function useUpdateBusiness() {
   });
 }
 
+export function useDeleteBusiness() {
+  return useMutation({
+    mutationFn: async (businessId: string) => {
+      const { error } = await supabase
+        .from("businesses")
+        .delete()
+        .eq("id", businessId);
+      if (error) throw error;
+    },
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CUSTOMERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +140,38 @@ export function useCustomers(
       const { data, error, count } = await query;
       if (error) throw error;
       return { customers: (data ?? []) as Customer[], total: count ?? 0 };
+    },
+  });
+}
+
+export function useCustomer(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["customer", id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data as Customer;
+    },
+  });
+}
+
+export function useCustomerOrders(customerId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["customerOrders", customerId ?? ""],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, customers ( full_name )")
+        .eq("customer_id", customerId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as (Order & { customers: { full_name: string } | null })[];
     },
   });
 }
@@ -358,24 +402,37 @@ export function useDashboardStats(businessId: string | null | undefined) {
     enabled: !!businessId,
     queryFn: async () => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
 
-      const [ordersRes, customersRes, statusRes] = await Promise.all([
-        // Total + recent orders
+      const [ordersRes, customersRes, statusRes, totalOrdersRes, emailsTodayRes] = await Promise.all([
+        // Orders last 30 days
         supabase
           .from("orders")
-          .select("id, created_at, current_status", { count: "exact" })
+          .select("id", { count: "exact", head: true })
           .eq("business_id", businessId!)
           .gte("created_at", thirtyDaysAgo),
         // Total customers
         supabase
           .from("customers")
-          .select("id", { count: "exact" })
+          .select("id", { count: "exact", head: true })
           .eq("business_id", businessId!),
-        // Status breakdown
+        // Status breakdown (all orders)
         supabase
           .from("orders")
           .select("current_status")
           .eq("business_id", businessId!),
+        // Total orders ever
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", businessId!),
+        // Emails sent today
+        supabase
+          .from("notification_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", businessId!)
+          .gte("sent_at", todayStart.toISOString()),
       ]);
 
       const statusBreakdown: Record<string, number> = {};
@@ -387,6 +444,11 @@ export function useDashboardStats(businessId: string | null | undefined) {
         ordersLast30Days: ordersRes.count ?? 0,
         totalCustomers: customersRes.count ?? 0,
         statusBreakdown,
+        totalOrders: totalOrdersRes.count ?? 0,
+        activeDeliveries: (statusBreakdown["In transit"] ?? 0) + (statusBreakdown["Out for delivery"] ?? 0),
+        delayedOrders: statusBreakdown["Delayed"] ?? 0,
+        deliveredOrders: statusBreakdown["Delivered"] ?? 0,
+        emailsSentToday: emailsTodayRes.count ?? 0,
       };
     },
   });
@@ -474,6 +536,108 @@ export function useDeleteWorkflowTemplate() {
         .eq("id", id)
         .eq("business_id", businessId);
       if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
+export function useUpdateWorkflowTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      businessId,
+      ...updates
+    }: Partial<WorkflowTemplate> & { id: string; businessId: string }) => {
+      const { data, error } = await supabase
+        .from("workflow_templates")
+        .update(updates)
+        .eq("id", id)
+        .eq("business_id", businessId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as WorkflowTemplate;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
+export function useUpdateWorkflowSteps() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      templateId,
+      businessId,
+      steps,
+    }: {
+      templateId: string;
+      businessId: string;
+      steps: Omit<InsertWorkflowStep, "template_id">[];
+    }) => {
+      // Delete all existing steps then re-insert
+      const { error: delError } = await supabase
+        .from("workflow_steps")
+        .delete()
+        .eq("template_id", templateId);
+      if (delError) throw delError;
+
+      if (steps.length > 0) {
+        const { error: insError } = await supabase
+          .from("workflow_steps")
+          .insert(steps.map((s) => ({ ...s, template_id: templateId })));
+        if (insError) throw insError;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
+    },
+  });
+}
+
+export function useCloneWorkflowTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      sourceId,
+      businessId,
+      name,
+    }: { sourceId: string; businessId: string; name: string }) => {
+      // Fetch source template + steps
+      const { data: source, error: fetchError } = await supabase
+        .from("workflow_templates")
+        .select("*, workflow_steps(*)")
+        .eq("id", sourceId)
+        .single();
+      if (fetchError) throw fetchError;
+
+      // Insert new template
+      const { data: newTmpl, error: tmplError } = await supabase
+        .from("workflow_templates")
+        .insert({ business_id: businessId, name, description: (source as any).description, business_type: (source as any).business_type, is_system: false })
+        .select()
+        .single();
+      if (tmplError) throw tmplError;
+
+      const sourceSteps = (source as any).workflow_steps ?? [];
+      if (sourceSteps.length > 0) {
+        const { error: stepsError } = await supabase
+          .from("workflow_steps")
+          .insert(sourceSteps.map((s: any) => ({
+            template_id: (newTmpl as WorkflowTemplate).id,
+            label: s.label,
+            description: s.description,
+            color: s.color,
+            is_terminal: s.is_terminal,
+            position: s.position,
+          })));
+        if (stepsError) throw stepsError;
+      }
+      return newTmpl as WorkflowTemplate;
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
@@ -758,6 +922,26 @@ export function useAuditLogs(
         .range(offset, offset + limit - 1);
       if (error) throw error;
       return { logs: (data ?? []) as AuditLog[], total: count ?? 0 };
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATION LOGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useNotificationLogs(orderId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["notification_logs", orderId ?? ""],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notification_logs")
+        .select("*")
+        .eq("order_id", orderId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 }

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
 import {
-  useGetOrder,
+  useOrder,
+  useBusiness,
   useUpdateOrderStatus,
-  useResendOrderEmail,
-  useGetBusiness,
-} from "@workspace/api-client-react";
+  useSendNotification,
+  useNotificationLogs,
+} from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -176,10 +178,12 @@ function StatusPicker({
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: order, isLoading, refetch } = useGetOrder(id ?? "");
-  const { data: business } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: order, isLoading, refetch } = useOrder(id);
+  const { data: business } = useBusiness(user?.businessId);
+  const { data: notificationLogs } = useNotificationLogs(id);
   const updateStatusMutation = useUpdateOrderStatus();
-  const resendMutation = useResendOrderEmail();
+  const resendMutation = useSendNotification();
 
   const [statusForm, setStatusForm] = useState({
     status: "",
@@ -192,18 +196,14 @@ export default function OrderDetailPage() {
     updateStatusMutation.mutate(
       {
         orderId: id!,
-        data: {
-          status: statusForm.status as any,
-          location: statusForm.location || undefined,
-        },
+        businessId: user!.businessId,
+        status: statusForm.status,
+        location: statusForm.location || undefined,
+        userId: user!.id,
       },
       {
-        onSuccess: (result: any) => {
-          const emailMsg =
-            result.emailStatus === "sent" ? " Email sent to customer." :
-            result.emailStatus === "failed" ? " Email delivery failed — check Resend API key." :
-            "";
-          toast.success(`Status updated to "${statusForm.status}".${emailMsg}`);
+        onSuccess: () => {
+          toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
           setStatusForm({ status: "", location: "" });
           refetch();
         },
@@ -216,11 +216,7 @@ export default function OrderDetailPage() {
     resendMutation.mutate(
       { orderId: id! },
       {
-        onSuccess: (result: any) => {
-          if (result.success) toast.success("Email resent to customer");
-          else toast.error(`Failed to resend: ${result.message}`);
-          refetch();
-        },
+        onSuccess: () => { toast.success("Email resent to customer"); refetch(); },
         onError: () => toast.error("Failed to resend email"),
       }
     );
@@ -245,8 +241,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  if (!order) {
-    return (
+  if (!order) {    return (
       <EmptyState
         icon={<PackageX className="h-12 w-12" />}
         title="Order not found"
@@ -262,7 +257,10 @@ export default function OrderDetailPage() {
     );
   }
 
-  const lastEvent = order.trackingEvents?.[0];
+  const lastEvent = (order.tracking_events as any[])?.[0];
+  const trackingLink = business?.website_url
+    ? `${business.website_url}/track?code=${order.tracking_id}`
+    : null;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -289,31 +287,31 @@ export default function OrderDetailPage() {
       {/* Order identity */}
       <div className="pb-5 border-b">
         <div className="flex flex-wrap items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold font-mono tracking-tight">{order.trackingId}</h1>
-          <StatusBadge status={order.currentStatus} />
+          <h1 className="text-2xl font-bold font-mono tracking-tight">{order.tracking_id}</h1>
+          <StatusBadge status={order.current_status} />
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {order.orderReference && (
+          {order.order_reference && (
             <span className="flex items-center gap-1">
-              <span className="text-xs">Ref:</span> {order.orderReference}
+              <span className="text-xs">Ref:</span> {order.order_reference}
             </span>
           )}
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
-            {format(new Date(order.createdAt), "MMM d, yyyy · HH:mm")}
+            {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}
           </span>
-          {order.estimatedDeliveryDate && (
+          {order.estimated_delivery_date && (
             <span>
-              ETA: {format(new Date(order.estimatedDeliveryDate), "MMM d, yyyy")}
+              ETA: {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}
             </span>
           )}
-          {order.customer && (
+          {order.customers && (
             <Link
-              href={`/customers/${order.customer.id}`}
+              href={`/customers/${order.customers.id}`}
               className="flex items-center gap-1 text-primary hover:underline"
             >
-              {order.customer.fullName}
-              {order.customer.companyName && ` · ${order.customer.companyName}`}
+              {order.customers.full_name}
+              {order.customers.company_name && ` · ${order.customers.company_name}`}
               <ExternalLink className="h-3 w-3" />
             </Link>
           )}
@@ -335,7 +333,7 @@ export default function OrderDetailPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {isTerminal(order.currentStatus) ? (
+              {isTerminal(order.current_status) ? (
                 <div className="border bg-muted/40 px-4 py-8 text-center space-y-1">
                   <CheckCircle2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                   <p className="text-sm font-medium">
@@ -352,7 +350,7 @@ export default function OrderDetailPage() {
                       Select Next Status
                     </Label>
                     <StatusPicker
-                      currentStatus={order.currentStatus}
+                      currentStatus={order.current_status}
                       selected={statusForm.status}
                       onSelect={(s) => setStatusForm(f => ({ ...f, status: s }))}
                     />
@@ -391,7 +389,7 @@ export default function OrderDetailPage() {
                     {updateStatusMutation.isPending
                       ? "Updating and notifying customer…"
                       : statusForm.status
-                      ? `Update status and notify ${order.customer?.fullName?.split(" ")[0] ?? "customer"}`
+                      ? `Update status and notify ${order.customers?.full_name?.split(" ")[0] ?? "customer"}`
                       : "Update status and notify customer"}
                   </Button>
                 </form>
@@ -405,7 +403,7 @@ export default function OrderDetailPage() {
               <CardTitle className="text-base font-bold">Activity Timeline</CardTitle>
             </CardHeader>
             <CardContent>
-              {!order.trackingEvents?.length ? (
+              {!(order.tracking_events as any[])?.length ? (
                 <div className="text-center py-6">
                   <Activity className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">No tracking events yet.</p>
@@ -439,10 +437,10 @@ export default function OrderDetailPage() {
                               </span>
                             )}
                             <span className="text-xs text-muted-foreground ml-auto">
-                              {format(new Date(event.createdAt), "MMM d, yyyy · HH:mm")}
+                              {format(new Date(event.created_at), "MMM d, yyyy · HH:mm")}
                             </span>
                           </div>
-                          {isLatest && event.status === "Delivered" && (
+                          {order.current_status === "Delivered" && (
                             <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 bg-green-50 border border-green-200 w-fit">
                               <House className="h-3.5 w-3.5 text-green-600" />
                               <span className="text-[11px] font-semibold text-green-700 tracking-wide uppercase">
@@ -481,7 +479,7 @@ export default function OrderDetailPage() {
                     <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="text-base font-semibold">Email History</span>
                     <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 border">
-                      {order.emailNotifications?.length ?? 0}
+                      {notificationLogs?.length ?? 0}
                     </span>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
@@ -489,16 +487,16 @@ export default function OrderDetailPage() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-2 pt-0">
-                  {!order.emailNotifications?.length ? (
+                  {!notificationLogs?.length ? (
                     <p className="text-sm text-muted-foreground">No emails sent yet.</p>
                   ) : (
-                    order.emailNotifications.map((notif: any) => (
+                    notificationLogs.map((notif: any) => (
                       <div key={notif.id} className="flex items-start justify-between gap-3 p-3 border bg-muted/20">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{notif.subject}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">To: {notif.customerEmail}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">To: {notif.recipient_email}</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(notif.createdAt), "MMM d, yyyy · HH:mm")}
+                            {format(new Date(notif.created_at), "MMM d, yyyy · HH:mm")}
                           </p>
                         </div>
                         <span className={`text-xs font-semibold px-2 py-0.5 flex-shrink-0 border ${
@@ -523,7 +521,7 @@ export default function OrderDetailPage() {
         <div className="space-y-5">
 
           {/* Customer */}
-          {order.customer && (
+          {order.customers && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -534,37 +532,37 @@ export default function OrderDetailPage() {
               <CardContent className="space-y-3 text-xs">
                 <div>
                   <Link
-                    href={`/customers/${order.customer.id}`}
+                    href={`/customers/${order.customers.id}`}
                     className="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1"
                   >
-                    {order.customer.fullName}
+                    {order.customers.full_name}
                     <ExternalLink className="h-3 w-3 text-muted-foreground" />
                   </Link>
-                  {order.customer.companyName && (
+                  {order.customers.company_name && (
                     <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
                       <Building2 className="h-3 w-3" />
-                      {order.customer.companyName}
+                      {order.customers.company_name}
                     </p>
                   )}
                 </div>
                 <Separator />
                 <div className="space-y-1.5">
-                  {order.customer.email && (
+                  {order.customers.email && (
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Mail className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{order.customer.email}</span>
+                      <span className="truncate">{order.customers.email}</span>
                     </div>
                   )}
-                  {order.customer.phone && (
+                  {order.customers.phone && (
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Phone className="h-3 w-3 flex-shrink-0" />
-                      {order.customer.phone}
+                      {order.customers.phone}
                     </div>
                   )}
-                  {order.customer.address && (
+                  {order.customers.address && (
                     <div className="flex items-start gap-1.5 text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                      <span className="leading-snug">{order.customer.address}</span>
+                      <span className="leading-snug">{order.customers.address}</span>
                     </div>
                   )}
                 </div>
@@ -625,20 +623,20 @@ export default function OrderDetailPage() {
                   <p className="text-sm">{order.description}</p>
                 </div>
               )}
-              {order.estimatedDeliveryDate && (
+              {order.estimated_delivery_date && (
                 <div>
                   <p className="text-muted-foreground uppercase font-medium mb-0.5">Est. Delivery</p>
-                  <p className="text-sm">{format(new Date(order.estimatedDeliveryDate), "MMMM d, yyyy")}</p>
+                  <p className="text-sm">{format(new Date(order.estimated_delivery_date), "MMMM d, yyyy")}</p>
                 </div>
               )}
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Last Updated</p>
-                <p className="text-sm">{format(new Date(order.updatedAt), "MMM d, yyyy · HH:mm")}</p>
+                <p className="text-sm">{format(new Date(order.updated_at), "MMM d, yyyy · HH:mm")}</p>
               </div>
-              {order.orderReference && (
+              {order.order_reference && (
                 <div>
                   <p className="text-muted-foreground uppercase font-medium mb-0.5">Reference</p>
-                  <p className="text-sm font-mono">{order.orderReference}</p>
+                  <p className="text-sm font-mono">{order.order_reference}</p>
                 </div>
               )}
             </CardContent>

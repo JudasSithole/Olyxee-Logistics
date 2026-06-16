@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useListOrders, useListCustomers, useCreateOrder } from "@workspace/api-client-react";
+import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
-function CreateOrderDialog({ onSuccess }: { onSuccess: () => void }) {
+function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
@@ -38,7 +39,7 @@ function CreateOrderDialog({ onSuccess }: { onSuccess: () => void }) {
     estimatedDeliveryDate: "",
   }));
   const createMutation = useCreateOrder();
-  const { data: customers } = useListCustomers({ limit: 100 });
+  const { data: customersData } = useCustomers(businessId, { limit: 100 });
 
   React.useEffect(() => {
     if (open) {
@@ -54,7 +55,7 @@ function CreateOrderDialog({ onSuccess }: { onSuccess: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(
-      { data: { customerId: form.customerId, orderReference: form.orderReference || undefined, description: form.description || undefined, estimatedDeliveryDate: form.estimatedDeliveryDate || undefined } },
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_delivery_date: form.estimatedDeliveryDate || undefined },
       {
         onSuccess: () => {
           toast.success("Order created — tracking ID auto-generated");
@@ -81,8 +82,8 @@ function CreateOrderDialog({ onSuccess }: { onSuccess: () => void }) {
             <Select value={form.customerId} onValueChange={v => setForm(f => ({ ...f, customerId: v }))}>
               <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
               <SelectContent>
-                {customers?.data.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.fullName} — {c.email}</SelectItem>
+                {customersData?.customers.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.email}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -135,12 +136,13 @@ function getInitialStatusFromUrl(): string {
 
 export default function OrdersPage() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [querySearch, setQuerySearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFromUrl);
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, refetch } = useListOrders({
+  const { data, isLoading, refetch } = useOrders(user?.businessId, {
     search: querySearch || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,
@@ -160,7 +162,7 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total orders</p>
         </div>
-        <CreateOrderDialog onSuccess={() => refetch()} />
+        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
       </div>
 
       <Card>
@@ -186,7 +188,7 @@ export default function OrdersPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : !data?.data.length ? (
+          ) : !data?.orders.length ? (
             <EmptyState
               icon={<Package className="h-12 w-12" />}
               title="No orders found"
@@ -207,23 +209,23 @@ export default function OrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.data.map((order) => (
+                  {data.orders.map((order) => (
                     <TableRow
                       key={order.id}
                       className="cursor-pointer hover:bg-muted/40"
                       onClick={() => navigate(`/orders/${order.id}`)}
                     >
                       <TableCell>
-                        <span className="font-mono text-sm font-semibold">{order.trackingId}</span>
+                        <span className="font-mono text-sm font-semibold">{order.tracking_id}</span>
                       </TableCell>
-                      <TableCell className="font-medium">{order.customer?.fullName ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{order.orderReference ?? "—"}</TableCell>
-                      <TableCell><StatusBadge status={order.currentStatus} /></TableCell>
+                      <TableCell className="font-medium">{order.customers?.full_name ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{order.order_reference ?? "—"}</TableCell>
+                      <TableCell><StatusBadge status={order.current_status} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {order.estimatedDeliveryDate ? format(new Date(order.estimatedDeliveryDate), "MMM d, yyyy") : "—"}
+                        {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(order.updatedAt), "MMM d, HH:mm")}
+                        {format(new Date(order.updated_at), "MMM d, HH:mm")}
                       </TableCell>
                       <TableCell className="text-right pr-4" onClick={e => e.stopPropagation()}>
                         <Link href={`/orders/${order.id}`}>

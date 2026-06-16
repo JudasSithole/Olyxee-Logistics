@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { useGetBusiness, useUpdateBusiness } from "@workspace/api-client-react";
+import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/page-loader";
 import { BusinessTypeSelector } from "@/components/business-type-selector";
@@ -10,20 +11,21 @@ import bgImage from "@assets/image_1778124687840.png";
 
 export default function BusinessTypePage() {
   const [, setLocation] = useLocation();
-  const { data: business, isLoading } = useGetBusiness();
+  const { user } = useAuth();
+  const { data: business, isLoading } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
 
   const [selected, setSelected] = useState<string>("");
 
   // Pre-fill if the user already set a type and came back to this step.
   useEffect(() => {
-    if (business?.industry) setSelected(business.industry);
-  }, [business?.industry]);
+    if (business?.business_type) setSelected(business.business_type);
+  }, [business?.business_type]);
 
   async function handleContinue() {
     if (!selected) return;
     try {
-      await updateMutation.mutateAsync({ data: { industry: selected } });
+      await updateMutation.mutateAsync({ id: user!.businessId, business_type: selected });
       setLocation("/onboarding");
     } catch (err) {
       toast.error(
