@@ -144,6 +144,38 @@ export function useCustomers(
   });
 }
 
+export function useCustomer(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["customer", id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data as Customer;
+    },
+  });
+}
+
+export function useCustomerOrders(customerId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["customerOrders", customerId ?? ""],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, customers ( full_name )")
+        .eq("customer_id", customerId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as (Order & { customers: { full_name: string } | null })[];
+    },
+  });
+}
+
 export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
