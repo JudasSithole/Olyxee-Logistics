@@ -349,11 +349,13 @@ function TemplateEditorModal({
   onClose,
   initial,
   templateId, // defined when editing an existing template
+  businessId,
 }: {
   open: boolean;
   onClose: () => void;
   initial: { name: string; description: string; businessType: string; steps: EditableStep[] };
   templateId?: string;
+  businessId: string;
 }) {
   const queryClient = useQueryClient();
   const createMutation = useCreateWorkflowTemplate();
@@ -392,7 +394,7 @@ function TemplateEditorModal({
     description: s.description || undefined,
     position: i,
     color: s.color,
-    isTerminal: s.isTerminal,
+    is_terminal: s.isTerminal,
   }));
 
   async function handleSave() {
@@ -413,27 +415,26 @@ function TemplateEditorModal({
     try {
       if (isEditing) {
         await updateMutation.mutateAsync({
-          id: templateId,
-          data: {
-            name: name.trim(),
-            description: description.trim() || null,
-            businessType: businessType.trim() || null,
-          },
+          id: templateId!,
+          businessId,
+          name: name.trim(),
+          description: description.trim() || null,
+          business_type: businessType.trim() || null,
         });
-        await stepsMutation.mutateAsync({ id: templateId, data: { steps: stepsPayload } });
+        await stepsMutation.mutateAsync({ templateId: templateId!, businessId, steps: stepsPayload });
         toast.success("Template saved");
       } else {
         await createMutation.mutateAsync({
-          data: {
+          template: {
+            business_id: businessId,
             name: name.trim(),
-            description: description.trim() || undefined,
-            businessType: businessType.trim() || undefined,
-            steps: stepsPayload,
+            description: description.trim() || null,
+            business_type: businessType.trim() || null,
           },
+          steps: stepsPayload,
         });
         toast.success("Template created");
       }
-      queryClient.invalidateQueries({ queryKey: getGetWorkflowTemplatesQueryKey() });
       onClose();
     } catch {
       toast.error("Could not save template. Please try again.");
@@ -557,12 +558,13 @@ function CloneDialog({
   open,
   onClose,
   source,
+  businessId,
 }: {
   open: boolean;
   onClose: () => void;
-  source: { name: string; businessType?: string | null; steps: PresetStep[] | WorkflowStepInput[] };
+  source: { id?: string; name: string; businessType?: string | null; steps: PresetStep[] | WorkflowStepInput[] };
+  businessId: string;
 }) {
-  const queryClient = useQueryClient();
   const cloneMutation = useCloneWorkflowTemplate();
   const [cloneName, setCloneName] = useState(`${source.name} (copy)`);
 
@@ -570,20 +572,11 @@ function CloneDialog({
     if (!cloneName.trim()) return;
     try {
       await cloneMutation.mutateAsync({
-        data: {
-          name: cloneName.trim(),
-          businessType: source.businessType ?? undefined,
-          steps: (source.steps as any[]).map((s, i) => ({
-            label: s.label,
-            description: s.description ?? undefined,
-            position: i,
-            color: s.color ?? undefined,
-            isTerminal: s.isTerminal ?? false,
-          })),
-        },
+        sourceId: source.id ?? "",
+        businessId,
+        name: cloneName.trim(),
       });
       toast.success("Template cloned");
-      queryClient.invalidateQueries({ queryKey: getGetWorkflowTemplatesQueryKey() });
       onClose();
     } catch {
       toast.error("Could not clone template.");
@@ -619,10 +612,11 @@ function CloneDialog({
 
 export default function WorkflowsPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const { data: business } = useGetBusiness();
-  const templatesQuery = useGetWorkflowTemplates();
-  const activeQuery = useGetActiveWorkflow();
+  const { data: business } = useBusiness(user?.businessId);
+  const templatesQuery = useWorkflowTemplates(user?.businessId);
+  const activeQuery = useActiveWorkflow(user?.businessId);
   const activateMutation = useActivateWorkflow();
   const deleteMutation = useDeleteWorkflowTemplate();
 
@@ -630,24 +624,24 @@ export default function WorkflowsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<WorkflowTemplateWithSteps | null>(null);
   const [cloningSource, setCloningSource] = useState<null | {
-    name: string; businessType?: string | null; steps: any[]
+    id?: string; name: string; businessType?: string | null; steps: any[]
   }>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
 
-  const activeTemplateId = activeQuery.data?.templateId;
+  const activeTemplateId = activeQuery.data?.template_id;
 
   // Resolve the active template display info
   const activePreset = activeTemplateId ? findPreset(activeTemplateId) : null;
   const activeDbTemplate = activeTemplateId && !activePreset
     ? templatesQuery.data?.find((t) => t.id === activeTemplateId)
     : null;
-  const activeSteps = activePreset?.steps ?? activeDbTemplate?.steps ?? [];
-  const activeName = activePreset?.name ?? activeDbTemplate?.name ?? activeQuery.data?.templateName;
+  const activeSteps = activePreset?.steps ?? activeDbTemplate?.workflow_steps ?? [];
+  const activeName = activePreset?.name ?? activeDbTemplate?.name ?? (activeQuery.data as any)?.template_name;
 
   // Auto-suggest preset for this business's industry on first visit
-  const suggestedPresetId = business?.industry
-    ? WORKFLOW_PRESETS.find((p) => p.businessType === business.industry)?.id
+  const suggestedPresetId = business?.business_type
+    ? WORKFLOW_PRESETS.find((p) => p.businessType === business.business_type)?.id
     : undefined;
 
   const q = search.toLowerCase();
@@ -659,7 +653,7 @@ export default function WorkflowsPage() {
   );
   const filteredCustom = useMemo(
     () => (templatesQuery.data ?? []).filter(
-      (t) => !q || t.name.toLowerCase().includes(q) || (t.businessType?.toLowerCase() ?? "").includes(q),
+      (t) => !q || t.name.toLowerCase().includes(q) || (t.business_type?.toLowerCase() ?? "").includes(q),
     ),
     [templatesQuery.data, q],
   );
@@ -667,8 +661,7 @@ export default function WorkflowsPage() {
   async function handleActivate(templateId: string, templateName: string) {
     setActivatingId(templateId);
     try {
-      await activateMutation.mutateAsync({ data: { templateId, templateName } });
-      queryClient.invalidateQueries({ queryKey: getGetActiveWorkflowQueryKey() });
+      await activateMutation.mutateAsync({ businessId: user!.businessId, templateId, templateName });
       toast.success(`"${templateName}" is now the active workflow`);
     } catch {
       toast.error("Could not set active workflow.");
@@ -679,8 +672,7 @@ export default function WorkflowsPage() {
 
   async function handleDelete(id: string) {
     try {
-      await deleteMutation.mutateAsync({ id });
-      queryClient.invalidateQueries({ queryKey: getGetWorkflowTemplatesQueryKey() });
+      await deleteMutation.mutateAsync({ id, businessId: user!.businessId });
       toast.success("Template deleted");
     } catch {
       toast.error("Could not delete template.");
@@ -703,8 +695,8 @@ export default function WorkflowsPage() {
     ? {
         name: editingTemplate.name,
         description: editingTemplate.description ?? "",
-        businessType: editingTemplate.businessType ?? "",
-        steps: editingTemplate.steps
+        businessType: editingTemplate.business_type ?? "",
+        steps: (editingTemplate.workflow_steps ?? [])
           .sort((a, b) => a.position - b.position)
           .map(dbStepToEditable),
       }
@@ -854,14 +846,14 @@ export default function WorkflowsPage() {
                 key={tpl.id}
                 name={tpl.name}
                 description={tpl.description}
-                businessType={tpl.businessType}
-                steps={tpl.steps}
+                businessType={tpl.business_type}
+                steps={tpl.workflow_steps}
                 isActive={activeTemplateId === tpl.id}
                 isPreset={false}
                 activating={activatingId === tpl.id}
                 onActivate={() => handleActivate(tpl.id, tpl.name)}
                 onEdit={() => openEditEditor(tpl)}
-                onClone={() => setCloningSource({ name: tpl.name, businessType: tpl.businessType, steps: tpl.steps })}
+                onClone={() => setCloningSource({ id: tpl.id, name: tpl.name, businessType: tpl.business_type, steps: tpl.workflow_steps })}
                 onDelete={() => setDeletingId(tpl.id)}
               />
             ))}
@@ -876,6 +868,7 @@ export default function WorkflowsPage() {
           onClose={() => { setEditorOpen(false); setEditingTemplate(null); }}
           initial={editorInitial}
           templateId={editingTemplate?.id}
+          businessId={user?.businessId ?? ""}
         />
       )}
 
@@ -885,6 +878,7 @@ export default function WorkflowsPage() {
           open={!!cloningSource}
           onClose={() => setCloningSource(null)}
           source={cloningSource}
+          businessId={user?.businessId ?? ""}
         />
       )}
 
