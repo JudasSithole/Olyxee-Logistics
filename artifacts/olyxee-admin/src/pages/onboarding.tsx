@@ -30,15 +30,6 @@ const EMPLOYEE_RANGES = [
   "500+",
 ];
 
-const INDUSTRIES = [
-  "Freight & logistics",
-  "Last-mile delivery",
-  "Warehousing",
-  "Cold chain",
-  "Courier",
-  "Other",
-];
-
 export default function OnboardingPage() {
   const [, setLocation] = useLocation();
   const { data: business, isLoading } = useGetBusiness();
@@ -141,6 +132,21 @@ export default function OnboardingPage() {
               tracking pages feel like yours from day one. You can change
               anything later in Settings.
             </p>
+            {form.industry && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[hsl(220,9%,94%)] px-3 py-1 text-[13px]">
+                <span className="text-[hsl(220,9%,40%)]">
+                  Business type:{" "}
+                  <span className="font-semibold text-[hsl(220,20%,10%)]">{form.industry}</span>
+                </span>
+                <a
+                  href="/business-type"
+                  className="text-[hsl(220,9%,46%)] underline underline-offset-2 hover:text-[hsl(220,20%,10%)] transition-colors text-[11px]"
+                  onClick={(e) => { e.preventDefault(); setLocation("/business-type"); }}
+                >
+                  Change
+                </a>
+              </div>
+            )}
           </div>
 
           {isLoading ? (
@@ -246,25 +252,6 @@ export default function OnboardingPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">Industry</Label>
-                    <Select
-                      value={form.industry}
-                      onValueChange={(v) => setForm((f) => ({ ...f, industry: v }))}
-                    >
-                      <SelectTrigger id="industry" className="h-11" data-testid="select-industry">
-                        <SelectValue placeholder="Select industry" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDUSTRIES.map((i) => (
-                          <SelectItem key={i} value={i}>
-                            {i}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="employeeCount">Number of employees</Label>
                     <Select
