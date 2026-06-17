@@ -3,3 +3,4 @@
 - [Monthly email limit](email-limit.md) — per-business cap; usage = sent notifications this UTC month via join to orders (no businessId on notifications); best-effort, not atomic.
 - [Prod login 500 root cause](prod-login-db-url.md) — was a malformed Vercel DATABASE_URL (unencoded `@` in password → `%40`), NOT missing columns; prod schema is healthy.
 - [Public order tracking](public-tracking.md) — no-login /track page + email link fallback to hosted base; buildTrackingLink must normalize websiteUrl or the email CTA silently drops; tenant sites auto-added to CORS.
+- [Prod schema drift](prod-schema-drift.md) — prod Supabase tables can lack columns the Drizzle SELECT pulls → 500; diff information_schema vs schema, ALTER ADD, never push to prod.
