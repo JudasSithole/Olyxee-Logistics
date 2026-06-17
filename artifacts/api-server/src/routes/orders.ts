@@ -10,7 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
-import { generateId, generateTrackingId } from "../lib/id";
+import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
 import {
@@ -162,7 +162,11 @@ router.post("/orders", requireAuth, async (req, res) => {
     // pre-check-only loop can both pass the SELECT then collide on INSERT,
     // surfacing as a 500. ~26 bits of entropy per ID per business make
     // collisions vanishingly rare, but a bounded retry keeps things safe.
-    const prefix = business?.trackingIdPrefix ?? "OLY";
+    const prefix = resolveTrackingPrefix(
+      business?.trackingIdPrefix,
+      business?.name,
+      business?.slug,
+    );
     const MAX_TRACKING_ATTEMPTS = 8;
     let inserted: typeof ordersTable.$inferSelect | undefined;
     let lastErr: unknown;

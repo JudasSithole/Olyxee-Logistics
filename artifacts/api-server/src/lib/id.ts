@@ -31,3 +31,34 @@ export function generateTrackingId(prefixInput: string): string {
   const prefix = cleaned.length >= 3 ? cleaned : "OLY";
   return `${prefix}-${randomChars(3)}-${randomChars(4)}`;
 }
+
+// Pick the leading segment for a business's tracking IDs so every code is
+// clearly tied to THAT business. Preference order:
+//   1. the prefix the business explicitly configured (unique per business);
+//   2. otherwise the first 3+ letters of the business name (e.g. "Freight
+//      Shift" -> "FRE"), so even businesses that never set a prefix still get
+//      a branded, business-specific code instead of a shared generic one;
+//   3. otherwise the first 3+ letters of the (always-present, URL-safe) slug,
+//      which covers names that yield <3 A-Z letters (very short or non-Latin);
+//   4. "OLY" only as a true last resort.
+// generateTrackingId() re-sanitizes whatever this returns, so it's safe to
+// pass slightly messy input.
+export function resolveTrackingPrefix(
+  configuredPrefix: string | null | undefined,
+  businessName: string | null | undefined,
+  slug?: string | null | undefined,
+): string {
+  const lettersOf = (s: string | null | undefined) =>
+    (s ?? "").toUpperCase().replace(/[^A-Z]/g, "");
+
+  const configured = lettersOf(configuredPrefix).substring(0, 5);
+  if (configured.length >= 3) return configured;
+
+  const fromName = lettersOf(businessName).substring(0, 3);
+  if (fromName.length >= 3) return fromName;
+
+  const fromSlug = lettersOf(slug).substring(0, 3);
+  if (fromSlug.length >= 3) return fromSlug;
+
+  return "OLY";
+}
