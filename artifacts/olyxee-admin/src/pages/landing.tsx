@@ -479,7 +479,7 @@ const Landing: FC = () => {
       <section className="relative px-4 sm:px-8 pt-20 sm:pt-28 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
           <div className="relative rounded-[2rem] overflow-hidden bg-neutral-900">
-            <img src={repairPhoto} alt="Repair shop owner ready to help customers" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={closingPhoto} alt="Support agent helping a customer over the phone" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-32 lg:py-40 grid grid-cols-12 gap-8 items-end">
