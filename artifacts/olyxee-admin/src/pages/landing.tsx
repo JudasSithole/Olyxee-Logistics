@@ -604,7 +604,7 @@ const Landing: FC = () => {
                     </div>
                     <div className="min-w-0">
                       <div style={mono} className="text-[8px] tracking-widest text-neutral-400">ORDER LOOP · NOW</div>
-                      <div className="text-[13px] font-medium text-neutral-900 leading-tight truncate">Your order is out for delivery</div>
+                      <div className="text-[13px] font-medium text-neutral-900 leading-tight truncate">Your order is ready to collect</div>
                     </div>
                   </div>
                 </motion.div>
@@ -617,7 +617,7 @@ const Landing: FC = () => {
                 >
                   <div className="flex items-center justify-between mb-2.5">
                     <div style={mono} className="text-[8px] tracking-widest text-neutral-400">#OLY-1042</div>
-                    <span style={mono} className="text-[7px] tracking-widest px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">ON TIME</span>
+                    <span style={mono} className="text-[7px] tracking-widest px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">READY</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {["bg-emerald-500", "bg-emerald-500", "bg-orange-500", "bg-neutral-200"].map((c, i) => (
@@ -625,8 +625,8 @@ const Landing: FC = () => {
                     ))}
                   </div>
                   <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                    Out for delivery · ETA 14:42
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Ready to collect · since 14:42
                   </div>
                 </motion.div>
               </div>
