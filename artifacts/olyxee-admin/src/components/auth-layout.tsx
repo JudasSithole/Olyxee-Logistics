@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
-import courierLoopLogo from "@assets/1_1780016152275.png";
+import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -12,8 +12,8 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         data-testid="link-auth-home"
       >
         <img
-          src={courierLoopLogo}
-          alt="Courier Loop"
+          src={orderLoopLogo}
+          alt="Order Loop"
           className="h-8 sm:h-10 w-auto"
           draggable={false}
         />

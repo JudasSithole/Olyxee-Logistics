@@ -10,7 +10,7 @@ export default function LoginPage() {
   const { signIn, signUp, requestPasswordReset } = useAuth();
   const [, setLocation] = useLocation();
 
-  // When arriving from the hero "Try Courier Loop" CTA we assume the visitor
+  // When arriving from the hero "Try Order Loop" CTA we assume the visitor
   // doesn't have an account yet, so default to the create-account form.
   const initialMode: Mode =
     typeof window !== "undefined" &&
@@ -87,9 +87,9 @@ export default function LoginPage() {
         </h1>
         <p className="text-[15px] text-[#8e8e93] mt-2 text-center leading-snug max-w-[300px]">
           {mode === "signin"
-            ? "Sign in to your Courier Loop workspace"
+            ? "Sign in to your Order Loop workspace"
             : mode === "signup"
-              ? "Set up Courier Loop for your business in seconds"
+              ? "Set up Order Loop for your business in seconds"
               : "Enter your email and we'll send you a reset link"}
         </p>
       </div>
@@ -309,7 +309,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-[10px] text-center text-[#b0b0b8] mt-10 tracking-[0.15em] uppercase">
-        Powered by Courier Loop
+        Powered by Order Loop
       </p>
     </AuthLayout>
   );

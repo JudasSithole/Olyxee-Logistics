@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Bot, Route, Sparkles, BarChart3, Mail, Phone } from "lucide-react";
 import defaultIcon from "@assets/Courier_Loop_Orange_Icon_1779935120486.png";
 import navLogo from "@assets/1_1780016152275.png";
+import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 import heroPhoto from "@assets/image_1780017592401.png";
 import scanPhoto from "@assets/image_1779935779272.png";
 import trackPhoto from "@assets/image_1779935881868.png";
@@ -222,9 +223,9 @@ const Landing: FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
             <img
-              src={navLogo}
+              src={orderLoopLogo}
               alt="Order Loop"
-              className="h-7 sm:h-9 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain"
             />
           </Link>
           <Link href="/login" className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
@@ -536,13 +537,12 @@ export const SiteFooter: FC = () => (
       <div className="grid grid-cols-2 md:grid-cols-12 gap-y-12 gap-x-8">
         {/* Brand */}
         <div className="col-span-2 md:col-span-5">
-          <Link href="/" className="inline-flex items-center gap-2.5">
+          <Link href="/" className="inline-flex items-center">
             <img
-              src={defaultIcon}
-              alt="Olyxee"
-              className="w-8 h-8 rounded-md object-cover ring-1 ring-neutral-200"
+              src={orderLoopLogo}
+              alt="Order Loop"
+              className="h-9 w-auto object-contain"
             />
-            <span style={serif} className="text-xl tracking-tight">Olyxee</span>
           </Link>
           <p className="mt-5 text-sm text-neutral-600 leading-relaxed max-w-sm">
             Order Loop is the order-tracking and customer-notification layer
