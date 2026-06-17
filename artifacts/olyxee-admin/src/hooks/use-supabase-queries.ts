@@ -22,18 +22,13 @@ import type {
   Customer,
   InsertCustomer,
   InsertOrder,
-  InsertWorkflowTemplate,
-  InsertWorkflowStep,
   Order,
   Reminder,
-  WorkflowStep,
-  WorkflowTemplate,
   NotificationTemplate,
   TeamInvite,
   AuditLog,
   InsertNotificationTemplate,
   InsertReminder,
-  BusinessWorkflow,
   NotificationLog,
 } from "../lib/database.types";
 
@@ -46,10 +41,6 @@ export const qk = {
     ["orders", businessId, filters] as const,
   order: (id: string) => ["orders", id] as const,
   trackingEvents: (orderId: string) => ["tracking_events", orderId] as const,
-  workflowTemplates: (businessId: string) => ["workflow_templates", businessId] as const,
-  workflowTemplate: (id: string) => ["workflow_templates", id] as const,
-  workflowSteps: (templateId: string) => ["workflow_steps", templateId] as const,
-  activeWorkflow: (businessId: string) => ["business_workflows", businessId] as const,
   notificationTemplates: (businessId: string) =>
     ["notification_templates", businessId] as const,
   notificationLogs: (businessId: string) => ["notification_logs", businessId] as const,
@@ -58,7 +49,6 @@ export const qk = {
   teamInvites: (businessId: string) => ["team_invites", businessId] as const,
   auditLogs: (businessId: string) => ["audit_logs", businessId] as const,
   dashboard: (businessId: string) => ["dashboard", businessId] as const,
-  systemPresets: () => ["workflow_presets", "__system__"] as const,
 } as const;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -220,77 +210,6 @@ function mapBusiness(b: ApiBusiness): Business {
     email_usage_this_month: b.emailUsageThisMonth ?? 0,
     created_at: b.createdAt,
     updated_at: b.createdAt,
-  };
-}
-
-interface ApiWorkflowStep {
-  id: string;
-  templateId: string;
-  label: string;
-  description?: string | null;
-  position: number;
-  color?: string | null;
-  isTerminal?: boolean;
-  autoNotify?: boolean;
-  notifyTemplateId?: string | null;
-}
-
-function mapWorkflowStep(s: ApiWorkflowStep): WorkflowStep {
-  return {
-    id: s.id,
-    template_id: s.templateId,
-    label: s.label,
-    description: s.description ?? null,
-    position: s.position,
-    color: s.color ?? "#000000",
-    is_terminal: s.isTerminal ?? false,
-    auto_notify: s.autoNotify ?? false,
-    notify_template_id: s.notifyTemplateId ?? null,
-  };
-}
-
-interface ApiWorkflowTemplate {
-  id: string;
-  businessId: string;
-  name: string;
-  description?: string | null;
-  businessType?: string | null;
-  isSystem?: boolean;
-  createdAt: string;
-  steps?: ApiWorkflowStep[];
-}
-
-function mapWorkflowTemplate(
-  t: ApiWorkflowTemplate,
-): WorkflowTemplate & { workflow_steps: WorkflowStep[] } {
-  return {
-    id: t.id,
-    business_id: t.businessId,
-    name: t.name,
-    description: t.description ?? null,
-    business_type: t.businessType ?? null,
-    is_system: t.isSystem ?? false,
-    created_at: t.createdAt,
-    updated_at: t.createdAt,
-    workflow_steps: (t.steps ?? []).map(mapWorkflowStep),
-  };
-}
-
-interface ApiBusinessWorkflow {
-  id: string;
-  businessId: string;
-  templateId: string;
-  templateName: string;
-  assignedAt: string;
-}
-
-function mapBusinessWorkflow(w: ApiBusinessWorkflow): BusinessWorkflow {
-  return {
-    id: w.id,
-    business_id: w.businessId,
-    template_id: w.templateId,
-    template_name: w.templateName,
-    assigned_at: w.assignedAt,
   };
 }
 
@@ -696,242 +615,6 @@ export function useDashboardStats(businessId: string | null | undefined) {
         deliveredOrders: summary.deliveredOrders,
         emailsSentToday: summary.emailsSentToday,
       };
-    },
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// WORKFLOW TEMPLATES
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function useWorkflowTemplates(businessId: string | null | undefined) {
-  return useQuery({
-    queryKey: qk.workflowTemplates(businessId ?? ""),
-    enabled: !!businessId,
-    queryFn: async () => {
-      const data = await apiFetch<ApiWorkflowTemplate[]>("/api/workflow-templates");
-      return (data ?? []).map(mapWorkflowTemplate);
-    },
-  });
-}
-
-export function useSystemPresets() {
-  return useQuery({
-    queryKey: qk.systemPresets(),
-    queryFn: async () => {
-      // System presets are resolved client-side from a constant; the API does
-      // not expose a system-template endpoint.
-      return [] as (WorkflowTemplate & { workflow_steps: WorkflowStep[] })[];
-    },
-  });
-}
-
-export function useCreateWorkflowTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      template,
-      steps,
-    }: {
-      template: InsertWorkflowTemplate;
-      steps: Omit<InsertWorkflowStep, "template_id">[];
-    }) => {
-      const data = await apiFetch<ApiWorkflowTemplate>("/api/workflow-templates", {
-        method: "POST",
-        body: {
-          name: template.name,
-          description: template.description ?? undefined,
-          businessType: template.business_type ?? undefined,
-          steps: steps.map((s) => ({
-            label: s.label,
-            description: s.description ?? undefined,
-            position: s.position,
-            color: s.color ?? undefined,
-            isTerminal: s.is_terminal ?? false,
-          })),
-        },
-      });
-      return mapWorkflowTemplate(data);
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({
-        queryKey: qk.workflowTemplates(variables.template.business_id),
-      });
-    },
-  });
-}
-
-export function useDeleteWorkflowTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      businessId: _businessId,
-    }: { id: string; businessId: string }) => {
-      await apiFetch(`/api/workflow-templates/${id}`, { method: "DELETE" });
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
-    },
-  });
-}
-
-export function useUpdateWorkflowTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      businessId: _businessId,
-      ...updates
-    }: Partial<WorkflowTemplate> & { id: string; businessId: string }) => {
-      const body: Record<string, unknown> = {};
-      if (updates.name !== undefined) body.name = updates.name;
-      if (updates.description !== undefined) body.description = updates.description;
-      if (updates.business_type !== undefined) body.businessType = updates.business_type;
-
-      const data = await apiFetch<ApiWorkflowTemplate>(`/api/workflow-templates/${id}`, {
-        method: "PUT",
-        body,
-      });
-      return mapWorkflowTemplate(data);
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
-    },
-  });
-}
-
-export function useUpdateWorkflowSteps() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      templateId,
-      businessId: _businessId,
-      steps,
-    }: {
-      templateId: string;
-      businessId: string;
-      steps: Omit<InsertWorkflowStep, "template_id">[];
-    }) => {
-      await apiFetch(`/api/workflow-templates/${templateId}/steps`, {
-        method: "PUT",
-        body: {
-          steps: steps.map((s) => ({
-            label: s.label,
-            description: s.description ?? undefined,
-            position: s.position,
-            color: s.color ?? undefined,
-            isTerminal: s.is_terminal ?? false,
-          })),
-        },
-      });
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
-    },
-  });
-}
-
-export function useCloneWorkflowTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      sourceId,
-      businessId: _businessId,
-      name,
-      presetSteps,
-      description,
-      businessType,
-    }: {
-      sourceId?: string;
-      businessId: string;
-      name: string;
-      presetSteps?: Array<{ label: string; description?: string | null; color?: string | null; is_terminal: boolean; position: number }>;
-      description?: string | null;
-      businessType?: string | null;
-    }) => {
-      let stepsToInsert: Array<{ label: string; description?: string | null; color?: string | null; is_terminal: boolean; position: number }>;
-      let sourceDescription: string | null = description ?? null;
-      let sourceBusinessType: string | null = businessType ?? null;
-
-      if (presetSteps) {
-        stepsToInsert = presetSteps;
-      } else if (sourceId) {
-        const source = await apiFetch<ApiWorkflowTemplate>(`/api/workflow-templates/${sourceId}`);
-        sourceDescription = source.description ?? null;
-        sourceBusinessType = source.businessType ?? null;
-        stepsToInsert = (source.steps ?? []).map((s) => ({
-          label: s.label,
-          description: s.description ?? null,
-          color: s.color ?? null,
-          is_terminal: s.isTerminal ?? false,
-          position: s.position,
-        }));
-      } else {
-        stepsToInsert = [];
-      }
-
-      const data = await apiFetch<ApiWorkflowTemplate>("/api/workflow-templates/clone", {
-        method: "POST",
-        body: {
-          name,
-          description: sourceDescription ?? undefined,
-          businessType: sourceBusinessType ?? undefined,
-          steps: stepsToInsert.map((s) => ({
-            label: s.label,
-            description: s.description ?? undefined,
-            position: s.position,
-            color: s.color ?? undefined,
-            isTerminal: s.is_terminal,
-          })),
-        },
-      });
-      return mapWorkflowTemplate(data);
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: qk.workflowTemplates(variables.businessId) });
-    },
-  });
-}
-
-export function useActiveWorkflow(businessId: string | null | undefined) {
-  return useQuery({
-    queryKey: qk.activeWorkflow(businessId ?? ""),
-    enabled: !!businessId,
-    queryFn: async () => {
-      try {
-        const data = await apiFetch<ApiBusinessWorkflow>("/api/business-workflows/active");
-        return mapBusinessWorkflow(data);
-      } catch (e) {
-        // 404 = no active workflow assigned yet.
-        if (e instanceof Error && /not found|no active/i.test(e.message)) return null;
-        const status = (e as { status?: number }).status;
-        if (status === 404) return null;
-        throw e;
-      }
-    },
-  });
-}
-
-export function useActivateWorkflow() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      businessId: _businessId,
-      templateId,
-      templateName,
-    }: {
-      businessId: string;
-      templateId: string;
-      templateName: string;
-    }) => {
-      await apiFetch("/api/business-workflows/activate", {
-        method: "POST",
-        body: { templateId, templateName },
-      });
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: qk.activeWorkflow(variables.businessId) });
     },
   });
 }

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw, History, Trash2, ShieldAlert,
-  Code2, Copy, Download, Globe, Tag, GitBranch, ExternalLink,
+  Code2, Copy, Download, Globe, Tag,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -35,16 +35,6 @@ import {
 import { ActivityFeed } from "@/components/activity-feed";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
-
-// ─── Color presets ────────────────────────────────────────────────────────────
-const PRESET_COLORS = [
-  { label: "Charcoal", hex: "#2b2b2b" },
-  { label: "Slate", hex: "#475569" },
-  { label: "Ocean", hex: "#2563eb" },
-  { label: "Indigo", hex: "#4f46e5" },
-  { label: "Emerald", hex: "#059669" },
-  { label: "Rose", hex: "#e11d48" },
-];
 
 const DEFAULT_PRIMARY = "#2b2b2b";
 
@@ -112,10 +102,6 @@ function BrandColorPicker({
     setHexError(false);
   }, [value]);
 
-  const presetMatch = PRESET_COLORS.find(
-    (c) => c.hex.toLowerCase() === value.toLowerCase(),
-  );
-
   const commitHex = (raw: string) => {
     const norm = normalizeHex(raw);
     if (!norm) {
@@ -147,43 +133,42 @@ function BrandColorPicker({
 
   return (
     <div className="space-y-4">
-      {/* Step 1: Named presets - bigger tiles with the name visible so the
-          choice feels like picking a brand mood, not guessing at swatches. */}
+      {/* Spectrum: drag across the rainbow to choose any hue, then fine-tune
+          below. Replaces the old fixed swatch grid so the brand color feels
+          like a free choice instead of a short, noisy preset list. */}
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Quick picks</p>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {PRESET_COLORS.map((c) => {
-            const active = value.toLowerCase() === c.hex.toLowerCase();
-            return (
-              <button
-                key={c.hex}
-                type="button"
-                onClick={() => onChange(c.hex)}
-                aria-pressed={active}
-                className={cn(
-                  "group relative flex flex-col items-stretch border transition-all text-left",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                  active
-                    ? "border-foreground"
-                    : "border-border hover:border-muted-foreground/60",
-                )}
-              >
-                <div
-                  className="h-12 w-full flex items-center justify-center"
-                  style={{ backgroundColor: c.hex }}
-                >
-                  {active && <Check className="h-4 w-4 text-white drop-shadow" aria-hidden="true" />}
-                </div>
-                <div className="px-2 py-1.5 flex items-center justify-between gap-1 bg-background">
-                  <span className="text-[11px] font-medium truncate">{c.label}</span>
-                  {active && (
-                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground">In use</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <p className="text-xs font-medium text-muted-foreground">Pick your brand color</p>
+        <input
+          type="range"
+          min={0}
+          max={360}
+          value={hexToHsl(value).h}
+          onChange={(e) => {
+            const { s, l } = hexToHsl(value);
+            onChange(hslToHex(Number(e.target.value), s < 12 ? 72 : s, s < 12 ? 46 : l));
+          }}
+          aria-label="Brand color hue"
+          className="brand-hue h-3 w-full cursor-pointer appearance-none rounded-full border border-border"
+          style={{
+            background:
+              "linear-gradient(to right,#ff0000,#ffd400,#22c55e,#06b6d4,#3b82f6,#a855f7,#ff0000)",
+          }}
+        />
+        <style>{`
+          .brand-hue::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px; width: 22px; border-radius: 9999px;
+            background: ${value}; border: 3px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+            cursor: pointer;
+          }
+          .brand-hue::-moz-range-thumb {
+            height: 22px; width: 22px; border-radius: 9999px;
+            background: ${value}; border: 3px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+            cursor: pointer;
+          }
+        `}</style>
       </div>
 
       {/* Step 2: Custom color - one tidy row instead of three stacked controls.
@@ -244,11 +229,6 @@ function BrandColorPicker({
             />
           </div>
 
-          {!presetMatch && (
-            <span className="inline-flex items-center px-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 border border-border">
-              Custom
-            </span>
-          )}
         </div>
 
         <input
@@ -302,6 +282,30 @@ function hslToHex(h: number, s: number, l: number): string {
     return Math.round(v * 255).toString(16).padStart(2, "0");
   };
   return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// Inverse of hslToHex - lets the spectrum slider read the current hue and keep
+// the existing saturation/lightness when the admin only drags the hue.
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const n = normalizeHex(hex) ?? "#000000";
+  const r = parseInt(n.slice(1, 3), 16) / 255;
+  const g = parseInt(n.slice(3, 5), 16) / 255;
+  const b = parseInt(n.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+  }
+  return { h, s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
 // ─── Section primitives (Apple "Inset Grouped" feel) ──────────────────────────
@@ -511,7 +515,6 @@ const NAV_ITEMS = [
   { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
-  { id: "workflows", label: "Workflows", icon: GitBranch, tint: TINTS.green },
   { id: "activity", label: "Activity", icon: History, tint: TINTS.teal },
   { id: "danger", label: "Danger zone", icon: ShieldAlert, tint: TINTS.red },
 ] as const;
@@ -998,34 +1001,6 @@ export default function SettingsPage() {
                   muted="bg-zinc-700"
                 />
               </div>
-            </div>
-          </SectionShell>
-        </TabsContent>
-
-        {/* ─── Workflows ────────────────────────────────────────────── */}
-        <TabsContent value="workflows" className="mt-6 focus-visible:outline-none">
-          <SectionShell
-            icon={GitBranch}
-            tint={TINTS.green}
-            title="Workflow Templates"
-            description="Define and assign the steps your team follows for every order."
-          >
-            <div className="px-4 py-6 flex flex-col items-center gap-4 text-center">
-              <GitBranch className="h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Manage your workflow templates</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  Create custom workflows, clone system presets, and assign an active template to
-                  control the order statuses shown to your team.
-                </p>
-              </div>
-              <a
-                href="/workflows"
-                className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-2 hover:text-muted-foreground transition-colors"
-              >
-                Open Workflows
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
             </div>
           </SectionShell>
         </TabsContent>

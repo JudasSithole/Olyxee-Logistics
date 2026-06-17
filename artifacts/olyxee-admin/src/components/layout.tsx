@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package,
-  Menu, Moon, Sun, Settings, LogOut, GitBranch,
+  Menu, Moon, Sun, Settings, LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -69,7 +69,6 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Orders", icon: Package },
-  { href: "/workflows", label: "Workflows", icon: GitBranch },
 ];
 
 // A single nav row used for every sidebar link so the active treatment -
