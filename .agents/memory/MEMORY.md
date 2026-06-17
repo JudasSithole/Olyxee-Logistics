@@ -1,4 +1,5 @@
 - [Demo account auth](demo-account-auth.md) — demo user is hardcoded, not in DB; every auth endpoint needs the same demo bypass requireAuth has.
 - [olyxee architecture](olyxee-architecture.md) — Vite SPA (olyxee-admin) + Express API (api-server) over /api, cookie-session auth; migrated off Supabase.
 - [Monthly email limit](email-limit.md) — per-business cap; usage = sent notifications this UTC month via join to orders (no businessId on notifications); best-effort, not atomic.
+- [Prod login 500 root cause](prod-login-db-url.md) — was a malformed Vercel DATABASE_URL (unencoded `@` in password → `%40`), NOT missing columns; prod schema is healthy.
 - [Public order tracking](public-tracking.md) — no-login /track page + email link fallback to hosted base; buildTrackingLink must normalize websiteUrl or the email CTA silently drops; tenant sites auto-added to CORS.
