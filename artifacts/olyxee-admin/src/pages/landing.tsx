@@ -537,152 +537,159 @@ const Landing: FC = () => {
       {/* === HERO === */}
       <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-20 px-4 sm:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-y-12 gap-x-10 items-center">
-            {/* Left: message + CTAs */}
-            <div className="col-span-12 lg:col-span-5">
+          {/* dateline rule */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.05, ease }}
+            className="flex items-center justify-between border-t-2 border-neutral-900 pt-3 mb-12 sm:mb-16"
+          >
+            <span style={mono} className="text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-900">OLYXEE / ORDER LOOP</span>
+            <span style={mono} className="hidden sm:block text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-400">FOR LOCAL BUSINESS</span>
+            <span style={mono} className="flex items-center gap-2 text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-900">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" /> LIVE
+            </span>
+          </motion.div>
+
+          <div className="grid grid-cols-12 gap-y-16 gap-x-8 items-start">
+            {/* Headline block */}
+            <div className="col-span-12 lg:col-span-7">
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1, ease }}
-                className="inline-flex items-center gap-2 rounded-full bg-orange-50 ring-1 ring-orange-200/80 pl-1.5 pr-3.5 py-1.5 mb-7"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.15, ease }}
+                className="flex items-center gap-4 mb-7"
               >
-                <span style={mono} className="rounded-full bg-orange-500 text-white text-[9px] tracking-widest px-2 py-1">NEW</span>
-                <span className="text-[12px] text-orange-900/80">Order management for local businesses</span>
+                <span style={mono} className="text-[11px] tracking-[0.25em] text-orange-500">01 / THE PROMISE</span>
+                <span className="h-px flex-1 bg-neutral-200" />
               </motion.div>
 
               <motion.h1
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, delay: 0.15, ease }}
+                transition={{ duration: 0.9, delay: 0.2, ease }}
                 style={serif}
-                className="text-[3rem] sm:text-7xl lg:text-[5.25rem] xl:text-[6rem] tracking-[-0.03em] leading-[0.92]"
+                className="text-[3rem] sm:text-[4.75rem] lg:text-[6rem] xl:text-[6.75rem] leading-[0.85] tracking-[-0.035em]"
               >
-                Keep customers
+                Nothing
                 <br />
-                in the <em className="text-orange-500 italic">loop.</em>
+                falls through
+                <br />
+                the{" "}
+                <span className="relative inline-block">
+                  <em className="italic text-orange-500">loop</em>
+                  <svg
+                    aria-hidden
+                    className="absolute left-0 -bottom-3 w-full"
+                    height="14"
+                    viewBox="0 0 140 14"
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path d="M3 9 C 34 3, 70 3, 102 8 S 136 11, 137 6" stroke="#f97316" strokeWidth="3.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="text-neutral-300">.</span>
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3, ease }}
-                className="mt-6 text-lg text-neutral-600 leading-relaxed max-w-md"
+                transition={{ duration: 0.8, delay: 0.35, ease }}
+                className="mt-10 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md"
               >
-                Order Loop helps businesses manage customer orders, update statuses, and keep customers informed - all from one simple dashboard.
+                From the moment an order comes in to the second it is picked up, Order Loop keeps your team and your customers on the same page. One screen. Every status. No chasing.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.45, ease }}
-                className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4"
+                transition={{ duration: 0.8, delay: 0.5, ease }}
+                className="mt-9 flex items-center gap-7"
               >
                 <Link
                   href="/login?mode=signup"
-                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
+                  className="group inline-flex items-center gap-4 bg-neutral-900 text-white pl-6 pr-2 py-2 hover:bg-orange-500 transition-colors duration-300"
                 >
-                  <span className="text-sm font-medium tracking-wide">Start Managing Orders</span>
-                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                  <span className="text-sm tracking-wide">Start managing orders</span>
+                  <span className="w-8 h-8 bg-white text-neutral-900 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                     <ArrowUpRight className="w-4 h-4" />
                   </span>
                 </Link>
                 <Link
                   href="/login"
                   style={mono}
-                  className="text-[11px] tracking-[0.22em] text-neutral-400 hover:text-neutral-900 transition-colors"
+                  className="text-[11px] tracking-[0.22em] text-neutral-500 border-b border-neutral-300 pb-0.5 hover:text-neutral-900 hover:border-neutral-900 transition-colors"
                 >
-                  → OPEN DASHBOARD
+                  OPEN DASHBOARD
                 </Link>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6, ease }}
-                className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
-              >
-                {[
-                  { icon: Sparkles, label: "Create orders" },
-                  { icon: Route, label: "Live tracking" },
-                  { icon: Mail, label: "Auto updates" },
-                ].map((f) => {
-                  const Icon = f.icon;
-                  return (
-                    <div key={f.label} className="flex items-center gap-2 text-[13px] text-neutral-500">
-                      <span className="w-7 h-7 rounded-full bg-orange-50 ring-1 ring-orange-100 flex items-center justify-center">
-                        <Icon className="w-3.5 h-3.5 text-orange-500" />
-                      </span>
-                      {f.label}
-                    </div>
-                  );
-                })}
               </motion.div>
             </div>
 
-            {/* Right: visual */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 0.4, ease }}
-              className="col-span-12 lg:col-span-7 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3]"
-            >
-              <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-orange-100 via-amber-50 to-orange-200/70 ring-1 ring-orange-200/70">
-                {/* ambient glow */}
-                <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-orange-300/50 blur-3xl" />
-                <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-amber-300/40 blur-3xl" />
-                {/* dotted texture */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 opacity-[0.35]"
-                  style={{ backgroundImage: "radial-gradient(rgba(120,53,15,0.18) 1px, transparent 1px)", backgroundSize: "22px 22px" }}
-                />
+            {/* Order ticket rail */}
+            <div className="col-span-12 lg:col-span-5">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.3, ease }}
+                className="flex items-center gap-4 mb-7"
+              >
+                <span style={mono} className="text-[11px] tracking-[0.25em] text-orange-500">02 / THE RAIL</span>
+                <span className="h-px flex-1 bg-neutral-200" />
+              </motion.div>
 
-                {/* person */}
-                <img
-                  src={heroPerson}
-                  alt="Business owner smiling at an order update on his phone"
-                  className="absolute bottom-0 right-0 sm:right-4 h-[94%] w-auto object-contain object-bottom drop-shadow-[0_30px_60px_rgba(120,53,15,0.25)]"
-                />
+              <div className="space-y-5 sm:px-2">
+                {[
+                  { ref: "OLY-1042", time: "14:42", name: "Sarah Klein", detail: "2x Wool coat · express", stamp: "READY", tone: "ready", rot: "-1.4deg", barcode: true },
+                  { ref: "OLY-1041", time: "14:30", name: "Marcus Tan", detail: "1x Birthday cake · large", stamp: "PREPARING", tone: "prep", rot: "1.1deg", barcode: false },
+                  { ref: "OLY-1040", time: "13:58", name: "Priya Raman", detail: "3x Shirt alteration · slim", stamp: "COLLECTED", tone: "done", rot: "-0.6deg", barcode: false },
+                ].map((t, i) => {
+                  const stampColor =
+                    t.tone === "ready"
+                      ? "border-orange-500 text-orange-500"
+                      : t.tone === "done"
+                        ? "border-emerald-500 text-emerald-600"
+                        : "border-neutral-400 text-neutral-500";
+                  return (
+                    <motion.div
+                      key={t.ref}
+                      initial={{ opacity: 0, y: 24, rotate: 0 }}
+                      animate={{ opacity: t.tone === "done" ? 0.78 : 1, y: 0, rotate: parseFloat(t.rot) }}
+                      transition={{ duration: 0.7, delay: 0.4 + i * 0.12, ease }}
+                      style={{ transformOrigin: "center" }}
+                      className="relative bg-white border border-neutral-900 p-4 shadow-[5px_5px_0_0_rgba(23,23,23,0.08)]"
+                    >
+                      {/* stamp */}
+                      <span
+                        style={mono}
+                        className={`absolute right-3 -top-3 rotate-6 bg-white border-2 ${stampColor} px-2 py-0.5 text-[9px] tracking-[0.22em]`}
+                      >
+                        {t.stamp}
+                      </span>
 
-                {/* floating notification card */}
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-6 left-6 sm:top-8 sm:left-8 w-[58%] max-w-[260px] bg-white/90 backdrop-blur-md rounded-2xl p-3.5 ring-1 ring-white/70 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0 shadow-[0_8px_20px_-6px_rgba(249,115,22,0.8)]">
-                      <Route className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <div style={mono} className="text-[8px] tracking-widest text-neutral-400">ORDER LOOP · NOW</div>
-                      <div className="text-[13px] font-medium text-neutral-900 leading-tight truncate">Your order is ready to collect</div>
-                    </div>
-                  </div>
-                </motion.div>
+                      {/* header */}
+                      <div className="flex items-center justify-between border-b border-dashed border-neutral-300 pb-2">
+                        <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-900">#{t.ref}</span>
+                        <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-400">{t.time}</span>
+                      </div>
 
-                {/* floating status card */}
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 w-[54%] max-w-[240px] bg-white/90 backdrop-blur-md rounded-2xl p-3.5 ring-1 ring-white/70 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)]"
-                >
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div style={mono} className="text-[8px] tracking-widest text-neutral-400">#OLY-1042</div>
-                    <span style={mono} className="text-[7px] tracking-widest px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">READY</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {["bg-emerald-500", "bg-emerald-500", "bg-orange-500", "bg-neutral-200"].map((c, i) => (
-                      <div key={i} className={`h-1.5 flex-1 rounded-full ${c}`} />
-                    ))}
-                  </div>
-                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Ready to collect · since 14:42
-                  </div>
-                </motion.div>
+                      {/* body */}
+                      <div style={serif} className="mt-3 text-xl text-neutral-900 leading-none">{t.name}</div>
+                      <div style={mono} className="mt-1.5 text-[11px] text-neutral-500">{t.detail}</div>
+
+                      {/* barcode (featured ticket only) */}
+                      {t.barcode && (
+                        <div aria-hidden className="mt-3 flex items-end gap-[2px] h-7">
+                          {[3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 2, 1, 3, 1].map((w, bi) => (
+                            <span key={bi} className="bg-neutral-900 h-full" style={{ width: `${w}px` }} />
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
