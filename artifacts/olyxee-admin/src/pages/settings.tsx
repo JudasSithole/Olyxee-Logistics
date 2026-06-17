@@ -178,7 +178,7 @@ function BrandColorPicker({
           <button
             type="button"
             onClick={() => nativeRef.current?.click()}
-            className="h-10 w-10 border border-border flex-shrink-0 relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-10 w-10 rounded-lg border border-border flex-shrink-0 relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ backgroundColor: hexError ? "transparent" : (normalizeHex(hexDraft) ?? value) }}
             aria-label="Open color spectrum"
             title="Open color spectrum"
@@ -340,7 +340,7 @@ function SectionShell({
         {action && <div className="flex-shrink-0">{action}</div>}
       </header>
 
-      <div className="bg-card border border-border divide-y divide-border/70">
+      <div className="bg-card border border-border divide-y divide-border/70 rounded-2xl shadow-sm overflow-hidden">
         {children}
       </div>
     </section>
@@ -416,7 +416,7 @@ function BrandIdentityPreview({
 }) {
   const name = businessName.trim() || "Your business";
   return (
-    <div className="bg-card border border-border">
+    <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="px-4 py-2 border-b border-border bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
         <Eye className="h-3 w-3" aria-hidden="true" />
         Live preview
@@ -425,7 +425,7 @@ function BrandIdentityPreview({
         {/* Sidebar */}
         <div className="space-y-1.5">
           <p className="text-[10px] text-muted-foreground">Sidebar</p>
-          <div className="flex items-center gap-2.5 px-3 h-11 border border-border bg-background">
+          <div className="flex items-center gap-2.5 px-3 h-11 rounded-lg border border-border bg-background">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -447,7 +447,7 @@ function BrandIdentityPreview({
           </div>
           {/* Active nav item in the brand color */}
           <div
-            className="px-3 py-1.5 text-[11px] font-semibold text-white w-fit"
+            className="px-3 py-1.5 rounded-md text-[11px] font-semibold text-white w-fit"
             style={{ background: primaryColor }}
           >
             Orders
@@ -457,7 +457,7 @@ function BrandIdentityPreview({
         {/* Browser tab */}
         <div className="space-y-1.5">
           <p className="text-[10px] text-muted-foreground">Browser tab</p>
-          <div className="bg-muted/60 pt-2 px-2 border border-border">
+          <div className="bg-muted/60 pt-2 px-2 border border-border rounded-lg">
             <div className="flex items-end">
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background border-t border-l border-r border-border -mb-px text-[11px] text-foreground max-w-[180px]">
                 {faviconUrl ? (
@@ -481,7 +481,7 @@ function BrandIdentityPreview({
         {/* Customer email line - full width */}
         <div className="space-y-1.5 sm:col-span-2">
           <p className="text-[10px] text-muted-foreground">On customer emails</p>
-          <div className="border border-border bg-background px-3 py-2.5">
+          <div className="border border-border bg-background px-3 py-2.5 rounded-lg">
             <p className="text-sm font-semibold text-foreground leading-tight">{name}</p>
             {tagline.trim() ? (
               <p className="text-xs text-muted-foreground">{tagline}</p>
@@ -1118,9 +1118,9 @@ function EmailCustomizationSection({
       {/* Token legend */}
       <div className="px-4 py-3 bg-muted/30 text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>Tokens:</span>
-        <code className="font-mono text-foreground bg-background border border-border px-1.5 py-0.5">{"{name}"}</code>
+        <code className="font-mono text-foreground bg-background border border-border px-1.5 py-0.5 rounded-md">{"{name}"}</code>
         <span className="text-muted-foreground/70">customer's name</span>
-        <code className="font-mono text-foreground bg-background border border-border px-1.5 py-0.5">{"{businessName}"}</code>
+        <code className="font-mono text-foreground bg-background border border-border px-1.5 py-0.5 rounded-md">{"{businessName}"}</code>
         <span className="text-muted-foreground/70">your business</span>
       </div>
 
@@ -1231,7 +1231,7 @@ function EmailCustomizationSection({
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Preview
             </p>
-            <div className="border border-border bg-background p-4 text-sm space-y-3">
+            <div className="border border-border bg-background p-4 text-sm space-y-3 rounded-xl">
               <p className="font-medium">{previewGreeting}</p>
               <p className="text-muted-foreground">
                 Your package has left our facility and is making its way to you.
@@ -1679,7 +1679,7 @@ function highlight(code: string, lang: IntegrationLang): { type: HlType; value: 
 function CodeBlock({ code, lang }: { code: string; lang: IntegrationLang }) {
   const tokens = useMemo(() => highlight(code, lang), [code, lang]);
   return (
-    <pre className="overflow-x-auto bg-zinc-950 text-zinc-200 text-[12.5px] leading-relaxed p-4 pt-9 font-mono">
+    <pre className="overflow-x-auto bg-zinc-950 text-zinc-200 text-[12.5px] leading-relaxed p-4 pt-9 font-mono rounded-xl">
       <code>
         {tokens.map((t, i) => (
           <span key={i} className={HL_CLASS[t.type]}>
@@ -1856,7 +1856,7 @@ function CopyButton({ text }: { text: string }) {
           toast.error("Couldn't copy - select the code and copy manually.");
         }
       }}
-      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 border border-border bg-background hover:bg-muted transition-colors"
+      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-border bg-background hover:bg-muted transition-colors tap"
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? "Copied" : "Copy"}
@@ -1995,7 +1995,7 @@ function IntegrationsSection() {
           </div>
 
           <div className="relative">
-            <div className="absolute top-2 right-2 z-10 text-[10px] uppercase tracking-wider text-zinc-400 bg-zinc-800 px-1.5 py-0.5 font-mono">
+            <div className="absolute top-2 right-2 z-10 text-[10px] uppercase tracking-wider text-zinc-400 bg-zinc-800 px-1.5 py-0.5 font-mono rounded-md">
               GET /api/public/track/:id
             </div>
             <CodeBlock code={snippets[lang]} lang={lang} />
