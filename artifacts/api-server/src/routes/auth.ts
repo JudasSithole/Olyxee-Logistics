@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -34,6 +34,33 @@ export const DEMO_USER = {
 
 function hashResetToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+// Self-healing schema guard. The production database may predate the
+// password-auth migration and be missing the `password_hash` / `auth_user_id`
+// columns, which makes every real login/signup query fail with Postgres code
+// 42703 ("column does not exist"). Adding them is idempotent and additive
+// (ADD COLUMN IF NOT EXISTS), so it is safe to run lazily before the first
+// auth query and is a no-op once the columns exist. Memoized so it runs at
+// most once per warm process; on failure the memo is cleared so a later
+// request can retry. This is a stopgap so the app heals itself without a
+// manual migration; the source-of-truth schema still lives in lib/db.
+let _authSchemaReady: Promise<void> | null = null;
+async function ensureAuthColumns(): Promise<void> {
+  if (_authSchemaReady) return _authSchemaReady;
+  _authSchemaReady = (async () => {
+    await db.execute(
+      sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "auth_user_id" text`,
+    );
+    await db.execute(
+      sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "password_hash" text`,
+    );
+  })().catch((err) => {
+    // Allow a retry on the next request rather than caching the failure.
+    _authSchemaReady = null;
+    throw err;
+  });
+  return _authSchemaReady;
 }
 
 // Drizzle wraps the underlying pg error in a DrizzleQueryError whose own
@@ -129,6 +156,7 @@ router.post("/auth/signup", async (req, res) => {
   const { email, password, fullName, businessName } = parsed.data;
 
   try {
+    await ensureAuthColumns();
     const existing = await db.query.usersTable.findFirst({
       where: eq(usersTable.email, email),
     });
@@ -204,6 +232,7 @@ router.post("/auth/login", async (req, res) => {
   const { email, password } = parsed.data;
 
   try {
+    await ensureAuthColumns();
     const user = await db.query.usersTable.findFirst({
       where: eq(usersTable.email, email),
     });
