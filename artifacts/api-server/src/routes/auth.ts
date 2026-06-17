@@ -36,6 +36,32 @@ function hashResetToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+// Drizzle wraps the underlying pg error in a DrizzleQueryError whose own
+// `.code`/`.detail` are undefined and whose `.message` is just "Failed query:
+// ...". The real Postgres error (e.g. code 42703 "column ... does not exist")
+// lives on `.cause`. Unwrap it so logs show the actionable cause instead of
+// "undefined undefined".
+function describeDbError(err: unknown): {
+  code?: string;
+  message?: string;
+  detail?: string;
+} {
+  const e = err as {
+    code?: string;
+    message?: string;
+    detail?: string;
+    cause?: unknown;
+  };
+  const cause = e?.cause as
+    | { code?: string; message?: string; detail?: string }
+    | undefined;
+  return {
+    code: cause?.code ?? e?.code,
+    message: cause?.message ?? e?.message,
+    detail: cause?.detail ?? e?.detail,
+  };
+}
+
 function buildResetLink(req: import("express").Request, token: string): string {
   // Prefer the first configured ALLOWED_ORIGINS entry (the production app
   // origin); fall back to the request's host so it still works in dev.
@@ -121,8 +147,8 @@ router.post("/auth/signup", async (req, res) => {
   } catch (err) {
     // Use console.error in addition to req.log because pino's async writes
     // sometimes don't flush before a serverless function freezes.
-    const e = err as { message?: string; code?: string; detail?: string };
-    console.error("[signup] failed:", e?.code, e?.message, e?.detail);
+    const e = describeDbError(err);
+    console.error("[signup] failed:", e.code, e.message, e.detail);
     req.log?.error({ err }, "signup failed");
     res.status(500).json({ error: "Could not create account" });
   }
@@ -172,8 +198,8 @@ router.post("/auth/login", async (req, res) => {
       },
     });
   } catch (err) {
-    const e = err as { message?: string; code?: string; detail?: string };
-    console.error("[login] failed:", e?.code, e?.message, e?.detail);
+    const e = describeDbError(err);
+    console.error("[login] failed:", e.code, e.message, e.detail);
     req.log?.error({ err }, "login failed");
     res.status(500).json({ error: "Login failed" });
   }
