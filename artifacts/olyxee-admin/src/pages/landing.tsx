@@ -297,12 +297,13 @@ const OrderScreen: FC<OrderScreenProps> = ({ variant, step, cust, custIdx, detai
 
   return (
     <div className="w-full h-full bg-gradient-to-br from-neutral-50 to-neutral-100 flex flex-col">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200/70 shrink-0">
-        <div style={mono} className="text-[10px] tracking-widest text-neutral-400">CREATE ORDER · {reff}</div>
-        <div style={mono} className="text-[10px] tracking-widest text-neutral-400 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          LIVE
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-neutral-200/70 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-red-400" />
+          <span className="w-3 h-3 rounded-full bg-amber-400" />
+          <span className="w-3 h-3 rounded-full bg-green-400" />
         </div>
+        <div style={mono} className="text-[10px] tracking-widest text-neutral-400 ml-2">CREATE ORDER · {reff}</div>
       </div>
       <div className="flex-1 grid grid-cols-5 gap-5 p-5 min-h-0">
         <div className="col-span-3">{form}</div>
@@ -313,8 +314,8 @@ const OrderScreen: FC<OrderScreenProps> = ({ variant, step, cust, custIdx, detai
 };
 
 const ScreenFrame: FC<{ children: ReactNode }> = ({ children }) => (
-  <div className="w-[600px] h-[375px] max-w-full mx-auto rounded-2xl overflow-hidden bg-white ring-1 ring-neutral-200/80 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.35)]">
-    {children}
+  <div className="w-[620px] h-[400px] max-w-full mx-auto rounded-2xl bg-neutral-900 p-2.5 ring-1 ring-neutral-800 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.45)]">
+    <div className="w-full h-full rounded-xl overflow-hidden bg-white">{children}</div>
   </div>
 );
 
