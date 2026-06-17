@@ -45,20 +45,41 @@ function describeDbError(err: unknown): {
   code?: string;
   message?: string;
   detail?: string;
+  chain?: string;
 } {
-  const e = err as {
-    code?: string;
-    message?: string;
-    detail?: string;
-    cause?: unknown;
-  };
-  const cause = e?.cause as
+  // Walk the full `.cause` chain. Drizzle wraps the real Postgres error (which
+  // carries the useful `code`/`detail`) one or more levels deep inside a
+  // generic "Failed query" error, so a single-level unwrap misses it.
+  const parts: string[] = [];
+  let pgErr:
     | { code?: string; message?: string; detail?: string }
     | undefined;
+  let cur = err as
+    | {
+        name?: string;
+        code?: string;
+        message?: string;
+        detail?: string;
+        cause?: unknown;
+      }
+    | undefined;
+  let depth = 0;
+  while (cur && depth < 8) {
+    const label = cur.name ?? cur.constructor?.name ?? "Error";
+    parts.push(
+      `${label}: ${cur.message ?? ""}${cur.code ? ` [${cur.code}]` : ""}`,
+    );
+    // First error in the chain that carries a Postgres-style code wins.
+    if (cur.code && !pgErr) pgErr = cur;
+    cur = cur.cause as typeof cur;
+    depth += 1;
+  }
+  const top = err as { code?: string; message?: string; detail?: string };
   return {
-    code: cause?.code ?? e?.code,
-    message: cause?.message ?? e?.message,
-    detail: cause?.detail ?? e?.detail,
+    code: pgErr?.code ?? top?.code,
+    message: pgErr?.message ?? top?.message,
+    detail: pgErr?.detail ?? top?.detail,
+    chain: parts.join("  <-  "),
   };
 }
 
@@ -148,7 +169,16 @@ router.post("/auth/signup", async (req, res) => {
     // Use console.error in addition to req.log because pino's async writes
     // sometimes don't flush before a serverless function freezes.
     const e = describeDbError(err);
-    console.error("[signup] failed:", e.code, e.message, e.detail);
+    console.error(
+      "[signup] failed:",
+      e.code ?? "(no code)",
+      "|",
+      e.message,
+      "|",
+      e.detail ?? "",
+      "| chain:",
+      e.chain,
+    );
     req.log?.error({ err }, "signup failed");
     res.status(500).json({ error: "Could not create account" });
   }
@@ -199,7 +229,16 @@ router.post("/auth/login", async (req, res) => {
     });
   } catch (err) {
     const e = describeDbError(err);
-    console.error("[login] failed:", e.code, e.message, e.detail);
+    console.error(
+      "[login] failed:",
+      e.code ?? "(no code)",
+      "|",
+      e.message,
+      "|",
+      e.detail ?? "",
+      "| chain:",
+      e.chain,
+    );
     req.log?.error({ err }, "login failed");
     res.status(500).json({ error: "Login failed" });
   }
