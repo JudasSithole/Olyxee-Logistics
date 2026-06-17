@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Bot, Route, Sparkles, BarChart3, Mail, Phone } from "lucide-react";
+import { ArrowUpRight, Bot, Route, Sparkles, BarChart3, Mail, Phone, Check, User, Package, MapPin, Loader2 } from "lucide-react";
 import defaultIcon from "@assets/Courier_Loop_Orange_Icon_1779935120486.png";
 import navLogo from "@assets/1_1780016152275.png";
 import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
@@ -33,48 +33,185 @@ const serif = { fontFamily: '"Lora", ui-serif, Georgia, serif', fontWeight: 500 
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
 const sans = '"Inter", system-ui, -apple-system, sans-serif';
 
-const DashboardMock: FC = () => (
-  <div className="w-full h-full bg-gradient-to-br from-neutral-50 to-neutral-100 p-8">
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-red-400" />
-        <div className="w-3 h-3 rounded-full bg-orange-400" />
-        <div className="w-3 h-3 rounded-full bg-green-400" />
-      </div>
-      <div style={mono} className="text-[10px] tracking-widest text-neutral-400">ORDERS · LIVE</div>
-    </div>
-    <div className="grid grid-cols-4 gap-3 mb-6">
-      {[
-        ["TOTAL", "248"],
-        ["IN TRANSIT", "37"],
-        ["DELIVERED", "194"],
-        ["DELAYED", "2"],
-      ].map(([label, val]) => (
-        <div key={label} className="bg-white rounded-xl p-4 ring-1 ring-neutral-200">
-          <div style={mono} className="text-[9px] tracking-widest text-neutral-400">{label}</div>
-          <div style={serif} className="text-3xl mt-1 text-neutral-900">{val}</div>
-        </div>
-      ))}
-    </div>
-    <div className="space-y-2">
-      {[
-        ["#OLY-1042", "Sarah K.", "OUT FOR DELIVERY", "bg-orange-100 text-orange-800"],
-        ["#OLY-1041", "Marcus T.", "DELIVERED", "bg-emerald-100 text-emerald-800"],
-        ["#OLY-1040", "Priya R.", "PACKED", "bg-sky-100 text-sky-800"],
-        ["#OLY-1039", "James L.", "CONFIRMED", "bg-neutral-100 text-neutral-800"],
-        ["#OLY-1038", "Ada O.", "DELIVERED", "bg-emerald-100 text-emerald-800"],
-      ].map(([id, name, status, color]) => (
-        <div key={id} className="bg-white rounded-lg px-4 py-3 ring-1 ring-neutral-200 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div style={mono} className="text-xs text-neutral-500">{id}</div>
-            <div className="text-sm text-neutral-900">{name}</div>
-          </div>
-          <span style={mono} className={`text-[9px] tracking-widest px-2 py-1 rounded ${color}`}>{status}</span>
-        </div>
-      ))}
-    </div>
-  </div>
+type DemoOrder = {
+  ref: string;
+  customer: string;
+  items: string;
+  address: string;
+};
+
+const DEMO_ORDERS: DemoOrder[] = [
+  { ref: "#OLY-1043", customer: "Sarah Klein", items: "2× Wool coat · 1× Silk dress", address: "14 Camden High St, London" },
+  { ref: "#OLY-1044", customer: "Marcus Tan", items: "1× Birthday cake (large)", address: "8 Maple Ave, Manchester" },
+  { ref: "#OLY-1045", customer: "Priya Raman", items: "3× Shirt alteration", address: "22 Oak Lane, Leeds" },
+];
+
+const STEP_DELAYS = [1000, 1100, 1100, 1100, 750, 2600];
+
+const Caret: FC = () => (
+  <motion.span
+    aria-hidden
+    className="inline-block w-[2px] h-[1em] -mb-[2px] bg-orange-500 ml-[1px]"
+    animate={{ opacity: [1, 1, 0, 0] }}
+    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+  />
 );
+
+const CreateOrderMock: FC = () => {
+  const [orderIdx, setOrderIdx] = useState(0);
+  const [step, setStep] = useState(0);
+  const [created, setCreated] = useState<(DemoOrder & { key: number })[]>([]);
+
+  const order = DEMO_ORDERS[orderIdx];
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (step >= 5) {
+        setOrderIdx((i) => (i + 1) % DEMO_ORDERS.length);
+        setStep(0);
+      } else {
+        setStep((s) => s + 1);
+      }
+    }, STEP_DELAYS[step]);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 5) {
+      setCreated((c) => [{ ...order, key: Date.now() }, ...c].slice(0, 3));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const fields = [
+    { label: "CUSTOMER", value: order.customer, icon: User, doneAt: 1 },
+    { label: "ITEMS", value: order.items, icon: Package, doneAt: 2 },
+    { label: "DELIVERY ADDRESS", value: order.address, icon: MapPin, doneAt: 3 },
+  ];
+
+  const creating = step === 4;
+  const ready = step === 3;
+  const done = step >= 5;
+
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-neutral-50 to-neutral-100 p-5 sm:p-7 flex flex-col">
+      <div className="flex items-center justify-between mb-5 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-orange-400" />
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+        </div>
+        <div style={mono} className="text-[10px] tracking-widest text-neutral-400 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          NEW ORDER · LIVE
+        </div>
+      </div>
+
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-4 min-h-0">
+        {/* Form */}
+        <div className="sm:col-span-3 bg-white rounded-2xl ring-1 ring-neutral-200 p-4 sm:p-5 flex flex-col">
+          <div style={mono} className="text-[9px] tracking-widest text-neutral-400 mb-4">CREATE ORDER · {order.ref}</div>
+          <div className="space-y-3 flex-1">
+            {fields.map((f, i) => {
+              const filled = step >= f.doneAt;
+              const active = step === i && !done;
+              const Icon = f.icon;
+              return (
+                <div key={f.label}>
+                  <div style={mono} className="text-[8px] tracking-widest text-neutral-400 mb-1">{f.label}</div>
+                  <div
+                    className={`flex items-center gap-2.5 rounded-xl px-3 h-10 ring-1 transition-colors duration-300 ${
+                      active ? "ring-orange-400 bg-orange-50/60" : filled ? "ring-neutral-200 bg-white" : "ring-neutral-200 bg-neutral-50"
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${filled || active ? "text-orange-500" : "text-neutral-300"}`} />
+                    <div className="text-[13px] text-neutral-900 truncate flex items-center">
+                      <AnimatePresence mode="wait">
+                        {filled ? (
+                          <motion.span
+                            key={f.value}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            {f.value}
+                          </motion.span>
+                        ) : active ? (
+                          <span className="text-neutral-300 flex items-center">Typing<Caret /></span>
+                        ) : (
+                          <span className="text-neutral-300">—</span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {filled && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                        className="ml-auto shrink-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
+                      >
+                        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                      </motion.span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <motion.button
+            type="button"
+            animate={creating ? { scale: 0.97 } : ready ? { scale: 1 } : { scale: 1 }}
+            className={`mt-4 h-10 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors duration-300 ${
+              ready || creating || done ? "bg-orange-500 text-white shadow-[0_8px_24px_-8px_rgba(249,115,22,0.7)]" : "bg-neutral-200 text-neutral-400"
+            }`}
+          >
+            {creating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating order…
+              </>
+            ) : done ? (
+              <>
+                <Check className="w-3.5 h-3.5" strokeWidth={3} /> Order created
+              </>
+            ) : (
+              "Create order"
+            )}
+          </motion.button>
+        </div>
+
+        {/* Live list */}
+        <div className="sm:col-span-2 flex flex-col min-h-0">
+          <div style={mono} className="text-[9px] tracking-widest text-neutral-400 mb-2 px-1">LIVE ORDERS</div>
+          <div className="space-y-2 overflow-hidden">
+            <AnimatePresence initial={false}>
+              {created.map((o) => (
+                <motion.div
+                  key={o.key}
+                  layout
+                  initial={{ opacity: 0, x: 24, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: "auto" }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.45, ease }}
+                  className="bg-white rounded-xl px-3 py-2.5 ring-1 ring-neutral-200"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div style={mono} className="text-[10px] text-neutral-500">{o.ref}</div>
+                    <span style={mono} className="text-[8px] tracking-widest px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">CONFIRMED</span>
+                  </div>
+                  <div className="text-[12px] text-neutral-900 mt-1 truncate">{o.customer}</div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {created.length === 0 && (
+              <div className="text-[11px] text-neutral-300 px-1 py-6 text-center">Orders appear here as you create them.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TrackingMapMock: FC = () => (
   <div className="w-full h-full bg-neutral-900 relative overflow-hidden">
@@ -342,7 +479,7 @@ const Landing: FC = () => {
             <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CH. 01</p>
             <h2 style={serif} className="text-5xl sm:text-7xl tracking-tight leading-[0.95] mb-6">Create.</h2>
             <p className="text-base text-neutral-500 font-light leading-relaxed max-w-sm">
-              One order, one form. Customer, items, address, done.
+              One order, one form. Add the customer, items and address - and it goes live the moment you hit create.
             </p>
           </motion.div>
 
@@ -353,7 +490,7 @@ const Landing: FC = () => {
             transition={{ duration: 0.9, ease }}
             className="col-span-12 lg:col-span-8 relative aspect-[4/3] rounded-[2rem] overflow-hidden ring-1 ring-neutral-200/80 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.3)]"
           >
-            <DashboardMock />
+            <CreateOrderMock />
           </motion.div>
         </div>
       </section>
