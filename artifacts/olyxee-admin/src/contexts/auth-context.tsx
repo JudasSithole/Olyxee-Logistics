@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           await apiFetch("/api/auth/logout", { method: "POST" });
         } catch {
-          // Ignore — clear local state regardless.
+          // Ignore - clear local state regardless.
         }
         setUser(null);
         setStatus("unauthenticated");

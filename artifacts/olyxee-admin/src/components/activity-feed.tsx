@@ -45,7 +45,7 @@ export function ActivityFeed() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Filter — kept lightweight so the feed itself stays the focus. */}
+      {/* Filter - kept lightweight so the feed itself stays the focus. */}
       <div className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">Show</span>
         <Select

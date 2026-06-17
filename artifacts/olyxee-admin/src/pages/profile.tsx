@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/auth-context";
 //
 // UX choices:
 //  - Big avatar + identity card at the top so you see "this is me" instantly.
-//  - Password is collapsed by default behind a "Change password" toggle —
+//  - Password is collapsed by default behind a "Change password" toggle -
 //    most visits are just to update name/email.
 //  - Live, inline feedback for password strength + match so users don't have
 //    to guess why Save is disabled.
@@ -55,7 +55,7 @@ export default function ProfilePage() {
     loaded && user != null && (info.name !== user.name || info.email !== user.email);
 
   // Cheap-and-cheerful password strength: rewards length and character variety.
-  // Returns 0..4 (Weak → Strong). Pure UX hint — server still enforces rules.
+  // Returns 0..4 (Weak → Strong). Pure UX hint - server still enforces rules.
   const pwdStrength = useMemo(() => {
     const p = pwd.next;
     if (!p) return 0;
@@ -164,7 +164,7 @@ export default function ProfilePage() {
         <div className="space-y-1">
           <Label className="text-sm font-medium">Account details</Label>
           <p className="text-xs text-muted-foreground">
-            These are saved as soon as you hit Save — no waiting.
+            These are saved as soon as you hit Save - no waiting.
           </p>
         </div>
 
@@ -280,7 +280,7 @@ export default function ProfilePage() {
               autoComplete="new-password"
             />
 
-            {/* Strength meter — appears only while typing */}
+            {/* Strength meter - appears only while typing */}
             {pwd.next.length > 0 && (
               <div className="space-y-1.5">
                 <div className="flex gap-1">

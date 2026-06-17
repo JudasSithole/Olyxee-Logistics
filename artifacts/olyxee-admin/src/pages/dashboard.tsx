@@ -40,7 +40,7 @@ function LiveClock() {
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 // Simple month grid: dates show a small "X deliveries" pill, and hovering
 // (or focusing) any day pops up the full list of orders with click-through
-// links. No selected-day state, no detail panel below — the hover popover
+// links. No selected-day state, no detail panel below - the hover popover
 // is the whole interaction so the widget stays compact and obvious.
 type OrderSummary = {
   id: string;
@@ -68,7 +68,7 @@ function DayCell({
   const total = orders.length;
   const attentionCount = orders.filter((o) => needsAttention(o.current_status)).length;
 
-  // Plain, decorative-only cell when empty — no hover popover to avoid noise.
+  // Plain, decorative-only cell when empty - no hover popover to avoid noise.
   if (total === 0) {
     return (
       <div
@@ -91,7 +91,7 @@ function DayCell({
       <HoverCardTrigger asChild>
         <button
           type="button"
-          aria-label={`${format(day, "EEEE, MMMM d")} — ${total} ${total === 1 ? "delivery" : "deliveries"}${
+          aria-label={`${format(day, "EEEE, MMMM d")} - ${total} ${total === 1 ? "delivery" : "deliveries"}${
             attentionCount > 0 ? `, ${attentionCount} needs attention` : ""
           }`}
           className={`
@@ -228,7 +228,7 @@ function CalendarWidget({ ordersByDate }: { ordersByDate: Map<string, OrderSumma
         ))}
       </div>
 
-      {/* Grid — days without orders are quiet, days with orders are clickable
+      {/* Grid - days without orders are quiet, days with orders are clickable
           tiles that reveal their order list on hover/focus. */}
       <div className="grid grid-cols-7 gap-1">
         {days.map((day) => {
@@ -423,7 +423,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Status breakdown — horizontal */}
+      {/* Status breakdown - horizontal */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Status Breakdown</CardTitle>

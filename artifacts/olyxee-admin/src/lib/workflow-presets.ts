@@ -1,4 +1,4 @@
-// System workflow presets — defined here on the client so no DB seeding is
+// System workflow presets - defined here on the client so no DB seeding is
 // required. These are read-only; users can Clone them to create editable copies.
 // IDs use the "preset-" prefix so the engine can distinguish them from DB records.
 
@@ -90,7 +90,7 @@ export const WORKFLOW_PRESETS: WorkflowPreset[] = [
     steps: [
       { label: "Received", description: "Device received and logged", position: 0, color: "#6366f1", isTerminal: false },
       { label: "Under Repair", description: "Technician is working on the device", position: 1, color: "#8b5cf6", isTerminal: false },
-      { label: "Ready For Collection", description: "Repair complete — ready for pickup", position: 2, color: "#f59e0b", isTerminal: false },
+      { label: "Ready For Collection", description: "Repair complete - ready for pickup", position: 2, color: "#f59e0b", isTerminal: false },
       { label: "Completed", description: "Device collected by customer", position: 3, color: "#10b981", isTerminal: true },
     ],
   },
@@ -111,7 +111,7 @@ export const WORKFLOW_PRESETS: WorkflowPreset[] = [
     id: "preset-custom",
     name: "Custom Business",
     businessType: "Custom Business",
-    description: "Generic workflow — customise the steps to fit your business.",
+    description: "Generic workflow - customise the steps to fit your business.",
     steps: [
       { label: "Received", description: "Job received", position: 0, color: "#6366f1", isTerminal: false },
       { label: "In Progress", description: "Work is underway", position: 1, color: "#8b5cf6", isTerminal: false },

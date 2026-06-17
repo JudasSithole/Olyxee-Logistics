@@ -160,7 +160,7 @@ export default function CustomersPage() {
             <Button type="submit" variant="secondary">Search</Button>
           </form>
 
-          {/* Filter row — applies immediately on change (no separate Apply button). */}
+          {/* Filter row - applies immediately on change (no separate Apply button). */}
           <div className="flex flex-wrap items-center gap-2">
             <Select value={hasCompany} onValueChange={updateFilter(setHasCompany) as (v: string) => void}>
               <SelectTrigger className="h-9 w-[160px]">
@@ -252,8 +252,8 @@ export default function CustomersPage() {
                         {customer.full_name}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.company_name ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.phone ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.company_name ?? "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.phone ?? "-"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(customer.created_at), "MMM d, yyyy")}
                       </TableCell>

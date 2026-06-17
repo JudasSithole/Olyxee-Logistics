@@ -72,8 +72,8 @@ const NAV_ITEMS = [
   { href: "/workflows", label: "Workflows", icon: GitBranch },
 ];
 
-// A single nav row used for every sidebar link so the active treatment —
-// a left accent bar plus filled background — stays perfectly consistent.
+// A single nav row used for every sidebar link so the active treatment -
+// a left accent bar plus filled background - stays perfectly consistent.
 function NavLink({
   href, label, icon: Icon, active,
 }: {
@@ -110,7 +110,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Logo / Brand — logo (or initial fallback) + company name, always side
+      {/* Logo / Brand - logo (or initial fallback) + company name, always side
           by side so the brand is named even when a logo is uploaded. */}
       <div className="flex items-center gap-2.5 px-5 h-14 border-b border-sidebar-border flex-shrink-0 min-w-0">
         {logoUrl ? (
@@ -211,7 +211,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content.
           The outer <div> owns the scroll. The inner wrapper centers content
           and caps width at 1536px so tables and cards have breathing room on
-          ultra-wide monitors instead of sprawling edge-to-edge — but tables
+          ultra-wide monitors instead of sprawling edge-to-edge - but tables
           can still use the full container width on a 27" screen.
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">

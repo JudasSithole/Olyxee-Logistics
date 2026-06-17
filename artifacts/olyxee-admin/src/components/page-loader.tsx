@@ -12,7 +12,7 @@ export function PageLoader({
   className,
   fullHeight = false,
 }: PageLoaderProps) {
-  // No default label — a bare spinner reads as "working" without the page
+  // No default label - a bare spinner reads as "working" without the page
   // feeling broken. Callers can still pass `label` if they need explicit
   // copy (e.g. for screen reader context).
   return (

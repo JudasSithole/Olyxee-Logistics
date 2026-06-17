@@ -105,7 +105,7 @@ const UPCOMING: UpcomingItem[] = [
     tag: "Q3 · 2026",
     icon: Bot,
     title: "Autonomous business runner",
-    body: "An AI ops partner that reads your inbox, schedules pickups, replies to customers, and flags exceptions — so you can run the business instead of running after it.",
+    body: "An AI ops partner that reads your inbox, schedules pickups, replies to customers, and flags exceptions - so you can run the business instead of running after it.",
     bullets: ["Auto-respond to WISMO emails", "Re-book missed pickups", "Daily ops briefing at 7am"],
     accent: "from-orange-400 to-orange-500",
   },
@@ -113,7 +113,7 @@ const UPCOMING: UpcomingItem[] = [
     tag: "Q4 · 2026",
     icon: Route,
     title: "Route optimizer",
-    body: "Drag a day's worth of orders onto the map and Order Loop builds the fastest multi-stop route for every team member — accounting for traffic, time windows, and vehicle load.",
+    body: "Drag a day's worth of orders onto the map and Order Loop builds the fastest multi-stop route for every team member - accounting for traffic, time windows, and vehicle load.",
     bullets: ["Multi-stop sequencing", "Live traffic & ETA recalc", "Driver mobile handoff"],
     accent: "from-sky-400 to-indigo-500",
   },
@@ -121,7 +121,7 @@ const UPCOMING: UpcomingItem[] = [
     tag: "2027",
     icon: BarChart3,
     title: "Insights & forecasting",
-    body: "Know which orders are slipping, which team members are crushing it, and what next week's volume will look like — before it lands.",
+    body: "Know which orders are slipping, which team members are crushing it, and what next week's volume will look like - before it lands.",
     bullets: ["SLA scorecards", "Volume forecasts", "Cost-per-order breakdowns"],
     accent: "from-emerald-400 to-teal-500",
   },
@@ -257,7 +257,7 @@ const Landing: FC = () => {
               className="col-span-12 lg:col-span-3 lg:pb-6"
             >
               <p className="text-lg sm:text-xl text-neutral-700 leading-relaxed max-w-sm">
-                Order Loop helps businesses manage customer orders, update statuses, and keep customers informed — all from one simple dashboard.
+                Order Loop helps businesses manage customer orders, update statuses, and keep customers informed - all from one simple dashboard.
               </p>
             </motion.div>
           </div>
@@ -372,7 +372,7 @@ const Landing: FC = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
             <p style={mono} className="absolute top-6 left-6 text-[10px] tracking-[0.3em] text-white/80">ATELIER · ORDER #OLY-1057</p>
             <p style={serif} className="absolute bottom-6 left-6 right-6 italic text-2xl sm:text-3xl text-white leading-tight">
-              From first measurement to final fitting — tracked.
+              From first measurement to final fitting - tracked.
             </p>
           </motion.div>
 
@@ -390,7 +390,7 @@ const Landing: FC = () => {
               <em className="italic text-orange-500">every order.</em>
             </h2>
             <p className="text-base text-neutral-500 font-light leading-relaxed max-w-sm">
-              Dry cleaners, bakeries, tailors, repair shops, local stores, delivery teams, warehouses — if you take customer orders, Order Loop keeps every one of them on track.
+              Dry cleaners, bakeries, tailors, repair shops, local stores, delivery teams, warehouses - if you take customer orders, Order Loop keeps every one of them on track.
             </p>
           </motion.div>
         </div>
@@ -450,7 +450,7 @@ const Landing: FC = () => {
               <p style={serif} className="absolute bottom-6 left-6 right-6 italic text-2xl text-white leading-tight">
                 "Where is my order?"
                 <span style={mono} className="block not-italic text-[10px] tracking-[0.2em] text-white/70 mt-3">
-                  — A QUESTION YOU WON'T HEAR ANYMORE
+                  - A QUESTION YOU WON'T HEAR ANYMORE
                 </span>
               </p>
             </div>
@@ -546,7 +546,7 @@ export const SiteFooter: FC = () => (
           </Link>
           <p className="mt-5 text-sm text-neutral-600 leading-relaxed max-w-sm">
             Order Loop is the order-tracking and customer-notification layer
-            for businesses and operations teams — from confirmed to delivered, in one loop.
+            for businesses and operations teams - from confirmed to delivered, in one loop.
           </p>
           <Link
             href="/login?mode=signup"

@@ -314,7 +314,7 @@ function StepRow({
         <button
           type="button"
           onClick={() => onChange({ ...step, isTerminal: !step.isTerminal })}
-          title={step.isTerminal ? "Final step — click to unset" : "Mark as final step"}
+          title={step.isTerminal ? "Final step - click to unset" : "Mark as final step"}
           className={cn(
             "transition-colors",
             step.isTerminal ? "text-emerald-600" : "text-muted-foreground hover:text-foreground",
@@ -496,7 +496,7 @@ function TemplateEditorModal({
               <Label>
                 Steps{" "}
                 <span className="text-xs text-muted-foreground font-normal">
-                  ({steps.length}/50) — click <CheckCircle2 className="h-3 w-3 inline text-emerald-600" /> to mark the final step
+                  ({steps.length}/50) - click <CheckCircle2 className="h-3 w-3 inline text-emerald-600" /> to mark the final step
                 </span>
               </Label>
             </div>

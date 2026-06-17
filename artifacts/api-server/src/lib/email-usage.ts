@@ -7,7 +7,7 @@ function startOfMonthUTC(now = new Date()): Date {
 }
 
 // How many status emails this business has actually sent this calendar month.
-// Only rows with status "sent" count — failed and limit-blocked attempts do
+// Only rows with status "sent" count - failed and limit-blocked attempts do
 // not consume the allowance. email_notifications has no businessId column, so
 // we reach it through the owning order.
 export async function getMonthlyEmailUsage(businessId: string): Promise<number> {

@@ -13,7 +13,7 @@ export const workflowStepsTable = pgTable("workflow_steps", {
     .references(() => workflowTemplatesTable.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   description: text("description"),
-  // 0-based display order — UI always sorts by this before rendering.
+  // 0-based display order - UI always sorts by this before rendering.
   position: integer("position").notNull(),
   // Optional hex color for the step dot/badge (e.g. "#10b981").
   color: text("color"),

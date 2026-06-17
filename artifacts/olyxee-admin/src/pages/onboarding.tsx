@@ -105,7 +105,7 @@ export default function OnboardingPage() {
   }
 
   // Mini live preview of how the workspace will look the moment the user
-  // hits "Finish setup" — makes the logo upload feel concrete instead of
+  // hits "Finish setup" - makes the logo upload feel concrete instead of
   // an abstract field. Falls back to the first initial when no logo is set.
   const previewName = form.name.trim() || "Your business";
   const previewInitial = previewName.charAt(0).toUpperCase();
@@ -153,7 +153,7 @@ export default function OnboardingPage() {
             <PageLoader />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-7" data-testid="form-onboarding">
-              {/* ─── Branding block — leads the form because it's what the user
+              {/* ─── Branding block - leads the form because it's what the user
                   will see first when they enter the app. */}
               <section className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -211,7 +211,7 @@ export default function OnboardingPage() {
                     </p>
                   </div>
 
-                  {/* Sidebar preview — mirrors what the actual app sidebar
+                  {/* Sidebar preview - mirrors what the actual app sidebar
                       looks like so the upload feels real. */}
                   <div className="space-y-2 md:w-[180px]">
                     <Label className="text-[hsl(220,9%,46%)]">Preview</Label>

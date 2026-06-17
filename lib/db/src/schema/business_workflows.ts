@@ -4,10 +4,10 @@ import { z } from "zod/v4";
 
 import { businessesTable } from "./businesses";
 
-// One row per business — tracks which template is currently active.
+// One row per business - tracks which template is currently active.
 // templateId can reference either:
-//   • A preset ID   (e.g. "preset-logistics") — resolved on the client from WORKFLOW_PRESETS
-//   • A DB record ID (hex string)             — fetched from workflow_templates
+//   • A preset ID   (e.g. "preset-logistics") - resolved on the client from WORKFLOW_PRESETS
+//   • A DB record ID (hex string)             - fetched from workflow_templates
 // templateName is cached so the UI can display the name without an extra join.
 export const businessWorkflowsTable = pgTable("business_workflows", {
   id: text("id").primaryKey(),

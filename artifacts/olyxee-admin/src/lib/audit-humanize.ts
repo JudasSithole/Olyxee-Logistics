@@ -12,7 +12,7 @@ function str(meta: Meta, key: string): string | undefined {
 }
 
 function prettyStatus(s: string | undefined): string {
-  if (!s) return "—";
+  if (!s) return "-";
   return s
     .replace(/[_-]+/g, " ")
     .toLowerCase()
@@ -44,7 +44,7 @@ export function humanizeAudit(log: {
   switch (action) {
     case "CREATE_ORDER":
       return {
-        title: ref ? `New order created — ${ref}` : "New order created",
+        title: ref ? `New order created - ${ref}` : "New order created",
         tone: "create",
       };
 
@@ -79,7 +79,7 @@ export function humanizeAudit(log: {
     case "CREATE_CUSTOMER": {
       const name = str(metadata, "fullName") ?? str(metadata, "name");
       return {
-        title: name ? `New customer added — ${name}` : "New customer added",
+        title: name ? `New customer added - ${name}` : "New customer added",
         tone: "create",
       };
     }
@@ -87,7 +87,7 @@ export function humanizeAudit(log: {
     case "UPDATE_CUSTOMER": {
       const name = str(metadata, "fullName") ?? str(metadata, "name");
       return {
-        title: name ? `Customer updated — ${name}` : "Customer updated",
+        title: name ? `Customer updated - ${name}` : "Customer updated",
         tone: "update",
       };
     }
@@ -96,7 +96,7 @@ export function humanizeAudit(log: {
       return { title: "Business settings updated", tone: "update" };
 
     default: {
-      // Generic fallback — turn VERB_NOUN_PHRASE into "Verb noun phrase".
+      // Generic fallback - turn VERB_NOUN_PHRASE into "Verb noun phrase".
       const verb = action.split("_")[0]?.toLowerCase() ?? "changed";
       const rest = action.split("_").slice(1).join(" ").toLowerCase();
       const sentence = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${rest || entityType}`.trim();
@@ -107,7 +107,7 @@ export function humanizeAudit(log: {
           : action.startsWith("UPDATE")
             ? "update"
             : "neutral";
-      return { title: ref ? `${sentence} — ${ref}` : sentence, tone };
+      return { title: ref ? `${sentence} - ${ref}` : sentence, tone };
     }
   }
 }

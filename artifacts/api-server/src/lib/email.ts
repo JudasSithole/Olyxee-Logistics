@@ -24,9 +24,9 @@ export interface SendStatusEmailParams {
   supportEmail: string;
   // Admin-customizable copy (from Settings). All optional; sensible defaults
   // are applied below so an empty value never produces an empty email.
-  //   emailGreeting    — opening line, `{name}` is replaced with customer name.
-  //   emailSignature   — sign-off block, `{businessName}` is replaced.
-  //   emailFooterNote  — single paragraph above the support email line.
+  //   emailGreeting    - opening line, `{name}` is replaced with customer name.
+  //   emailSignature   - sign-off block, `{businessName}` is replaced.
+  //   emailFooterNote  - single paragraph above the support email line.
   emailGreeting?: string | null;
   emailSignature?: string | null;
   emailFooterNote?: string | null;
@@ -39,7 +39,7 @@ function renderGreeting(template: string | null | undefined, customerName: strin
 }
 
 function renderSignature(template: string | null | undefined, businessName: string): string {
-  const t = (template ?? "").trim() || "— {businessName}";
+  const t = (template ?? "").trim() || "- {businessName}";
   return t.replace(/\{businessName\}/gi, businessName);
 }
 
@@ -77,7 +77,7 @@ function escapeHtml(s: string): string {
 function buildSubject(p: SendStatusEmailParams): string {
   const c = copyFor(p.status);
   // Subject must work in inbox previews. Lead with the headline + tracking ID.
-  return `${c.headline} — ${p.trackingId}`;
+  return `${c.headline} - ${p.trackingId}`;
 }
 
 function buildText(p: SendStatusEmailParams): string {
@@ -124,7 +124,7 @@ function buildHtml(p: SendStatusEmailParams): string {
   const validLink = safeTrackingLink(p.trackingLink);
   const safeLink = validLink ? escapeHtml(validLink) : "";
 
-  // Customizable copy — placeholders substituted before escaping so admins
+  // Customizable copy - placeholders substituted before escaping so admins
   // can edit wording in Settings without writing HTML.
   const safeGreeting = escapeHtml(renderGreeting(p.emailGreeting, p.customerName));
   // Signature is multi-line: convert newlines to <br> AFTER escaping.
@@ -271,12 +271,12 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const resend = getResend();
   if (!resend) {
-    logger.warn("Resend API key not configured — password reset email not sent");
+    logger.warn("Resend API key not configured - password reset email not sent");
     return { success: false, error: "Email provider not configured" };
   }
   const fromAddress = process.env.EMAIL_FROM_ADDRESS;
   if (!fromAddress) {
-    logger.warn("EMAIL_FROM_ADDRESS not configured — password reset email not sent");
+    logger.warn("EMAIL_FROM_ADDRESS not configured - password reset email not sent");
     return { success: false, error: "Email sender not configured" };
   }
   const from = `Olyxee <${fromAddress}>`;
@@ -294,7 +294,7 @@ export async function sendPasswordResetEmail(
     "",
     "If you didn't request this, you can safely ignore this email.",
     "",
-    "— Olyxee",
+    "- Olyxee",
   ].join("\n");
   const safeName = escapeHtml(p.name || "there");
   const safeUrl = escapeHtml(safeLink);
@@ -307,7 +307,7 @@ export async function sendPasswordResetEmail(
 <p style="margin:0 0 16px;font-size:15px;color:#52525b;">We received a request to reset your Olyxee password. Click the button below to choose a new one. This link expires in ${p.expiresInMinutes} minutes.</p>
 <p style="margin:0 0 16px;"><a href="${safeUrl}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Reset password</a></p>
 <p style="margin:0 0 16px;font-size:12px;color:#a1a1aa;word-break:break-all;">Or open: <a href="${safeUrl}" style="color:#52525b;text-decoration:underline;">${safeUrl}</a></p>
-<p style="margin:24px 0 0;font-size:13px;color:#71717a;">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+<p style="margin:24px 0 0;font-size:13px;color:#71717a;">If you didn't request this, you can safely ignore this email - your password won't change.</p>
 </td></tr></table></td></tr></table></body></html>`;
   try {
     const result = await resend.emails.send({
@@ -337,7 +337,7 @@ export async function sendStatusEmail(params: SendStatusEmailParams): Promise<{
   const resend = getResend();
 
   if (!resend) {
-    logger.warn("Resend API key not configured — email not sent");
+    logger.warn("Resend API key not configured - email not sent");
     return { success: false, error: "Email provider not configured" };
   }
 
@@ -347,7 +347,7 @@ export async function sendStatusEmail(params: SendStatusEmailParams): Promise<{
   // customer replies reach the right team.
   const fromAddress = process.env.EMAIL_FROM_ADDRESS;
   if (!fromAddress) {
-    logger.warn("EMAIL_FROM_ADDRESS not configured — email not sent");
+    logger.warn("EMAIL_FROM_ADDRESS not configured - email not sent");
     return { success: false, error: "Email sender not configured" };
   }
 

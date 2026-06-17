@@ -37,7 +37,7 @@ router.get("/customers", requireAuth, async (req, res) => {
         ) as any,
       );
     }
-    // For the "has X" filters we also treat empty strings as missing — older
+    // For the "has X" filters we also treat empty strings as missing - older
     // records may have stored "" instead of NULL.
     if (hasCompany === true) {
       whereConditions.push(isNotNull(customersTable.companyName));

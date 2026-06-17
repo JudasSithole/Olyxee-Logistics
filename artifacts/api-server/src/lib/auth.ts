@@ -16,7 +16,7 @@ export async function requireAuth(
     return;
   }
 
-  // Demo session — fully hardcoded, no database needed.
+  // Demo session - fully hardcoded, no database needed.
   if (payload.userId === DEMO_USER_ID) {
     (req as any).businessId = DEMO_BUSINESS_ID;
     (req as any).userId = DEMO_USER_ID;

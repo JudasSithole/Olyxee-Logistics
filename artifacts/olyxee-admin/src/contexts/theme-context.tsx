@@ -7,7 +7,7 @@ export interface ThemeSettings {
   faviconUrl: string;
   businessName: string;
   // Short tag-line shown under the business name on emails and the customer
-  // tracking page. Kept optional — empty string means "don't render".
+  // tracking page. Kept optional - empty string means "don't render".
   businessTagline: string;
 }
 

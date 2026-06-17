@@ -228,7 +228,7 @@ router.delete("/workflow-templates/:id", requireAuth, async (req, res) => {
 
 // ─── POST /workflow-templates/clone ──────────────────────────────────────────
 // Accepts the full step list from the caller (works for both preset and DB
-// source templates — the client resolves the steps before sending).
+// source templates - the client resolves the steps before sending).
 
 router.post("/workflow-templates/clone", requireAuth, async (req, res) => {
   try {
@@ -291,7 +291,7 @@ router.put("/workflow-templates/:id/steps", requireAuth, async (req, res) => {
       return;
     }
 
-    // Atomic replace — delete all then insert new set
+    // Atomic replace - delete all then insert new set
     await db.delete(workflowStepsTable).where(eq(workflowStepsTable.templateId, req.params.id));
     await db.insert(workflowStepsTable).values(
       parsed.data.steps.map((s) => ({

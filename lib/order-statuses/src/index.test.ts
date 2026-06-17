@@ -68,7 +68,7 @@ describe("statusChoices", () => {
 });
 
 describe("Failed delivery recovery (regression for the recovery-path fix)", () => {
-  // Before the fix, Failed delivery only offered limited recovery paths —
+  // Before the fix, Failed delivery only offered limited recovery paths -
   // which silently removed the "try again today" and "send back into transit"
   // paths admins actually need. Lock that contract in.
   const choices = statusChoices("Failed delivery");
@@ -128,7 +128,7 @@ describe("nextStatuses", () => {
   });
 
   it("every non-terminal status can eventually reach Delivered or Cancelled", () => {
-    // BFS — guards against a future edit accidentally creating an island.
+    // BFS - guards against a future edit accidentally creating an island.
     for (const start of ORDER_STATUSES) {
       if (isTerminal(start)) continue;
       const seen = new Set<string>([start]);

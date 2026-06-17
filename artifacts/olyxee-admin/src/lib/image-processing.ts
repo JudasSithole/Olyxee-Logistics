@@ -58,7 +58,7 @@ export async function compressLogo(file: File): Promise<string> {
 }
 
 export async function compressFavicon(file: File): Promise<string> {
-  // SVG favicons are tiny and resolution-independent — pass straight through.
+  // SVG favicons are tiny and resolution-independent - pass straight through.
   if (file.type === "image/svg+xml") return readFileAsDataUrl(file);
   const { img, revoke } = await loadImage(file);
   try {

@@ -47,7 +47,7 @@ function publicStatusFor(internal: string | null | undefined): string {
 }
 
 // Public, unauthenticated tracking endpoint. Returns ONLY what a customer
-// needs to see their parcel — no customer PII, no business internals, no
+// needs to see their parcel - no customer PII, no business internals, no
 // pricing. Mounted before auth and the write-mutation rate limiter in app.ts.
 // The cache header lets browsers and our edge proxy de-dupe the polling that
 // happens when a customer leaves the tracking page open.
@@ -69,7 +69,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
       return;
     }
 
-    // No business lookup here — the brief explicitly forbids leaking the
+    // No business lookup here - the brief explicitly forbids leaking the
     // owning business's name on the public payload.
     const events = await db
       .select()
@@ -94,7 +94,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
     // Legacy field names (`status`, `orderReference`, `events[].timestamp`,
     // `events[].statusLabel`, `events[].notes`) are kept alongside so any
     // older integrators don't break while migrating. `businessName` is
-    // intentionally omitted per the brief — public payloads must not leak
+    // intentionally omitted per the brief - public payloads must not leak
     // the owning business across tenants.
     res.json({
       trackingId: order.trackingId,

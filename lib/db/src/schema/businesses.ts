@@ -15,16 +15,16 @@ export const businessesTable = pgTable("businesses", {
   // Customer email customization. All nullable; the email template applies
   // sensible defaults when these are blank so existing businesses keep
   // working unchanged.
-  //   emailGreeting    — opening line, supports {name} placeholder.
-  //   emailSignature   — sign-off block; multi-line, supports {businessName}.
-  //   emailFooterNote  — free text shown above the support email in footer.
+  //   emailGreeting    - opening line, supports {name} placeholder.
+  //   emailSignature   - sign-off block; multi-line, supports {businessName}.
+  //   emailFooterNote  - free text shown above the support email in footer.
   emailGreeting: text("email_greeting"),
   emailSignature: text("email_signature"),
   emailFooterNote: text("email_footer_note"),
   // Customer-facing tracking ID prefix (3–5 A–Z), unique across all
   // businesses. Used when generating per-business tracking IDs in the form
   // {PREFIX}-{3 alnums}-{4 alnums}. Nullable so existing businesses don't
-  // break on migration — order creation falls back to "OLY" until set.
+  // break on migration - order creation falls back to "OLY" until set.
   trackingIdPrefix: text("tracking_id_prefix").unique(),
   // Comma-separated list of website origins allowed to call this business's
   // public endpoints (currently /api/public/track/:id) cross-origin. Lets each

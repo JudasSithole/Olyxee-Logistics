@@ -134,7 +134,7 @@ router.post("/orders", requireAuth, async (req, res) => {
 
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
-    // — this is the only race-free pattern. Concurrent inserts under a
+    // - this is the only race-free pattern. Concurrent inserts under a
     // pre-check-only loop can both pass the SELECT then collide on INSERT,
     // surfacing as a 500. ~26 bits of entropy per ID per business make
     // collisions vanishingly rare, but a bounded retry keeps things safe.
@@ -206,7 +206,7 @@ router.post("/orders", requireAuth, async (req, res) => {
   }
 });
 
-// GET /orders/stuck — must be declared BEFORE /orders/:orderId so Express
+// GET /orders/stuck - must be declared BEFORE /orders/:orderId so Express
 // doesn't treat "stuck" as an order ID param. Returns orders whose dwell
 // time in a watched lifecycle state exceeds the configured threshold.
 router.get("/orders/stuck", requireAuth, async (req, res) => {
@@ -447,7 +447,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
   }
 });
 
-// POST /orders/:orderId/transition — FSM-gated status change.
+// POST /orders/:orderId/transition - FSM-gated status change.
 //
 // Distinct from the legacy /status endpoint above: that one accepts any
 // free-text status (used for "In transit", "Out for delivery", etc., which
@@ -466,7 +466,7 @@ router.post("/orders/:orderId/transition", requireAuth, async (req, res) => {
     const orderId = req.params.orderId as string;
 
     // Wire format follows the spec: snake_case keys (`current_status`,
-    // `event_id`). The FSM module stays camelCase internally — we serialize
+    // `event_id`). The FSM module stays camelCase internally - we serialize
     // at the route boundary so the public contract is exactly what was
     // requested without polluting the TS types.
     const parse = TransitionBody.safeParse(req.body);
@@ -517,7 +517,7 @@ router.post("/orders/:orderId/transition", requireAuth, async (req, res) => {
     });
   } catch (err) {
     if (err instanceof ConcurrentTransitionError) {
-      // Another writer beat us between read and update — caller should
+      // Another writer beat us between read and update - caller should
       // re-fetch and retry with the latest state.
       res.status(409).json({
         success: false,
@@ -563,7 +563,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
     ]);
 
     if (!customer || !business) {
-      res.status(400).json({ error: "Cannot resend email — missing customer or business data" });
+      res.status(400).json({ error: "Cannot resend email - missing customer or business data" });
       return;
     }
 
@@ -584,7 +584,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
 
     const { subject, body } = buildEmailBody(emailParams);
 
-    // Same monthly allowance check as the status endpoint — a manual resend
+    // Same monthly allowance check as the status endpoint - a manual resend
     // counts against the quota too.
     const emailLimit = business.monthlyEmailLimit;
     const emailUsage = await getMonthlyEmailUsage(businessId);

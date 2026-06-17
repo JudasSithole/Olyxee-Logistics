@@ -69,7 +69,7 @@ function serialize(
 router.get("/business", requireAuth, async (req, res) => {
   const businessId = (req as any).businessId;
 
-  // Demo session — return hardcoded data, no DB needed.
+  // Demo session - return hardcoded data, no DB needed.
   if (businessId === DEMO_BUSINESS_ID) {
     res.json(DEMO_BUSINESS);
     return;
@@ -140,7 +140,7 @@ router.put("/business", requireAuth, async (req, res) => {
         allowedOrigins: "allowedOrigins" in parse.data
           ? (() => {
               const raw = parse.data.allowedOrigins ?? "";
-              // Trim, drop trailing slashes, drop empties, dedupe — same
+              // Trim, drop trailing slashes, drop empties, dedupe - same
               // shape the admin UI normalizes to, applied server-side as a
               // defense in depth.
               const list = Array.from(
@@ -202,7 +202,7 @@ router.delete("/business", requireAuth, async (req, res) => {
 
   try {
     await db.transaction(async (tx) => {
-      // Order matters — no ON DELETE CASCADE in the schema, so we peel from
+      // Order matters - no ON DELETE CASCADE in the schema, so we peel from
       // the leaves of the FK graph upward.
       const orderIds = (
         await tx

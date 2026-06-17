@@ -205,7 +205,7 @@ export default function OrderDetailPage() {
         onSuccess: (data) => {
           if (data?.emailStatus === "limit_reached") {
             toast.warning(
-              `Status updated, but the email wasn't sent — you've reached this month's email limit (${data.emailUsage ?? ""}/${data.emailLimit ?? ""}). Upgrade to keep notifying customers.`,
+              `Status updated, but the email wasn't sent - you've reached this month's email limit (${data.emailUsage ?? ""}/${data.emailLimit ?? ""}). Upgrade to keep notifying customers.`,
             );
           } else if (data?.emailStatus === "failed") {
             toast.warning(`Status updated to "${statusForm.status}", but the email failed to send.`);
@@ -341,7 +341,7 @@ export default function OrderDetailPage() {
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
 
-        {/* Left — main actions */}
+        {/* Left - main actions */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Operations Control */}
@@ -385,7 +385,7 @@ export default function OrderDetailPage() {
                   <div className="space-y-1.5">
                     <Label className="text-xs font-normal text-muted-foreground">
                       Location{" "}
-                      <span className="text-muted-foreground/60">(optional — shown in timeline)</span>
+                      <span className="text-muted-foreground/60">(optional - shown in timeline)</span>
                     </Label>
                     <Input
                       value={statusForm.location}

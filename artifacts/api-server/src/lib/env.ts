@@ -34,7 +34,7 @@ const RECOMMENDED: EnvCheck[] = [
   {
     name: "RESEND_API_KEY",
     required: false,
-    description: "Resend API key — order status emails will be skipped without it.",
+    description: "Resend API key - order status emails will be skipped without it.",
   },
   {
     name: "EMAIL_FROM_ADDRESS",
@@ -71,7 +71,7 @@ export function validateEnv(): void {
     if (!process.env[c.name]) {
       logger.warn(
         { env: c.name },
-        `Recommended env not set: ${c.name} — ${c.description}`,
+        `Recommended env not set: ${c.name} - ${c.description}`,
       );
     }
   }
@@ -153,11 +153,11 @@ export function getBusinessAllowedOrigins(): Set<string> {
 // never warmed yet) we AWAIT the first refresh instead of returning an empty
 // set and triggering a background fetch. Without this, the very first
 // cross-origin preflight on each cold Vercel function instance always 403s
-// because the cache hasn't been populated — every customer who happens to
+// because the cache hasn't been populated - every customer who happens to
 // hit a fresh instance sees "Tracking is temporarily unavailable".
 export async function ensureBusinessAllowedOrigins(): Promise<Set<string>> {
   if (businessOriginCacheExpiresAt === 0) {
-    // First call ever on this instance — populate synchronously.
+    // First call ever on this instance - populate synchronously.
     if (!businessOriginRefresh) {
       businessOriginRefresh = refreshBusinessOrigins()
         .catch((err) => {
@@ -174,7 +174,7 @@ export async function ensureBusinessAllowedOrigins(): Promise<Set<string>> {
     }
     return businessOriginRefresh;
   }
-  // Cache is warm — fall back to the existing stale-while-revalidate behavior.
+  // Cache is warm - fall back to the existing stale-while-revalidate behavior.
   return getBusinessAllowedOrigins();
 }
 

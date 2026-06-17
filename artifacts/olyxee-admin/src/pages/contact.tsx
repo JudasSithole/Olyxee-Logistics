@@ -76,7 +76,7 @@ const ContactPage: FC = () => {
               {submitted ? (
                 <div className="py-16 text-center">
                   <p style={mono} className="text-[10px] tracking-[0.3em] text-orange-500 mb-3">MESSAGE SENT</p>
-                  <h3 style={serif} className="text-3xl mb-3">Thanks — we'll be in touch.</h3>
+                  <h3 style={serif} className="text-3xl mb-3">Thanks - we'll be in touch.</h3>
                   <p className="text-neutral-600">We typically reply within one business day.</p>
                 </div>
               ) : (

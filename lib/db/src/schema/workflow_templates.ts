@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 import { businessesTable } from "./businesses";
 
 // User-created workflow templates scoped to a business.
-// System (preset) templates live as frontend constants — they are not stored
+// System (preset) templates live as frontend constants - they are not stored
 // in this table so no seeding or migration is needed for them.
 export const workflowTemplatesTable = pgTable("workflow_templates", {
   id: text("id").primaryKey(),
@@ -15,7 +15,7 @@ export const workflowTemplatesTable = pgTable("workflow_templates", {
   name: text("name").notNull(),
   description: text("description"),
   // Optional tag linking this template to a business type (e.g. "Restaurant").
-  // Purely for display — the engine uses it to suggest the right template.
+  // Purely for display - the engine uses it to suggest the right template.
   businessType: text("business_type"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

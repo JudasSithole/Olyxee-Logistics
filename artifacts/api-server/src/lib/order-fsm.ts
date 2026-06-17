@@ -64,7 +64,7 @@ export function validateTransition(from: string, to: string): ValidationResult {
     return {
       ok: false,
       code: "terminal_state",
-      message: `Order is already "${from}" — no further transitions are allowed.`,
+      message: `Order is already "${from}" - no further transitions are allowed.`,
     };
   }
   if (!canTransition(from, to)) {
@@ -167,7 +167,7 @@ export async function transitionOrder(
       id: newEventId,
       orderId,
       status: toStatus,
-      message: noteParts.join(" — "),
+      message: noteParts.join(" - "),
       createdBy: updatedBy,
     });
 

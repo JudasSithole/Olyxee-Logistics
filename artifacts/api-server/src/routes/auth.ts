@@ -20,7 +20,7 @@ import { sendPasswordResetEmail } from "../lib/email";
 
 const RESET_TOKEN_TTL_MINUTES = 30;
 
-// Hardcoded demo account — intentionally bypasses the database so the demo
+// Hardcoded demo account - intentionally bypasses the database so the demo
 // login works even when the database is unavailable.
 export const DEMO_USER_ID = "demo-usr-000000000001";
 export const DEMO_BUSINESS_ID = "demo-biz-000000000001";
@@ -132,7 +132,7 @@ router.post("/auth/login", async (req, res) => {
   const rawEmail = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
   const rawPassword = typeof req.body?.password === "string" ? req.body.password : "";
 
-  // Hardcoded demo credentials — works even when the database is unavailable.
+  // Hardcoded demo credentials - works even when the database is unavailable.
   if ((rawEmail === "demo" || rawEmail === "demo@demo.com") && rawPassword === "demo") {
     const token = signSession(DEMO_USER_ID);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
@@ -286,8 +286,8 @@ router.post("/auth/logout", (req, res) => {
 
 // Allow the currently signed-in admin to edit their own profile. Two
 // independent concerns share this endpoint:
-//   1. Update name / email (lightweight — email uniqueness re-checked).
-//   2. Change password — requires `currentPassword` + `newPassword` so a
+//   1. Update name / email (lightweight - email uniqueness re-checked).
+//   2. Change password - requires `currentPassword` + `newPassword` so a
 //      stolen-session attacker can't silently rotate the password.
 // Any field can be omitted; only what's provided is touched.
 const UpdateMeBody = z
@@ -313,7 +313,7 @@ router.put("/auth/me", async (req, res) => {
     return;
   }
 
-  // Demo session is fully hardcoded and has no database row — mirror the
+  // Demo session is fully hardcoded and has no database row - mirror the
   // bypass in requireAuth so the profile page doesn't 401. Updates are a no-op.
   if (payload.userId === DEMO_USER_ID) {
     res.json({ user: DEMO_USER });
@@ -338,7 +338,7 @@ router.put("/auth/me", async (req, res) => {
       return;
     }
 
-    // Email uniqueness check — only if the email is actually changing.
+    // Email uniqueness check - only if the email is actually changing.
     if (email && email !== user.email) {
       const clash = await db.query.usersTable.findFirst({
         where: eq(usersTable.email, email),
@@ -349,7 +349,7 @@ router.put("/auth/me", async (req, res) => {
       }
     }
 
-    // Password change path — verify current password before rotating.
+    // Password change path - verify current password before rotating.
     let nextPasswordHash: string | undefined;
     if (currentPassword && newPassword) {
       if (!user.passwordHash) {
@@ -400,7 +400,7 @@ router.get("/auth/me", async (req, res) => {
     return;
   }
 
-  // Demo session is fully hardcoded and has no database row — mirror the
+  // Demo session is fully hardcoded and has no database row - mirror the
   // bypass in requireAuth so session restore works on refresh.
   if (payload.userId === DEMO_USER_ID) {
     res.json({ user: DEMO_USER });

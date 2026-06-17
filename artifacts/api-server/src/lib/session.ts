@@ -18,7 +18,7 @@ function getSecret(): string {
     ephemeralSecret = crypto.randomBytes(32).toString("hex");
     // eslint-disable-next-line no-console
     console.warn(
-      "[session] SESSION_SECRET not set — using ephemeral random secret (sessions reset on restart).",
+      "[session] SESSION_SECRET not set - using ephemeral random secret (sessions reset on restart).",
     );
   }
   return ephemeralSecret;

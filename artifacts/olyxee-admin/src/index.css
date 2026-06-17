@@ -60,7 +60,7 @@
 }
 
 :root {
-  /* Brand color — updated dynamically via JS */
+  /* Brand color - updated dynamically via JS */
   --brand-h: 0;
   --brand-s: 0%;
   --brand-l: 17%;
@@ -73,7 +73,7 @@
   --input: 220 13% 88%;
   --ring: var(--brand-h) var(--brand-s) var(--brand-l);
 
-  /* Cards — white, no shadow */
+  /* Cards - white, no shadow */
   --card: 0 0% 100%;
   --card-foreground: 220 20% 10%;
   --card-border: 220 13% 88%;
@@ -170,7 +170,7 @@
 
 /* Flat, sharp overrides for Shadcn components */
 @layer components {
-  /* Inputs — square corners + always-readable text color (overrides
+  /* Inputs - square corners + always-readable text color (overrides
      browser/user-agent defaults and stops autofill from showing as grey) */
   input, textarea, select {
     border-radius: 0 !important;

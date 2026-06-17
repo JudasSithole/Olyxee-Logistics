@@ -50,7 +50,7 @@ const DEFAULT_PRIMARY = "#2b2b2b";
 
 // ─── Section accent tints ─────────────────────────────────────────────────────
 // Apple system colors. Each settings area gets its own tint so the page is
-// instantly scannable by color — the iOS Settings pattern of colored, rounded
+// instantly scannable by color - the iOS Settings pattern of colored, rounded
 // icon badges next to each row.
 const TINTS = {
   blue: "#0a84ff",
@@ -127,7 +127,7 @@ function BrandColorPicker({
     onChange(norm);
   };
 
-  // Tasteful random — restrict to mid-saturation / mid-lightness so we
+  // Tasteful random - restrict to mid-saturation / mid-lightness so we
   // don't hand the admin neon yellow or near-black.
   const surpriseMe = () => {
     const h = Math.floor(Math.random() * 360);
@@ -141,13 +141,13 @@ function BrandColorPicker({
     contrast >= 4.5 ? "good" : contrast >= 3 ? "okay" : "bad";
   const CONTRAST_COPY: Record<typeof contrastTier, { label: string; tone: string }> = {
     good: { label: "White text reads clearly on this color.", tone: "text-emerald-700" },
-    okay: { label: "White text works for large headings only — pick a darker shade for buttons.", tone: "text-amber-700" },
+    okay: { label: "White text works for large headings only - pick a darker shade for buttons.", tone: "text-amber-700" },
     bad: { label: "White text is hard to read on this color. Try something darker.", tone: "text-rose-700" },
   };
 
   return (
     <div className="space-y-4">
-      {/* Step 1: Named presets — bigger tiles with the name visible so the
+      {/* Step 1: Named presets - bigger tiles with the name visible so the
           choice feels like picking a brand mood, not guessing at swatches. */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Quick picks</p>
@@ -186,7 +186,7 @@ function BrandColorPicker({
         </div>
       </div>
 
-      {/* Step 2: Custom color — one tidy row instead of three stacked controls.
+      {/* Step 2: Custom color - one tidy row instead of three stacked controls.
           The big swatch on the left is the "current pick" indicator. */}
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
@@ -268,7 +268,7 @@ function BrandColorPicker({
         )}
       </div>
 
-      {/* Step 3: Plain-English readability check — tells the admin whether
+      {/* Step 3: Plain-English readability check - tells the admin whether
           their button text will actually be legible without making them
           learn what "WCAG 4.5:1" means. */}
       <div
@@ -306,14 +306,14 @@ function hslToHex(h: number, s: number, l: number): string {
 
 // ─── Section primitives (Apple "Inset Grouped" feel) ──────────────────────────
 // A section is a titled card. Title + description live OUTSIDE the card (small,
-// muted) — content lives INSIDE on a flat surface with hairline dividers
+// muted) - content lives INSIDE on a flat surface with hairline dividers
 // between rows. This is the macOS / iOS Settings pattern and keeps the page
 // scannable when you have a lot of fields.
 
 function SectionShell({
   id, icon: Icon, title, description, action, children, tint = TINTS.gray,
 }: {
-  // Optional — used to be required for scrollspy anchors. With tabs now
+  // Optional - used to be required for scrollspy anchors. With tabs now
   // driving navigation, callers usually omit it.
   id?: string;
   icon: React.ElementType;
@@ -411,7 +411,7 @@ function RestoreButton({ onClick, label = "Restore" }: { onClick: () => void; la
 }
 
 // One compact, consolidated preview that replaces the four separate inline
-// mockups. It shows — at a glance, side by side — how the brand reads in this
+// mockups. It shows - at a glance, side by side - how the brand reads in this
 // app's sidebar, in a browser tab, and on a customer email, so the user can
 // judge everything in one place instead of scrolling through stacked cards.
 function BrandIdentityPreview({
@@ -487,7 +487,7 @@ function BrandIdentityPreview({
           </div>
         </div>
 
-        {/* Customer email line — full width */}
+        {/* Customer email line - full width */}
         <div className="space-y-1.5 sm:col-span-2">
           <p className="text-[10px] text-muted-foreground">On customer emails</p>
           <div className="border border-border bg-background px-3 py-2.5">
@@ -593,8 +593,8 @@ function DangerZone({ businessName }: { businessName: string }) {
                   <div className="space-y-3 text-sm text-muted-foreground">
                     <p>
                       This action is <span className="font-medium text-foreground">permanent</span>.
-                      Everything in your account — customers, orders, tracking events,
-                      email logs, and team members — will be erased.
+                      Everything in your account - customers, orders, tracking events,
+                      email logs, and team members - will be erased.
                     </p>
                     <p>
                       To confirm, type the business name{" "}
@@ -720,12 +720,12 @@ export default function SettingsPage() {
 
   // Track the email editor's dirty state so the beforeunload guard covers
   // unsaved email wording too (email persists server-side via its own button,
-  // so it's not in the page-level save bar — but losing typed text on tab
+  // so it's not in the page-level save bar - but losing typed text on tab
   // close would still be a bad surprise).
   const [emailDirty, setEmailDirty] = useState(false);
   const guardActive = hasChanges || emailDirty;
 
-  // ⌘S / Ctrl+S — power-user shortcut. Browsers reserve this for "Save page",
+  // ⌘S / Ctrl+S - power-user shortcut. Browsers reserve this for "Save page",
   // so we preventDefault and route it to our save handler.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -759,7 +759,7 @@ export default function SettingsPage() {
     return NAV_ITEMS.some((n) => n.id === hash) ? hash : NAV_ITEMS[0].id;
   });
 
-  // Keep the URL hash in sync as the tab changes — preserves deep-linking
+  // Keep the URL hash in sync as the tab changes - preserves deep-linking
   // and back/forward navigation between tabs.
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
@@ -788,7 +788,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-full pb-32">
-      {/* Page header — kept generous; this is the moment the page "establishes
+      {/* Page header - kept generous; this is the moment the page "establishes
           itself" before the content groups begin. */}
       <header className="mb-8 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-500">
         <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
@@ -797,7 +797,7 @@ export default function SettingsPage() {
         </p>
       </header>
 
-      {/* Tabs — replace the long scroll. Only the active panel renders, so
+      {/* Tabs - replace the long scroll. Only the active panel renders, so
           there's no off-screen content competing for attention. */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="max-w-4xl">
         {/* TabsList scrolls horizontally on narrow viewports so the labels
@@ -840,13 +840,13 @@ export default function SettingsPage() {
 
         {/* ─── Brand & Identity ─────────────────────────────────────── */}
         {/* One compact card for all brand inputs, plus a single consolidated
-            preview — far shorter and calmer than the old stacked sections. */}
+            preview - far shorter and calmer than the old stacked sections. */}
         <TabsContent value="identity" className="mt-6 focus-visible:outline-none">
           <SectionShell
             icon={Building2}
             tint={TINTS.blue}
             title="Brand & Identity"
-            description="Your name, logo, and accent color — how you appear to your team and customers."
+            description="Your name, logo, and accent color - how you appear to your team and customers."
             action={
               dirty.has("identity") && (
                 <RestoreButton
@@ -951,7 +951,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Business Type — persists server-side independently of the
+          {/* Business Type - persists server-side independently of the
               theme save bar (same pattern as Tracking). */}
           <div className="mt-8">
             <BusinessTypeSection />
@@ -1050,7 +1050,7 @@ export default function SettingsPage() {
 
       {/* ─── Sticky save bar ───────────────────────────────────────────────
           Floats above the content with a soft backdrop blur. Slides in only
-          when there are real changes — the empty state would feel like noise. */}
+          when there are real changes - the empty state would feel like noise. */}
       <div
         className={cn(
           "fixed bottom-0 left-0 right-0 md:left-56 z-30 border-t bg-background/85 backdrop-blur-md transition-all duration-300 ease-out",
@@ -1091,7 +1091,7 @@ export default function SettingsPage() {
 
 // ─── Customer email wording ───────────────────────────────────────────────────
 // Lives server-side on the Business record so the API server can inject it
-// into outgoing customer status emails. Self-contained — has its own load /
+// into outgoing customer status emails. Self-contained - has its own load /
 // save lifecycle and "Save email wording" button so it doesn't interfere with
 // the page-level "Unsaved changes" bar (which is wired to the theme form).
 function EmailCustomizationSection({
@@ -1173,7 +1173,7 @@ function EmailCustomizationSection({
   // renderFooterNote). Keeping them in sync is the only way the live preview
   // tells the truth about what customers will actually receive.
   const previewGreeting = sub(form.emailGreeting || "Hi {name},");
-  const previewSignature = sub(form.emailSignature || "— {businessName}");
+  const previewSignature = sub(form.emailSignature || "- {businessName}");
   const previewFooter = sub(form.emailFooterNote || "");
 
   return (
@@ -1225,7 +1225,7 @@ function EmailCustomizationSection({
             </div>
             {reached ? (
               <p className="mt-2 text-xs text-destructive">
-                You've reached your monthly email limit. Customer status emails won't be sent until next month — upgrade to send more.
+                You've reached your monthly email limit. Customer status emails won't be sent until next month - upgrade to send more.
               </p>
             ) : near ? (
               <p className="mt-2 text-xs text-amber-600">
@@ -1282,7 +1282,7 @@ function EmailCustomizationSection({
 
           <SectionRow
             label="Footer note"
-            hint="Optional — shown below the sign-off in muted text."
+            hint="Optional - shown below the sign-off in muted text."
             htmlFor="emailFooterNote"
           >
             <Textarea
@@ -1295,7 +1295,7 @@ function EmailCustomizationSection({
             />
           </SectionRow>
 
-          {/* Live email preview — uses real fallbacks + token substitution so
+          {/* Live email preview - uses real fallbacks + token substitution so
               the admin sees exactly what the customer will get. */}
           <div className="px-4 py-4 bg-muted/20 space-y-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -1317,7 +1317,7 @@ function EmailCustomizationSection({
 
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Saves immediately — separate from the page-level Save.
+              Saves immediately - separate from the page-level Save.
             </p>
             <Button
               size="sm"
@@ -1443,9 +1443,9 @@ function BusinessTypeSection() {
 // ─── Tracking customization ───────────────────────────────────────────────────
 // Two server-side fields on the Business record that govern the public
 // customer experience:
-//   trackingIdPrefix — 3–5 uppercase letters, used as the leading segment
+//   trackingIdPrefix - 3–5 uppercase letters, used as the leading segment
 //     of every new tracking ID we generate (e.g. "FSL" → "FSL-K7M-9X2A").
-//   allowedOrigins   — comma-separated list of customer-site origins allowed
+//   allowedOrigins   - comma-separated list of customer-site origins allowed
 //     to call the public tracking endpoint cross-origin.
 // Self-contained like EmailCustomizationSection so it persists independently
 // of the theme save bar at the top of the page.
@@ -1541,7 +1541,7 @@ function TrackingCustomizationSection() {
                 setForm((f) => ({
                   ...f,
                   // Uppercase as the user types, strip everything that isn't
-                  // a letter, clamp to 5 chars — produces a valid prefix
+                  // a letter, clamp to 5 chars - produces a valid prefix
                   // without forcing the user to think about the rules.
                   trackingIdPrefix: e.target.value
                     .toUpperCase()
@@ -1594,7 +1594,7 @@ function TrackingCustomizationSection() {
 
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Saves immediately — separate from the page-level Save.
+              Saves immediately - separate from the page-level Save.
             </p>
             <Button
               size="sm"
@@ -1618,7 +1618,7 @@ function TrackingCustomizationSection() {
 
 // ─── Integrations ─────────────────────────────────────────────────────────────
 // Developer-facing tab. Generates copy-paste snippets that hit the *public*
-// tracking endpoint (GET /api/public/track/:id — no auth) so a customer's
+// tracking endpoint (GET /api/public/track/:id - no auth) so a customer's
 // engineering team can embed live order tracking on their own website in any
 // language, or download a standalone HTML page and run it locally to test.
 const INTEGRATION_LANGS = [
@@ -1633,7 +1633,7 @@ type IntegrationLang = (typeof INTEGRATION_LANGS)[number]["id"];
 
 // ─── Lightweight syntax highlighter ───────────────────────────────────────────
 // A small, dependency-free tokenizer good enough to make the snippets read like
-// real code. Tokens are rendered as React spans, so all text is auto-escaped —
+// real code. Tokens are rendered as React spans, so all text is auto-escaped -
 // no risk of HTML injection from user-edited base URL / tracking ID.
 type HlType =
   | "comment" | "string" | "number" | "keyword" | "fn"
@@ -1774,7 +1774,7 @@ async function trackOrder(trackingId) {
 }
 
 trackOrder("__ID__").then((order) => {
-  console.log(order.statusLabel, "—", order.currentStatus);
+  console.log(order.statusLabel, "-", order.currentStatus);
   order.events.forEach((e) =>
     console.log(e.at, e.statusLabel, e.location ?? "")
   );
@@ -1814,7 +1814,7 @@ const HTML_TPL = `<!doctype html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>__BIZ__ — Order tracking</title>
+  <title>__BIZ__ - Order tracking</title>
   <style>
     :root { --accent: __ACCENT__; }
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 560px; margin: 48px auto; padding: 0 16px; color: #111; }
@@ -1923,7 +1923,7 @@ function CopyButton({ text }: { text: string }) {
           toast.success("Copied to clipboard");
           setTimeout(() => setCopied(false), 1500);
         } catch {
-          toast.error("Couldn't copy — select the code and copy manually.");
+          toast.error("Couldn't copy - select the code and copy manually.");
         }
       }}
       className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 border border-border bg-background hover:bg-muted transition-colors"
@@ -1996,7 +1996,7 @@ function IntegrationsSection() {
         icon={Code2}
         tint={TINTS.indigo}
         title="Integrations"
-        description="Embed live order tracking on your own website — copy a snippet in your language, or download a ready-to-run page to test locally."
+        description="Embed live order tracking on your own website - copy a snippet in your language, or download a ready-to-run page to test locally."
       >
         <SectionRow
           label="API base URL"
@@ -2093,7 +2093,7 @@ function IntegrationsSection() {
         <Globe className="h-4 w-4 mt-0.5 flex-shrink-0" />
         <p>
           Browser calls from a different website (the JavaScript and HTML samples) need that site's address listed under{" "}
-          <span className="font-medium text-foreground">Allowed website origins</span> in the Identity tab — including any
+          <span className="font-medium text-foreground">Allowed website origins</span> in the Identity tab - including any
           local server you test with, e.g. <span className="font-mono text-foreground">http://localhost:3000</span>. Opening
           the HTML file directly with <span className="font-mono text-foreground">file://</span> will be blocked, so serve it instead.
           Server-side calls (cURL, Python, PHP) work without any allow-listing.

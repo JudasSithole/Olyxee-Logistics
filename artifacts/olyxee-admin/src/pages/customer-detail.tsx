@@ -200,10 +200,10 @@ export default function CustomerDetailPage() {
                         {order.tracking_id}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{order.order_reference ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{order.order_reference ?? "-"}</TableCell>
                     <TableCell><StatusBadge status={order.current_status} /></TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "—"}
+                      {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(order.created_at), "MMM d, yyyy")}

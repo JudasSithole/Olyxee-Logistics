@@ -58,7 +58,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_delivery_date: form.estimatedDeliveryDate || undefined },
       {
         onSuccess: () => {
-          toast.success("Order created — tracking ID auto-generated");
+          toast.success("Order created - tracking ID auto-generated");
           setOpen(false);
           onSuccess();
         },
@@ -83,7 +83,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
               <SelectContent>
                 {customersData?.customers.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.email}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.full_name} - {c.email}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -218,11 +218,11 @@ export default function OrdersPage() {
                       <TableCell>
                         <span className="font-mono text-sm font-semibold">{order.tracking_id}</span>
                       </TableCell>
-                      <TableCell className="font-medium">{order.customers?.full_name ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{order.order_reference ?? "—"}</TableCell>
+                      <TableCell className="font-medium">{order.customers?.full_name ?? "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{order.order_reference ?? "-"}</TableCell>
                       <TableCell><StatusBadge status={order.current_status} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "—"}
+                        {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(order.updated_at), "MMM d, HH:mm")}

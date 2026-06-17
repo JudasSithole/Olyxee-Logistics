@@ -57,7 +57,7 @@ function Protected({
 
   if (!skipOnboardingGuard) {
     if (businessQuery.isLoading) {
-      // We're already authenticated here — render the real app chrome with a
+      // We're already authenticated here - render the real app chrome with a
       // small inline spinner in the content area so the sidebar stays put
       // and the page feels like it's loading data, not crashing.
       return (
@@ -127,7 +127,7 @@ function AppRoutes() {
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
       <Route path="/workflows" component={() => <Protected component={WorkflowsPage} />} />
-      {/* Legacy /audit-logs URL — bounce to the new Settings → Activity tab. */}
+      {/* Legacy /audit-logs URL - bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">
         {() => {
           if (typeof window !== "undefined") {

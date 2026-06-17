@@ -57,7 +57,7 @@ app.use(
 // from ALLOWED_ORIGINS only. Same-origin requests (no Origin header) are
 // always allowed so server-to-server calls and the SPA-on-same-domain deploy
 // keep working. Per-business customer origins are intentionally NOT honored
-// here — they only apply to the public tracking surface below, otherwise a
+// here - they only apply to the public tracking surface below, otherwise a
 // tenant's website would gain CORS access to authenticated endpoints (cookies
 // stripped by browser but still a wider surface than needed).
 const allowedOrigins = getAllowedOrigins();
@@ -72,7 +72,7 @@ const adminCors = cors({
 });
 
 // Public tracking CORS: env allowlist UNION every business's whitelisted
-// customer-site origins. No credentials — the public endpoint never reads
+// customer-site origins. No credentials - the public endpoint never reads
 // cookies, so allowing arbitrary tenant origins is bounded to read-only
 // tracking data. Scoped to /api/public/* below so it cannot widen access
 // on authenticated routes.
