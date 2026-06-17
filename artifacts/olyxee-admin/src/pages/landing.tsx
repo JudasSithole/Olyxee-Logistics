@@ -535,40 +535,96 @@ const Landing: FC = () => {
       </header>
 
       {/* === HERO === */}
-      <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-20 px-4 sm:px-8">
+      <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-20 px-4 sm:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-y-10 gap-x-6 items-end">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.1, ease }}
-              style={serif}
-              className="col-span-12 lg:col-span-9 text-[2.75rem] sm:text-[5rem] md:text-[6.5rem] lg:text-[8rem] xl:text-[9rem] tracking-[-0.03em] leading-[0.9] break-words"
-            >
-              The
-              <br />
-              <em className="text-orange-500 italic">Loop.</em>
-            </motion.h1>
+          <div className="grid grid-cols-12 gap-y-12 gap-x-10 items-center">
+            {/* Left: message + CTAs */}
+            <div className="col-span-12 lg:col-span-5">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.1, ease }}
+                className="inline-flex items-center gap-2 rounded-full bg-orange-50 ring-1 ring-orange-200/80 pl-1.5 pr-3.5 py-1.5 mb-7"
+              >
+                <span style={mono} className="rounded-full bg-orange-500 text-white text-[9px] tracking-widest px-2 py-1">NEW</span>
+                <span className="text-[12px] text-orange-900/80">Order management for local businesses</span>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease }}
-              className="col-span-12 lg:col-span-3 lg:pb-6"
-            >
-              <p className="text-lg sm:text-xl text-neutral-700 leading-relaxed max-w-sm">
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.15, ease }}
+                style={serif}
+                className="text-[3rem] sm:text-7xl lg:text-[5.25rem] xl:text-[6rem] tracking-[-0.03em] leading-[0.92]"
+              >
+                Keep customers
+                <br />
+                in the <em className="text-orange-500 italic">loop.</em>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3, ease }}
+                className="mt-6 text-lg text-neutral-600 leading-relaxed max-w-md"
+              >
                 Order Loop helps businesses manage customer orders, update statuses, and keep customers informed - all from one simple dashboard.
-              </p>
-            </motion.div>
-          </div>
+              </motion.p>
 
-          {/* Hero visual + CTA row */}
-          <div className="mt-16 sm:mt-24 grid grid-cols-12 gap-6 sm:gap-8 items-end">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.45, ease }}
+                className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4"
+              >
+                <Link
+                  href="/login?mode=signup"
+                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
+                >
+                  <span className="text-sm font-medium tracking-wide">Start Managing Orders</span>
+                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </Link>
+                <Link
+                  href="/login"
+                  style={mono}
+                  className="text-[11px] tracking-[0.22em] text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  → OPEN DASHBOARD
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.6, ease }}
+                className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
+              >
+                {[
+                  { icon: Sparkles, label: "Create orders" },
+                  { icon: Route, label: "Live tracking" },
+                  { icon: Mail, label: "Auto updates" },
+                ].map((f) => {
+                  const Icon = f.icon;
+                  return (
+                    <div key={f.label} className="flex items-center gap-2 text-[13px] text-neutral-500">
+                      <span className="w-7 h-7 rounded-full bg-orange-50 ring-1 ring-orange-100 flex items-center justify-center">
+                        <Icon className="w-3.5 h-3.5 text-orange-500" />
+                      </span>
+                      {f.label}
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </div>
+
+            {/* Right: visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, delay: 0.4, ease }}
-              className="col-span-12 lg:col-span-8 relative aspect-[4/3] sm:aspect-[16/10]"
+              className="col-span-12 lg:col-span-7 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3]"
             >
               <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-orange-100 via-amber-50 to-orange-200/70 ring-1 ring-orange-200/70">
                 {/* ambient glow */}
@@ -626,30 +682,6 @@ const Landing: FC = () => {
                   </div>
                 </motion.div>
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.55, ease }}
-              className="col-span-12 lg:col-span-4 flex flex-col gap-4 lg:pb-8"
-            >
-              <Link
-                href="/login?mode=signup"
-                className="group inline-flex items-center justify-between gap-6 px-7 py-5 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
-              >
-                <span className="text-sm font-medium tracking-wide">Start Managing Orders</span>
-                <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
-                  <ArrowUpRight className="w-4 h-4" />
-                </span>
-              </Link>
-              <Link
-                href="/login"
-                style={mono}
-                className="text-[11px] tracking-[0.22em] text-neutral-400 hover:text-neutral-900 transition-colors pl-2"
-              >
-                → OPEN DASHBOARD
-              </Link>
             </motion.div>
           </div>
         </div>
