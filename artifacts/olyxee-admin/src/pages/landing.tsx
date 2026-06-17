@@ -313,8 +313,8 @@ const OrderScreen: FC<OrderScreenProps> = ({ variant, step, cust, custIdx, detai
 };
 
 const ScreenFrame: FC<{ children: ReactNode }> = ({ children }) => (
-  <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden bg-white ring-1 ring-neutral-200/80 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.35)]">
-    <div className="aspect-[16/10]">{children}</div>
+  <div className="w-[600px] h-[375px] max-w-full mx-auto rounded-2xl overflow-hidden bg-white ring-1 ring-neutral-200/80 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.35)]">
+    {children}
   </div>
 );
 
@@ -361,12 +361,12 @@ const CreateOrderMock: FC = () => {
 
   return (
     <>
-      <div className="sm:hidden">
+      <div className="lg:hidden">
         <PhoneFrame>
           <OrderScreen variant="mobile" {...screenProps} />
         </PhoneFrame>
       </div>
-      <div className="hidden sm:block">
+      <div className="hidden lg:block">
         <ScreenFrame>
           <OrderScreen variant="desktop" {...screenProps} />
         </ScreenFrame>
