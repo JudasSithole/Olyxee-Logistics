@@ -10,6 +10,11 @@ import trackPhoto from "@assets/image_1779935881868.png";
 import handoffPhoto from "@assets/image_1779935903875.png";
 import unboxingPhoto from "@assets/image_1779935870578.png";
 import closingPhoto from "@assets/image_1780016743161.png";
+import dryCleanerPhoto from "@assets/image_1781655294134.png";
+import tailorPhoto from "@assets/image_1781655334535.png";
+import bakeryPhoto from "@assets/image_1781655422517.png";
+import warehousePhoto from "@assets/image_1781655528508.png";
+import repairPhoto from "@assets/image_1781655658557.png";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
@@ -72,8 +77,8 @@ const DashboardMock: FC = () => (
 
 const TrackingMapMock: FC = () => (
   <div className="w-full h-full bg-neutral-900 relative overflow-hidden">
-    <img src={trackPhoto} alt="Driver checking tablet inside van" className="absolute inset-0 w-full h-full object-cover opacity-90" />
-    <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-neutral-950/20" />
+    <img src={warehousePhoto} alt="Warehouse team member managing a customer order on a call" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+    <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/55 to-neutral-950/35" />
     <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
       <div style={mono} className="text-[10px] tracking-widest text-white/70">TRACKING · #OLY-1042</div>
       <div style={mono} className="text-[10px] tracking-widest text-orange-400">ETA 14:42</div>
@@ -352,6 +357,44 @@ const Landing: FC = () => {
         </div>
       </section>
 
+      {/* === FOR EVERY BUSINESS === */}
+      <section id="industries" className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
+        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.9, ease }}
+            className="col-span-12 lg:col-span-7 relative aspect-[16/10] rounded-[2rem] overflow-hidden ring-1 ring-neutral-200 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.3)]"
+          >
+            <img src={tailorPhoto} alt="Tailor working on a custom order at the workbench" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            <p style={mono} className="absolute top-6 left-6 text-[10px] tracking-[0.3em] text-white/80">ATELIER · ORDER #OLY-1057</p>
+            <p style={serif} className="absolute bottom-6 left-6 right-6 italic text-2xl sm:text-3xl text-white leading-tight">
+              From first measurement to final fitting — tracked.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease }}
+            className="col-span-12 lg:col-span-5 lg:pl-8"
+          >
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">FOR EVERY BUSINESS</p>
+            <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
+              One platform,
+              <br />
+              <em className="italic text-orange-500">every order.</em>
+            </h2>
+            <p className="text-base text-neutral-500 font-light leading-relaxed max-w-sm">
+              Dry cleaners, bakeries, tailors, repair shops, local stores, delivery teams, warehouses — if you take customer orders, Order Loop keeps every one of them on track.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* === CHAPTER 02 · TRACK === */}
       <section id="track" className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-950 text-white">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-center">
@@ -400,9 +443,9 @@ const Landing: FC = () => {
             </div>
 
             <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden">
-              <img src={scanPhoto} alt="Operator scanning a package label" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={bakeryPhoto} alt="Bakery owner preparing a customer order" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-              <p style={mono} className="absolute top-6 left-6 text-[10px] tracking-[0.3em] text-white/80">STOCKROOM · 09:14</p>
+              <p style={mono} className="absolute top-6 left-6 text-[10px] tracking-[0.3em] text-white/80">BAKERY · 09:14</p>
               <p style={serif} className="absolute bottom-6 left-6 right-6 italic text-2xl text-white leading-tight">
                 "Where is my order?"
                 <span style={mono} className="block not-italic text-[10px] tracking-[0.2em] text-white/70 mt-3">
@@ -419,12 +462,12 @@ const Landing: FC = () => {
             transition={{ duration: 0.9, ease }}
             className="col-span-12 lg:col-span-7 relative aspect-[4/5] lg:aspect-auto lg:min-h-[640px] rounded-[2rem] overflow-hidden"
           >
-            <img src={handoffPhoto} alt="Team member handing an order to a smiling customer" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={dryCleanerPhoto} alt="Dry cleaner handing a finished order to a customer" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
-              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">DELIVERED · 14:02</p>
+              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">READY · 14:02</p>
               <p style={serif} className="text-3xl sm:text-4xl tracking-tight leading-tight max-w-md">
-                The only surprise at the door is the package.
+                Every order handed over, right on time.
               </p>
             </div>
           </motion.div>
@@ -435,7 +478,7 @@ const Landing: FC = () => {
       <section className="relative px-4 sm:px-8 pt-20 sm:pt-28 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
           <div className="relative rounded-[2rem] overflow-hidden bg-neutral-900">
-            <img src={closingPhoto} alt="Support agent helping a customer over the phone" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={repairPhoto} alt="Repair shop owner ready to help customers" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-32 lg:py-40 grid grid-cols-12 gap-8 items-end">
