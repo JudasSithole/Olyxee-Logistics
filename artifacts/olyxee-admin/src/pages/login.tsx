@@ -73,7 +73,9 @@ export default function LoginPage() {
   }
 
   const fieldClass =
-    "w-full bg-transparent text-[17px] leading-tight text-[#1c1c1e] placeholder:text-[#b0b0b8] outline-none";
+    "w-full h-12 rounded-[12px] bg-white border border-black/[0.14] px-3.5 text-[16px] leading-tight text-[#1c1c1e] placeholder:text-[#b0b0b8] outline-none transition focus:border-[#1c1c1e] focus:ring-4 focus:ring-black/[0.05]";
+  const labelClass = "block text-[13px] font-semibold text-[#1c1c1e]";
+  const hintClass = "text-[12px] text-[#8e8e93] leading-snug";
 
   return (
     <AuthLayout>
@@ -135,105 +137,100 @@ export default function LoginPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5" data-testid={`form-${mode}`}>
-        <div className="rounded-[16px] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-black/[0.07]">
-          {mode === "signup" && (
-            <>
-              <div className="px-4 py-2.5">
-                <label
-                  htmlFor="fullName"
-                  className="block text-[11px] font-medium uppercase tracking-[0.06em] text-[#8e8e93] mb-0.5"
-                >
-                  Your name
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  placeholder="Jane Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className={fieldClass}
-                  data-testid="input-fullname"
-                />
-              </div>
-              <div className="px-4 py-2.5">
-                <label
-                  htmlFor="businessName"
-                  className="block text-[11px] font-medium uppercase tracking-[0.06em] text-[#8e8e93] mb-0.5"
-                >
-                  Business name
-                </label>
-                <input
-                  id="businessName"
-                  type="text"
-                  required
-                  placeholder="FreightShift Logistics"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className={fieldClass}
-                  data-testid="input-business-name"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="px-4 py-2.5">
-            <label
-              htmlFor="email"
-              className="block text-[11px] font-medium uppercase tracking-[0.06em] text-[#8e8e93] mb-0.5"
-            >
-              Email address
+        {mode === "signup" && (
+          <div className="space-y-1.5">
+            <label htmlFor="fullName" className={labelClass}>
+              Your name
             </label>
             <input
-              id="email"
-              type={mode === "signin" ? "text" : "email"}
-              autoComplete="email"
-              inputMode="email"
+              id="fullName"
+              type="text"
+              autoComplete="name"
               required
-              placeholder={mode === "signin" ? "you@company.com or demo" : "you@company.com"}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Jane Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               className={fieldClass}
-              data-testid="input-email"
+              data-testid="input-fullname"
             />
+            <p className={hintClass}>So we know who's running the account.</p>
           </div>
+        )}
 
-          {mode !== "forgot" && (
-            <div className="px-4 py-2.5">
-              <div className="flex items-center justify-between mb-0.5">
-                <label
-                  htmlFor="password"
-                  className="block text-[11px] font-medium uppercase tracking-[0.06em] text-[#8e8e93]"
-                >
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="text-[12px] font-medium text-[#8e8e93] hover:text-[#1c1c1e] transition-colors"
-                  data-testid="button-toggle-password"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                required
-                minLength={mode === "signup" ? 8 : undefined}
-                placeholder={
-                  mode === "signup" ? "At least 8 characters" : "Enter your password"
-                }
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={fieldClass}
-                data-testid="input-password"
-              />
-            </div>
+        {mode === "signup" && (
+          <div className="space-y-1.5">
+            <label htmlFor="businessName" className={labelClass}>
+              Business name
+            </label>
+            <input
+              id="businessName"
+              type="text"
+              required
+              placeholder="FreightShift Logistics"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              className={fieldClass}
+              data-testid="input-business-name"
+            />
+            <p className={hintClass}>This is what your customers see on emails and tracking pages.</p>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label htmlFor="email" className={labelClass}>
+            Email address
+          </label>
+          <input
+            id="email"
+            type={mode === "signin" ? "text" : "email"}
+            autoComplete="email"
+            inputMode="email"
+            required
+            placeholder={mode === "signin" ? "you@company.com or demo" : "you@company.com"}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={fieldClass}
+            data-testid="input-email"
+          />
+          {mode === "signup" && (
+            <p className={hintClass}>We'll send your account and order updates here.</p>
           )}
         </div>
+
+        {mode !== "forgot" && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className={labelClass}>
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="text-[12px] font-medium text-[#8e8e93] hover:text-[#1c1c1e] transition-colors"
+                data-testid="button-toggle-password"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              required
+              minLength={mode === "signup" ? 8 : undefined}
+              placeholder={
+                mode === "signup" ? "At least 8 characters" : "Enter your password"
+              }
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={fieldClass}
+              data-testid="input-password"
+            />
+            {mode === "signup" && (
+              <p className={hintClass}>Use at least 8 characters.</p>
+            )}
+          </div>
+        )}
 
         {mode === "signin" && (
           <div className="flex justify-end -mt-1">
