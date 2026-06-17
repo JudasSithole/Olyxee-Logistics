@@ -6,6 +6,7 @@ import defaultIcon from "@assets/Courier_Loop_Orange_Icon_1779935120486.png";
 import navLogo from "@assets/1_1780016152275.png";
 import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 import heroPhoto from "@assets/image_1780017592401.png";
+import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
 import scanPhoto from "@assets/image_1779935779272.png";
 import trackPhoto from "@assets/image_1779935881868.png";
 import handoffPhoto from "@assets/image_1779935903875.png";
@@ -407,7 +408,62 @@ const Landing: FC = () => {
               transition={{ duration: 1, delay: 0.4, ease }}
               className="col-span-12 lg:col-span-8 relative aspect-[4/3] sm:aspect-[16/10]"
             >
-              <img src={heroPhoto} alt="Isometric illustration of the Order Loop order operations network" className="absolute inset-0 w-full h-full object-contain" />
+              <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-orange-100 via-amber-50 to-orange-200/70 ring-1 ring-orange-200/70">
+                {/* ambient glow */}
+                <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-orange-300/50 blur-3xl" />
+                <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-amber-300/40 blur-3xl" />
+                {/* dotted texture */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 opacity-[0.35]"
+                  style={{ backgroundImage: "radial-gradient(rgba(120,53,15,0.18) 1px, transparent 1px)", backgroundSize: "22px 22px" }}
+                />
+
+                {/* person */}
+                <img
+                  src={heroPerson}
+                  alt="Business owner smiling at an order update on his phone"
+                  className="absolute bottom-0 right-0 sm:right-4 h-[94%] w-auto object-contain object-bottom drop-shadow-[0_30px_60px_rgba(120,53,15,0.25)]"
+                />
+
+                {/* floating notification card */}
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-6 left-6 sm:top-8 sm:left-8 w-[58%] max-w-[260px] bg-white/90 backdrop-blur-md rounded-2xl p-3.5 ring-1 ring-white/70 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0 shadow-[0_8px_20px_-6px_rgba(249,115,22,0.8)]">
+                      <Route className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div style={mono} className="text-[8px] tracking-widest text-neutral-400">ORDER LOOP · NOW</div>
+                      <div className="text-[13px] font-medium text-neutral-900 leading-tight truncate">Your order is out for delivery</div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* floating status card */}
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 w-[54%] max-w-[240px] bg-white/90 backdrop-blur-md rounded-2xl p-3.5 ring-1 ring-white/70 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)]"
+                >
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div style={mono} className="text-[8px] tracking-widest text-neutral-400">#OLY-1042</div>
+                    <span style={mono} className="text-[7px] tracking-widest px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">ON TIME</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {["bg-emerald-500", "bg-emerald-500", "bg-orange-500", "bg-neutral-200"].map((c, i) => (
+                      <div key={i} className={`h-1.5 flex-1 rounded-full ${c}`} />
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    Out for delivery · ETA 14:42
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
 
             <motion.div
