@@ -623,7 +623,12 @@ const Landing: FC = () => {
                 <span className="h-px flex-1 bg-neutral-200" />
               </motion.div>
 
-              <div className="space-y-5 sm:px-2">
+              <div className="relative space-y-7 sm:px-2">
+                {/* the spike the tickets hang from */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 bottom-14 w-[3px] rounded-full bg-gradient-to-b from-neutral-500 via-neutral-300 to-transparent"
+                />
                 {[
                   { ref: "OLY-1042", time: "14:42", name: "Sarah Klein", detail: "2x Wool coat · express", stamp: "READY", tone: "ready", rot: "-1.4deg", barcode: true },
                   { ref: "OLY-1041", time: "14:30", name: "Marcus Tan", detail: "1x Birthday cake · large", stamp: "PREPARING", tone: "prep", rot: "1.1deg", barcode: false },
@@ -639,37 +644,70 @@ const Landing: FC = () => {
                     <motion.div
                       key={t.ref}
                       initial={{ opacity: 0, y: 24, rotate: 0 }}
-                      animate={{ opacity: t.tone === "done" ? 0.78 : 1, y: 0, rotate: parseFloat(t.rot) }}
+                      animate={{ opacity: t.tone === "done" ? 0.82 : 1, y: 0, rotate: parseFloat(t.rot) }}
+                      whileHover={{ rotate: 0, y: -5 }}
                       transition={{ duration: 0.7, delay: 0.4 + i * 0.12, ease }}
-                      style={{ transformOrigin: "center" }}
-                      className="relative bg-white border border-neutral-900 p-4 shadow-[5px_5px_0_0_rgba(23,23,23,0.08)]"
+                      style={{ transformOrigin: "top center" }}
+                      className="group relative bg-[#fdfcf7] border border-neutral-900/90 px-4 pt-6 pb-4 shadow-[0_12px_26px_-14px_rgba(23,23,23,0.5),4px_4px_0_0_rgba(23,23,23,0.06)]"
                     >
-                      {/* stamp */}
+                      {/* lined-paper grain */}
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+                        style={{
+                          background:
+                            "repeating-linear-gradient(0deg, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 1px, transparent 1px, transparent 6px)",
+                        }}
+                      />
+                      {/* spindle punch hole */}
+                      <span
+                        aria-hidden
+                        className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-neutral-100 ring-1 ring-inset ring-neutral-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]"
+                      />
+
+                      {/* inked rubber stamp */}
                       <span
                         style={mono}
-                        className={`absolute right-3 -top-3 rotate-6 bg-white border-2 ${stampColor} px-2 py-0.5 text-[9px] tracking-[0.22em]`}
+                        className={`absolute right-2.5 top-2 rotate-[7deg] bg-[#fdfcf7] border-2 ${stampColor} rounded-[3px] px-2 py-0.5 text-[9px] font-bold tracking-[0.22em] opacity-90 mix-blend-multiply transition-transform duration-300 group-hover:rotate-[2deg]`}
                       >
                         {t.stamp}
                       </span>
 
+                      {/* receipt caption + tear-off perforation */}
+                      <div style={mono} className="relative text-center text-[7px] tracking-[0.45em] text-neutral-400">
+                        OLYXEE · ORDER TICKET
+                      </div>
+                      <div aria-hidden className="relative -mx-4 mt-2 border-t border-dashed border-neutral-300" />
+
                       {/* header */}
-                      <div className="flex items-center justify-between border-b border-dashed border-neutral-300 pb-2">
+                      <div className="relative flex items-center justify-between pt-2.5">
                         <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-900">#{t.ref}</span>
                         <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-400">{t.time}</span>
                       </div>
 
                       {/* body */}
-                      <div style={serif} className="mt-3 text-xl text-neutral-900 leading-none">{t.name}</div>
-                      <div style={mono} className="mt-1.5 text-[11px] text-neutral-500">{t.detail}</div>
+                      <div style={serif} className="relative mt-3 text-xl text-neutral-900 leading-none">{t.name}</div>
+                      <div style={mono} className="relative mt-1.5 text-[11px] text-neutral-500">{t.detail}</div>
 
                       {/* barcode (featured ticket only) */}
                       {t.barcode && (
-                        <div aria-hidden className="mt-3 flex items-end gap-[2px] h-7">
-                          {[3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 2, 1, 3, 1].map((w, bi) => (
-                            <span key={bi} className="bg-neutral-900 h-full" style={{ width: `${w}px` }} />
-                          ))}
+                        <div className="relative mt-3">
+                          <div aria-hidden className="flex items-end gap-[2px] h-7">
+                            {[3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 2, 1, 3, 1].map((w, bi) => (
+                              <span key={bi} className="bg-neutral-900 h-full" style={{ width: `${w}px` }} />
+                            ))}
+                          </div>
+                          <div style={mono} className="mt-1 text-center text-[8px] tracking-[0.4em] text-neutral-400">
+                            {t.ref.replace("-", "")} · 0042
+                          </div>
                         </div>
                       )}
+
+                      {/* bottom perforation + track stub */}
+                      <div aria-hidden className="relative -mx-4 mt-4 border-t border-dashed border-neutral-300" />
+                      <div style={mono} className="relative mt-2 text-[8px] tracking-[0.22em] text-neutral-400">
+                        TRACK · olyxee.com/t/{t.ref.toLowerCase()}
+                      </div>
                     </motion.div>
                   );
                 })}
