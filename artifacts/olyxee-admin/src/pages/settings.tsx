@@ -48,6 +48,23 @@ const PRESET_COLORS = [
 
 const DEFAULT_PRIMARY = "#2b2b2b";
 
+// ─── Section accent tints ─────────────────────────────────────────────────────
+// Apple system colors. Each settings area gets its own tint so the page is
+// instantly scannable by color — the iOS Settings pattern of colored, rounded
+// icon badges next to each row.
+const TINTS = {
+  blue: "#0a84ff",
+  indigo: "#5856d6",
+  purple: "#5e5ce6",
+  orange: "#ff9500",
+  green: "#34c759",
+  teal: "#30b0c7",
+  cyan: "#32ade6",
+  pink: "#ff2d55",
+  red: "#ff3b30",
+  gray: "#8e8e93",
+} as const;
+
 // Normalize free-typed hex into "#rrggbb". Returns null for invalid input so
 // we can surface a clear error instead of writing junk into the theme.
 function normalizeHex(raw: string): string | null {
@@ -294,7 +311,7 @@ function hslToHex(h: number, s: number, l: number): string {
 // scannable when you have a lot of fields.
 
 function SectionShell({
-  id, icon: Icon, title, description, action, children,
+  id, icon: Icon, title, description, action, children, tint = TINTS.gray,
 }: {
   // Optional — used to be required for scrollspy anchors. With tabs now
   // driving navigation, callers usually omit it.
@@ -304,6 +321,8 @@ function SectionShell({
   description?: React.ReactNode;
   action?: React.ReactNode;
   children: React.ReactNode;
+  // Accent color for the section's icon badge. Defaults to neutral gray.
+  tint?: string;
 }) {
   return (
     <section
@@ -312,15 +331,20 @@ function SectionShell({
       // with breathing room above the section title.
       className="scroll-mt-24 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500"
     >
-      <header className="px-1 mb-3 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-foreground">
-            <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
+      <header className="px-1 mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex items-start gap-2.5">
+          <span
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] shadow-sm ring-1 ring-black/5"
+            style={{ backgroundColor: tint }}
+          >
+            <Icon className="h-[18px] w-[18px] text-white" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            )}
           </div>
-          {description && (
-            <p className="text-xs text-muted-foreground mt-1 ml-6">{description}</p>
-          )}
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}
       </header>
@@ -484,12 +508,12 @@ function BrandIdentityPreview({
 // Each entry drives one TabsTrigger and matches the `id` of one TabsContent
 // below. Order here is the order shown to the user.
 const NAV_ITEMS = [
-  { id: "identity", label: "Brand & Identity", icon: Building2 },
-  { id: "integrations", label: "Integrations", icon: Code2 },
-  { id: "appearance", label: "Appearance", icon: SunMoon },
-  { id: "workflows", label: "Workflows", icon: GitBranch },
-  { id: "activity", label: "Activity", icon: History },
-  { id: "danger", label: "Danger zone", icon: ShieldAlert },
+  { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
+  { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
+  { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
+  { id: "workflows", label: "Workflows", icon: GitBranch, tint: TINTS.green },
+  { id: "activity", label: "Activity", icon: History, tint: TINTS.teal },
+  { id: "danger", label: "Danger zone", icon: ShieldAlert, tint: TINTS.red },
 ] as const;
 
 // ─── Danger zone ──────────────────────────────────────────────────────────────
@@ -524,6 +548,7 @@ function DangerZone({ businessName }: { businessName: string }) {
   return (
     <SectionShell
       icon={ShieldAlert}
+      tint={TINTS.red}
       title="Danger zone"
       description="Irreversible actions that affect the entire business account."
     >
@@ -796,7 +821,10 @@ export default function SettingsPage() {
                     transition={{ type: "spring", stiffness: 500, damping: 34 }}
                   />
                 )}
-                <Icon className="relative z-10 h-3.5 w-3.5" />
+                <Icon
+                  className="relative z-10 h-3.5 w-3.5"
+                  style={{ color: item.tint }}
+                />
                 <span className="relative z-10">{item.label}</span>
                 {isDirty && (
                   <motion.span
@@ -816,6 +844,7 @@ export default function SettingsPage() {
         <TabsContent value="identity" className="mt-6 focus-visible:outline-none">
           <SectionShell
             icon={Building2}
+            tint={TINTS.blue}
             title="Brand & Identity"
             description="Your name, logo, and accent color — how you appear to your team and customers."
             action={
@@ -944,6 +973,7 @@ export default function SettingsPage() {
         <TabsContent value="appearance" className="mt-6 focus-visible:outline-none">
           <SectionShell
             icon={SunMoon}
+            tint={TINTS.orange}
             title="Appearance"
             description="Pick the look that's easier on your eyes."
           >
@@ -976,6 +1006,7 @@ export default function SettingsPage() {
         <TabsContent value="workflows" className="mt-6 focus-visible:outline-none">
           <SectionShell
             icon={GitBranch}
+            tint={TINTS.green}
             title="Workflow Templates"
             description="Define and assign the steps your team follows for every order."
           >
@@ -1003,6 +1034,7 @@ export default function SettingsPage() {
         <TabsContent value="activity" className="mt-6 focus-visible:outline-none">
           <SectionShell
             icon={History}
+            tint={TINTS.teal}
             title="Activity"
             description="A plain-English log of what's happened in your account."
           >
@@ -1148,6 +1180,7 @@ function EmailCustomizationSection({
     <SectionShell
       id="emails"
       icon={Mail}
+      tint={TINTS.pink}
       title="Customer emails"
       description="Customize the greeting, sign-off, and footer on status emails."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
@@ -1356,6 +1389,7 @@ function BusinessTypeSection() {
   return (
     <SectionShell
       icon={Tag}
+      tint={TINTS.purple}
       title="Business Type"
       description="The industry that best describes your business."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
@@ -1480,6 +1514,7 @@ function TrackingCustomizationSection() {
     <SectionShell
       id="tracking"
       icon={Building2}
+      tint={TINTS.cyan}
       title="Tracking"
       description="Your tracking ID prefix and the websites allowed to look up orders."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
@@ -1959,6 +1994,7 @@ function IntegrationsSection() {
     <>
       <SectionShell
         icon={Code2}
+        tint={TINTS.indigo}
         title="Integrations"
         description="Embed live order tracking on your own website — copy a snippet in your language, or download a ready-to-run page to test locally."
       >
