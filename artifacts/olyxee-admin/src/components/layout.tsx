@@ -85,15 +85,15 @@ function NavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex items-center gap-2.5 pl-3 pr-3 py-2 text-sm font-medium transition-colors ${
+      className={`group relative flex items-center gap-2.5 pl-3.5 pr-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
         active
-          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
           : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       }`}
     >
       <span
         aria-hidden="true"
-        className={`absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-full transition-all ${
+        className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full transition-all duration-200 ${
           active ? "h-5 bg-sidebar-primary-foreground" : "h-0 bg-transparent group-hover:h-3 group-hover:bg-sidebar-foreground/30"
         }`}
       />
@@ -119,7 +119,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="h-7 w-auto object-contain max-w-[80px] flex-shrink-0"
           />
         ) : (
-          <div className="h-7 w-7 bg-primary flex items-center justify-center flex-shrink-0">
+          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
             <span className="text-white text-xs font-bold leading-none">
               {businessName.charAt(0).toUpperCase()}
             </span>
@@ -215,7 +215,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">
         <div className="flex-1 overflow-auto">
-          <div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10">
+          <div
+            key={location}
+            className="animate-page mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10"
+          >
             {children}
           </div>
         </div>

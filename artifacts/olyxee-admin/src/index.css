@@ -50,13 +50,33 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: 'Inter', sans-serif;
+  /* System-first stack so Apple devices render SF Pro natively; Inter is the
+     cross-platform fallback that keeps the same proportions on Windows/Linux. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Inter", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Square corners everywhere */
-  --radius-sm: 0rem;
-  --radius-md: 0rem;
-  --radius-lg: 0rem;
-  --radius-xl: 0rem;
+  /* iOS-style rounded corners. The OS leans on soft, generous radii: small
+     controls ~8-10px, cards ~14px, sheets/large surfaces ~20px. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+
+  /* Soft, diffuse, low-opacity shadows in the spirit of iOS depth - layered
+     so elements lift off the grouped grey background without a hard edge. */
+  --shadow-2xs: 0 1px 1px 0 rgb(17 24 39 / 0.03);
+  --shadow-xs: 0 1px 2px 0 rgb(17 24 39 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.04), 0 1px 3px 0 rgb(17 24 39 / 0.06);
+  --shadow: 0 1px 2px 0 rgb(17 24 39 / 0.04), 0 2px 6px -1px rgb(17 24 39 / 0.07);
+  --shadow-md: 0 2px 4px -1px rgb(17 24 39 / 0.05), 0 6px 16px -3px rgb(17 24 39 / 0.09);
+  --shadow-lg: 0 8px 24px -6px rgb(17 24 39 / 0.12), 0 2px 6px -2px rgb(17 24 39 / 0.06);
+  --shadow-xl: 0 16px 40px -10px rgb(17 24 39 / 0.16), 0 4px 10px -4px rgb(17 24 39 / 0.08);
+  --shadow-2xl: 0 28px 64px -14px rgb(17 24 39 / 0.22);
+
+  /* iOS spring-ish easing used for taps, sheets and transitions. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --radius: 0.75rem;
 }
 
 :root {
@@ -65,37 +85,39 @@
   --brand-s: 0%;
   --brand-l: 17%;
 
-  /* Pure white background */
-  --background: 0 0% 100%;
-  --foreground: 220 20% 10%;
+  /* iOS "grouped" surfaces: a soft cool-grey page behind floating white
+     cards, rather than stark white on white. */
+  --background: 240 20% 97%;
+  --foreground: 240 6% 12%;
 
-  --border: 220 13% 88%;
-  --input: 220 13% 88%;
+  --border: 240 10% 90%;
+  --input: 240 10% 89%;
   --ring: var(--brand-h) var(--brand-s) var(--brand-l);
 
-  /* Cards - white, no shadow */
+  /* Cards float on the grey background */
   --card: 0 0% 100%;
-  --card-foreground: 220 20% 10%;
-  --card-border: 220 13% 88%;
+  --card-foreground: 240 6% 12%;
+  --card-border: 240 12% 92%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 10%;
-  --popover-border: 220 13% 88%;
+  --popover-foreground: 240 6% 12%;
+  --popover-border: 240 12% 92%;
 
   /* Brand primary */
   --primary: var(--brand-h) var(--brand-s) var(--brand-l);
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 13% 96%;
-  --secondary-foreground: 220 20% 10%;
+  /* iOS fill greys for secondary surfaces */
+  --secondary: 240 16% 95%;
+  --secondary-foreground: 240 6% 16%;
 
-  --muted: 220 13% 96%;
-  --muted-foreground: 220 9% 46%;
+  --muted: 240 16% 95%;
+  --muted-foreground: 240 4% 46%;
 
-  --accent: 220 13% 96%;
-  --accent-foreground: 220 20% 10%;
+  --accent: 240 16% 95%;
+  --accent-foreground: 240 6% 16%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 0 72% 56%;
   --destructive-foreground: 0 0% 100%;
 
   --chart-1: var(--brand-h) var(--brand-s) var(--brand-l);
@@ -104,50 +126,53 @@
   --chart-4: 43 74% 66%;
   --chart-5: 0 84% 60%;
 
-  /* White sidebar */
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 220 20% 14%;
-  --sidebar-border: 220 13% 88%;
-  --sidebar-primary: 0 0% 16%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 220 13% 95%;
-  --sidebar-accent-foreground: 220 20% 14%;
-  --sidebar-ring: 220 13% 70%;
-
-  --radius: 0rem;
+  /* Sidebar: a touch off the page grey so it reads as its own surface */
+  --sidebar: 240 22% 98%;
+  --sidebar-foreground: 240 6% 18%;
+  --sidebar-border: 240 11% 91%;
+  --sidebar-primary: var(--brand-h) var(--brand-s) var(--brand-l);
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 16% 94%;
+  --sidebar-accent-foreground: 240 6% 16%;
+  --sidebar-ring: 240 10% 70%;
 }
 
 .dark {
-  --background: 220 20% 8%;
-  --foreground: 220 15% 92%;
+  /* iOS dark mode: not pure black - layered charcoal greys with white cards
+     replaced by slightly-raised dark surfaces. */
+  --background: 240 8% 7%;
+  --foreground: 240 12% 94%;
 
-  --border: 220 15% 16%;
-  --input: 220 15% 16%;
+  --border: 240 6% 18%;
+  --input: 240 6% 20%;
 
-  --card: 220 20% 10%;
-  --card-foreground: 220 15% 92%;
-  --card-border: 220 15% 16%;
+  --card: 240 8% 11%;
+  --card-foreground: 240 12% 94%;
+  --card-border: 240 6% 18%;
 
-  --popover: 220 20% 10%;
-  --popover-foreground: 220 15% 92%;
-  --popover-border: 220 15% 16%;
+  --popover: 240 8% 12%;
+  --popover-foreground: 240 12% 94%;
+  --popover-border: 240 6% 18%;
 
-  --secondary: 220 15% 14%;
-  --secondary-foreground: 220 15% 92%;
+  --secondary: 240 6% 16%;
+  --secondary-foreground: 240 12% 94%;
 
-  --muted: 220 15% 14%;
-  --muted-foreground: 220 10% 55%;
+  --muted: 240 6% 16%;
+  --muted-foreground: 240 6% 60%;
 
-  --accent: 220 15% 14%;
-  --accent-foreground: 220 15% 92%;
+  --accent: 240 6% 18%;
+  --accent-foreground: 240 12% 95%;
 
-  --sidebar: 220 20% 10%;
-  --sidebar-foreground: 220 15% 85%;
-  --sidebar-border: 220 15% 16%;
-  --sidebar-primary: 0 0% 25%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 220 15% 14%;
-  --sidebar-accent-foreground: 220 15% 95%;
+  --destructive: 0 72% 56%;
+  --destructive-foreground: 0 0% 100%;
+
+  --sidebar: 240 8% 10%;
+  --sidebar-foreground: 240 10% 88%;
+  --sidebar-border: 240 6% 18%;
+  --sidebar-primary: var(--brand-h) var(--brand-s) var(--brand-l);
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 6% 17%;
+  --sidebar-accent-foreground: 240 12% 95%;
 }
 
 @layer base {
@@ -157,23 +182,18 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-  }
-
-  /* Remove all default shadows globally */
-  *,
-  *::before,
-  *::after {
-    --tw-shadow: none;
-    --tw-ring-shadow: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
   }
 }
 
-/* Flat, sharp overrides for Shadcn components */
 @layer components {
-  /* Inputs - square corners + always-readable text color (overrides
-     browser/user-agent defaults and stops autofill from showing as grey) */
+  /* Inputs - rounded to match the iOS feel + always-readable text colour
+     (overrides browser/user-agent defaults and stops autofill from showing
+     as grey). */
   input, textarea, select {
-    border-radius: 0 !important;
     color: hsl(var(--foreground));
   }
   input::placeholder, textarea::placeholder {
@@ -181,26 +201,15 @@
     opacity: 1;
   }
   /* Chrome/Safari autofill paints its own background + text colour. Override
-     both so autofilled email/password values stay readable on the white form. */
+     both so autofilled email/password values stay readable on the form. */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
     -webkit-text-fill-color: hsl(var(--foreground)) !important;
-    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--card)) inset !important;
     caret-color: hsl(var(--foreground));
     transition: background-color 9999s ease-in-out 0s;
-  }
-
-  /* No shadows on anything */
-  .shadow,
-  .shadow-sm,
-  .shadow-md,
-  .shadow-lg,
-  .shadow-xl,
-  .shadow-2xl,
-  .shadow-xs {
-    box-shadow: none !important;
   }
 
   /* Clean table */
@@ -208,17 +217,70 @@
     border-collapse: collapse;
   }
 
-  /* Scrollbar minimal */
+  /* Minimal, rounded scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 0;
+    background: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+    background-clip: padding-box;
   }
 }
 
+@layer utilities {
+  /* Gentle iOS-style entrance: content lifts and fades in on mount. */
+  @keyframes ios-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.992);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-page {
+    animation: ios-enter 0.42s var(--ease-ios) both;
+  }
+
+  /* Soft press feedback any element can opt into. */
+  .tap {
+    transition: transform 0.18s var(--ease-ios), box-shadow 0.18s var(--ease-ios);
+  }
+  .tap:active {
+    transform: scale(0.97);
+  }
+
+  /* Respect the OS "reduce motion" setting everywhere: neutralize entrance
+     animations, easing transitions and tap-scale feedback app-wide, not just
+     on our own utilities. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .animate-page,
+    .tap {
+      animation: none !important;
+    }
+    .tap:active,
+    .active\:scale-\[0\.97\]:active,
+    .active\:scale-\[0\.98\]:active {
+      transform: none !important;
+    }
+  }
+}
