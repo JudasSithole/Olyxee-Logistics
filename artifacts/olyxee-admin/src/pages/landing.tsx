@@ -537,17 +537,6 @@ const Landing: FC = () => {
       {/* === HERO === */}
       <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-20 px-4 sm:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          {/* dateline rule */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.05, ease }}
-            className="flex items-center justify-between border-t-2 border-neutral-900 pt-3 mb-12 sm:mb-16"
-          >
-            <span style={mono} className="text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-900">OLYXEE / ORDER LOOP</span>
-            <span style={mono} className="text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-400">FOR LOCAL BUSINESS</span>
-          </motion.div>
-
           <div className="grid grid-cols-12 gap-y-16 gap-x-8 items-start">
             {/* Headline block */}
             <div className="col-span-12 lg:col-span-7">
