@@ -312,14 +312,9 @@ const OrderScreen: FC<OrderScreenProps> = ({ variant, step, cust, custIdx, detai
   );
 };
 
-const MacBookFrame: FC<{ children: ReactNode }> = ({ children }) => (
-  <div className="relative w-full max-w-3xl mx-auto">
-    <div className="rounded-[1.25rem] bg-neutral-800 p-3 ring-1 ring-neutral-700 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.45)]">
-      <div className="rounded-lg overflow-hidden bg-white aspect-[16/10]">{children}</div>
-    </div>
-    <div className="relative left-1/2 -translate-x-1/2 h-3.5 w-[112%] rounded-b-2xl bg-gradient-to-b from-neutral-300 to-neutral-400 shadow-[0_12px_24px_-8px_rgba(0,0,0,0.35)]">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1.5 w-28 rounded-b-xl bg-neutral-400/80" />
-    </div>
+const ScreenFrame: FC<{ children: ReactNode }> = ({ children }) => (
+  <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden bg-white ring-1 ring-neutral-200/80 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.35)]">
+    <div className="aspect-[16/10]">{children}</div>
   </div>
 );
 
@@ -372,9 +367,9 @@ const CreateOrderMock: FC = () => {
         </PhoneFrame>
       </div>
       <div className="hidden sm:block">
-        <MacBookFrame>
+        <ScreenFrame>
           <OrderScreen variant="desktop" {...screenProps} />
-        </MacBookFrame>
+        </ScreenFrame>
       </div>
     </>
   );
