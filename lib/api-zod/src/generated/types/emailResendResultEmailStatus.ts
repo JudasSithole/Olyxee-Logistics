@@ -6,12 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type StatusUpdateResultEmailStatus = typeof StatusUpdateResultEmailStatus[keyof typeof StatusUpdateResultEmailStatus];
+export type EmailResendResultEmailStatus = typeof EmailResendResultEmailStatus[keyof typeof EmailResendResultEmailStatus];
 
 
-export const StatusUpdateResultEmailStatus = {
+export const EmailResendResultEmailStatus = {
   sent: 'sent',
   failed: 'failed',
-  skipped: 'skipped',
   limit_reached: 'limit_reached',
 } as const;

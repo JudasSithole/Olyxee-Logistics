@@ -13,4 +13,5 @@ export const EmailNotificationStatus = {
   sent: 'sent',
   failed: 'failed',
   pending: 'pending',
+  limit_reached: 'limit_reached',
 } as const;

@@ -11,7 +11,7 @@ export const emailNotificationsTable = pgTable("email_notifications", {
   customerEmail: text("customer_email").notNull(),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
-  status: text("status", { enum: ["sent", "failed", "pending"] })
+  status: text("status", { enum: ["sent", "failed", "pending", "limit_reached"] })
     .notNull()
     .default("pending"),
   providerMessageId: text("provider_message_id"),

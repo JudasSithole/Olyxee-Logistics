@@ -1161,6 +1161,52 @@ function EmailCustomizationSection({
         <span className="text-muted-foreground/70">your business</span>
       </div>
 
+      {/* Monthly email usage */}
+      {(() => {
+        const used = business?.email_usage_this_month ?? 0;
+        const limit = business?.monthly_email_limit ?? 500;
+        const reached = used >= limit;
+        const near = !reached && used >= limit * 0.8;
+        const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+        return (
+          <div className="px-4 py-3 border-t border-border">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-foreground">Emails this month</span>
+              <span
+                className={cn(
+                  "font-mono",
+                  reached ? "text-destructive" : near ? "text-amber-600" : "text-muted-foreground",
+                )}
+              >
+                {used} / {limit}
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 w-full bg-muted overflow-hidden rounded-full">
+              <div
+                className={cn(
+                  "h-full transition-all",
+                  reached ? "bg-destructive" : near ? "bg-amber-500" : "bg-foreground",
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            {reached ? (
+              <p className="mt-2 text-xs text-destructive">
+                You've reached your monthly email limit. Customer status emails won't be sent until next month — upgrade to send more.
+              </p>
+            ) : near ? (
+              <p className="mt-2 text-xs text-amber-600">
+                You're close to your monthly email limit. Consider upgrading to avoid interruptions.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Resets on the 1st of each month.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       {isLoading && !loaded ? (
         <div
           className="px-4 py-8 flex items-center justify-center"

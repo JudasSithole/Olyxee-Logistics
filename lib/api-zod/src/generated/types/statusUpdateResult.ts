@@ -14,4 +14,8 @@ export interface StatusUpdateResult {
   trackingEvent: TrackingEvent;
   emailStatus: StatusUpdateResultEmailStatus;
   emailNotificationId?: string;
+  /** Status emails sent this month after this update. */
+  emailUsage?: number;
+  /** This business's monthly email allowance. */
+  emailLimit?: number;
 }

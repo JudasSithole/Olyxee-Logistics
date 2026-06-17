@@ -13,6 +13,7 @@ import { eq, inArray } from "drizzle-orm";
 import { UpdateBusinessBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
+import { getMonthlyEmailUsage } from "../lib/email-usage";
 import { DEMO_BUSINESS_ID } from "./auth";
 import { SESSION_COOKIE, sessionCookieOptions } from "../lib/session";
 
@@ -31,13 +32,18 @@ const DEMO_BUSINESS = {
   emailFooterNote: null,
   trackingIdPrefix: "TRK",
   allowedOrigins: null,
+  monthlyEmailLimit: 500,
+  emailUsageThisMonth: 0,
   onboardingCompleted: true,
   createdAt: new Date("2024-01-01").toISOString(),
 };
 
 const router = Router();
 
-function serialize(business: typeof businessesTable.$inferSelect) {
+function serialize(
+  business: typeof businessesTable.$inferSelect,
+  emailUsageThisMonth: number,
+) {
   return {
     id: business.id,
     name: business.name,
@@ -53,6 +59,8 @@ function serialize(business: typeof businessesTable.$inferSelect) {
     emailFooterNote: business.emailFooterNote,
     trackingIdPrefix: business.trackingIdPrefix,
     allowedOrigins: business.allowedOrigins,
+    monthlyEmailLimit: business.monthlyEmailLimit,
+    emailUsageThisMonth,
     onboardingCompleted: business.onboardingCompleted,
     createdAt: business.createdAt.toISOString(),
   };
@@ -77,7 +85,8 @@ router.get("/business", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json(serialize(business));
+    const emailUsageThisMonth = await getMonthlyEmailUsage(businessId);
+    res.json(serialize(business, emailUsageThisMonth));
   } catch (err) {
     req.log.error({ err }, "Failed to get business");
     res.status(500).json({ error: "Internal server error" });
@@ -173,7 +182,8 @@ router.put("/business", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json(serialize(updated));
+    const emailUsageThisMonth = await getMonthlyEmailUsage(businessId);
+    res.json(serialize(updated, emailUsageThisMonth));
   } catch (err) {
     req.log.error({ err }, "Failed to update business");
     res.status(500).json({ error: "Internal server error" });

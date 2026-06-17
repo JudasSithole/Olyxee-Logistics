@@ -44,6 +44,8 @@ export interface Database {
           onboarding_completed: boolean;
           onboarding_step: number;
           plan: string;
+          monthly_email_limit: number;
+          email_usage_this_month: number;
           created_at: string;
           updated_at: string;
         };

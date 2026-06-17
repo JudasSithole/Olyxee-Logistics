@@ -24,6 +24,10 @@ export interface Business {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  /** Maximum status emails this business may send per calendar month. */
+  monthlyEmailLimit?: number;
+  /** Status emails actually sent this calendar month. */
+  emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
   createdAt: string;
 }
@@ -152,6 +156,7 @@ export const EmailNotificationStatus = {
   sent: 'sent',
   failed: 'failed',
   pending: 'pending',
+  limit_reached: 'limit_reached',
 } as const;
 
 export interface EmailNotification {
@@ -216,6 +221,7 @@ export const StatusUpdateResultEmailStatus = {
   sent: 'sent',
   failed: 'failed',
   skipped: 'skipped',
+  limit_reached: 'limit_reached',
 } as const;
 
 export interface StatusUpdateResult {
@@ -223,12 +229,28 @@ export interface StatusUpdateResult {
   trackingEvent: TrackingEvent;
   emailStatus: StatusUpdateResultEmailStatus;
   emailNotificationId?: string;
+  /** Status emails sent this month after this update. */
+  emailUsage?: number;
+  /** This business's monthly email allowance. */
+  emailLimit?: number;
 }
+
+export type EmailResendResultEmailStatus = typeof EmailResendResultEmailStatus[keyof typeof EmailResendResultEmailStatus];
+
+
+export const EmailResendResultEmailStatus = {
+  sent: 'sent',
+  failed: 'failed',
+  limit_reached: 'limit_reached',
+} as const;
 
 export interface EmailResendResult {
   success: boolean;
   emailNotificationId?: string;
   message: string;
+  emailStatus?: EmailResendResultEmailStatus;
+  emailUsage?: number;
+  emailLimit?: number;
 }
 
 export type AuditLogMetadata = { [key: string]: unknown };
@@ -299,71 +321,4 @@ entityId?: string;
 page?: number;
 limit?: number;
 };
-
-// ─── Workflow Template Engine ─────────────────────────────────────────────────
-
-export interface WorkflowStep {
-  id: string;
-  templateId: string;
-  label: string;
-  description?: string | null;
-  position: number;
-  color?: string | null;
-  isTerminal: boolean;
-}
-
-export interface WorkflowTemplateWithSteps {
-  id: string;
-  businessId: string;
-  name: string;
-  description?: string | null;
-  businessType?: string | null;
-  createdAt: string;
-  steps: WorkflowStep[];
-}
-
-export interface WorkflowStepInput {
-  label: string;
-  description?: string;
-  position: number;
-  color?: string;
-  isTerminal: boolean;
-}
-
-export interface WorkflowTemplateCreate {
-  name: string;
-  description?: string;
-  businessType?: string;
-  steps: WorkflowStepInput[];
-}
-
-export interface WorkflowTemplateUpdate {
-  name?: string;
-  description?: string | null;
-  businessType?: string | null;
-}
-
-export interface WorkflowTemplateClone {
-  name: string;
-  description?: string;
-  businessType?: string;
-  steps: WorkflowStepInput[];
-}
-
-export interface WorkflowStepsUpdate {
-  steps: WorkflowStepInput[];
-}
-
-export interface BusinessWorkflowActive {
-  id: string;
-  businessId: string;
-  templateId: string;
-  templateName: string;
-  assignedAt: string;
-}
-
-export interface ActivateWorkflowInput {
-  templateId: string;
-  templateName: string;
-}
 

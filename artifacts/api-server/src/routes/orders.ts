@@ -12,6 +12,7 @@ import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId } from "../lib/id";
 import { sendStatusEmail, buildEmailBody } from "../lib/email";
+import { getMonthlyEmailUsage } from "../lib/email-usage";
 import {
   CreateOrderBody,
   UpdateOrderStatusBody,
@@ -352,8 +353,10 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       : "";
 
     // 4. Send email
-    let emailStatus: "sent" | "failed" | "skipped" = "skipped";
+    let emailStatus: "sent" | "failed" | "skipped" | "limit_reached" = "skipped";
     let emailNotificationId: string | undefined;
+    let emailUsage: number | undefined;
+    let emailLimit: number | undefined;
 
     if (customer && business) {
       const emailParams = {
@@ -372,23 +375,48 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
 
       const { subject, body } = buildEmailBody(emailParams);
 
-      const emailResult = await sendStatusEmail(emailParams);
-      emailStatus = emailResult.success ? "sent" : "failed";
+      // Enforce the per-business monthly email allowance. Once reached we skip
+      // the send entirely (so it doesn't consume the next month's quota) and
+      // record a "limit_reached" row so the order history shows why no email
+      // went out. The status update itself still succeeds.
+      emailLimit = business.monthlyEmailLimit;
+      emailUsage = await getMonthlyEmailUsage(businessId);
 
-      // 5. Save email notification
-      const notif = await db
-        .insert(emailNotificationsTable)
-        .values({
-          id: generateId(),
-          orderId,
-          customerEmail: customer.email,
-          subject,
-          body,
-          status: emailStatus,
-          providerMessageId: emailResult.messageId ?? null,
-        })
-        .returning();
-      emailNotificationId = notif[0]?.id;
+      if (emailUsage >= emailLimit) {
+        emailStatus = "limit_reached";
+        const notif = await db
+          .insert(emailNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerEmail: customer.email,
+            subject,
+            body,
+            status: "limit_reached",
+            providerMessageId: null,
+          })
+          .returning();
+        emailNotificationId = notif[0]?.id;
+      } else {
+        const emailResult = await sendStatusEmail(emailParams);
+        emailStatus = emailResult.success ? "sent" : "failed";
+        if (emailStatus === "sent") emailUsage += 1;
+
+        // 5. Save email notification
+        const notif = await db
+          .insert(emailNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerEmail: customer.email,
+            subject,
+            body,
+            status: emailStatus,
+            providerMessageId: emailResult.messageId ?? null,
+          })
+          .returning();
+        emailNotificationId = notif[0]?.id;
+      }
     }
 
     // 6. Audit log
@@ -410,6 +438,8 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       },
       emailStatus,
       emailNotificationId,
+      emailUsage,
+      emailLimit,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to update order status");
@@ -553,6 +583,47 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
     };
 
     const { subject, body } = buildEmailBody(emailParams);
+
+    // Same monthly allowance check as the status endpoint — a manual resend
+    // counts against the quota too.
+    const emailLimit = business.monthlyEmailLimit;
+    const emailUsage = await getMonthlyEmailUsage(businessId);
+
+    if (emailUsage >= emailLimit) {
+      const notif = await db
+        .insert(emailNotificationsTable)
+        .values({
+          id: generateId(),
+          orderId,
+          customerEmail: customer.email,
+          subject,
+          body,
+          status: "limit_reached",
+          providerMessageId: null,
+        })
+        .returning();
+
+      await db.insert(auditLogsTable).values({
+        id: generateId(),
+        businessId,
+        userId,
+        action: "RESEND_EMAIL",
+        entityType: "order",
+        entityId: orderId,
+        metadata: { emailStatus: "limit_reached" },
+      });
+
+      res.json({
+        success: false,
+        emailNotificationId: notif[0]?.id,
+        message: `Monthly email limit reached (${emailUsage}/${emailLimit}). Upgrade to send more emails.`,
+        emailStatus: "limit_reached",
+        emailUsage,
+        emailLimit,
+      });
+      return;
+    }
+
     const emailResult = await sendStatusEmail(emailParams);
     const emailStatus = emailResult.success ? "sent" : "failed";
 
@@ -583,6 +654,9 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       success: emailResult.success,
       emailNotificationId: notif[0]?.id,
       message: emailResult.success ? "Email resent successfully" : emailResult.error,
+      emailStatus,
+      emailUsage: emailStatus === "sent" ? emailUsage + 1 : emailUsage,
+      emailLimit,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to resend email");

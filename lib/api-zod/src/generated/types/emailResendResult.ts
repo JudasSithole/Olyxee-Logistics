@@ -5,9 +5,13 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { EmailResendResultEmailStatus } from './emailResendResultEmailStatus';
 
 export interface EmailResendResult {
   success: boolean;
   emailNotificationId?: string;
   message: string;
+  emailStatus?: EmailResendResultEmailStatus;
+  emailUsage?: number;
+  emailLimit?: number;
 }

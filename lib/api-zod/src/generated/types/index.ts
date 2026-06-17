@@ -17,6 +17,7 @@ export * from './dashboardSummary';
 export * from './emailNotification';
 export * from './emailNotificationStatus';
 export * from './emailResendResult';
+export * from './emailResendResultEmailStatus';
 export * from './healthStatus';
 export * from './listAuditLogsParams';
 export * from './listCustomersParams';

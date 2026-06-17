@@ -34,6 +34,8 @@ export const GetBusinessResponse = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
+  "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -73,6 +75,8 @@ export const UpdateBusinessResponse = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
+  "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -363,7 +367,7 @@ export const GetOrderResponse = zod.object({
   "customerEmail": zod.string(),
   "subject": zod.string(),
   "body": zod.string().optional(),
-  "status": zod.enum(['sent', 'failed', 'pending']),
+  "status": zod.enum(['sent', 'failed', 'pending', 'limit_reached']),
   "providerMessageId": zod.string().optional(),
   "createdAt": zod.string()
 }))
@@ -405,8 +409,10 @@ export const UpdateOrderStatusResponse = zod.object({
   "createdBy": zod.string().optional(),
   "createdAt": zod.string()
 }),
-  "emailStatus": zod.enum(['sent', 'failed', 'skipped']),
-  "emailNotificationId": zod.string().optional()
+  "emailStatus": zod.enum(['sent', 'failed', 'skipped', 'limit_reached']),
+  "emailNotificationId": zod.string().optional(),
+  "emailUsage": zod.number().optional().describe('Status emails sent this month after this update.'),
+  "emailLimit": zod.number().optional().describe('This business\'s monthly email allowance.')
 })
 
 
@@ -420,7 +426,10 @@ export const ResendOrderEmailParams = zod.object({
 export const ResendOrderEmailResponse = zod.object({
   "success": zod.boolean(),
   "emailNotificationId": zod.string().optional(),
-  "message": zod.string()
+  "message": zod.string(),
+  "emailStatus": zod.enum(['sent', 'failed', 'limit_reached']).optional(),
+  "emailUsage": zod.number().optional(),
+  "emailLimit": zod.number().optional()
 })
 
 
@@ -456,7 +465,7 @@ export const GetEmailNotificationsResponseItem = zod.object({
   "customerEmail": zod.string(),
   "subject": zod.string(),
   "body": zod.string().optional(),
-  "status": zod.enum(['sent', 'failed', 'pending']),
+  "status": zod.enum(['sent', 'failed', 'pending', 'limit_reached']),
   "providerMessageId": zod.string().optional(),
   "createdAt": zod.string()
 })
@@ -493,44 +502,5 @@ export const ListAuditLogsResponse = zod.object({
   "page": zod.number(),
   "limit": zod.number()
 })
-
-// ─── Workflow Template Engine ─────────────────────────────────────────────────
-
-const WorkflowStepInputSchema = zod.object({
-  label: zod.string().min(1).max(100),
-  description: zod.string().max(500).optional(),
-  position: zod.number().int().min(0),
-  color: zod.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  isTerminal: zod.boolean().default(false),
-});
-
-export const CreateWorkflowTemplateBody = zod.object({
-  name: zod.string().min(1).max(100),
-  description: zod.string().max(500).optional(),
-  businessType: zod.string().optional(),
-  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
-});
-
-export const UpdateWorkflowTemplateBody = zod.object({
-  name: zod.string().min(1).max(100).optional(),
-  description: zod.string().max(500).nullish(),
-  businessType: zod.string().nullish(),
-});
-
-export const CloneWorkflowTemplateBody = zod.object({
-  name: zod.string().min(1).max(100),
-  description: zod.string().max(500).optional(),
-  businessType: zod.string().optional(),
-  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
-});
-
-export const UpdateWorkflowStepsBody = zod.object({
-  steps: zod.array(WorkflowStepInputSchema).min(1).max(50),
-});
-
-export const ActivateWorkflowBody = zod.object({
-  templateId: zod.string().min(1),
-  templateName: zod.string().min(1),
-});
 
 

@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -30,6 +30,12 @@ export const businessesTable = pgTable("businesses", {
   // public endpoints (currently /api/public/track/:id) cross-origin. Lets each
   // tenant whitelist their own customer site without redeploying the API.
   allowedOrigins: text("allowed_origins"),
+  // Maximum number of customer status-update emails this business may send per
+  // calendar month. Once reached, the API stops sending and surfaces an
+  // "upgrade" prompt. Raising this value (manually) is how a business is
+  // "upgraded". Default keeps total volume across tenants inside the email
+  // provider's free tier.
+  monthlyEmailLimit: integer("monthly_email_limit").notNull().default(500),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

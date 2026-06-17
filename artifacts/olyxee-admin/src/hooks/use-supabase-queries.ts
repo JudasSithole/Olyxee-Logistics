@@ -185,6 +185,8 @@ interface ApiBusiness {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  monthlyEmailLimit?: number;
+  emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
   createdAt: string;
 }
@@ -214,6 +216,8 @@ function mapBusiness(b: ApiBusiness): Business {
     onboarding_completed: b.onboardingCompleted,
     onboarding_step: 0,
     plan: "free",
+    monthly_email_limit: b.monthlyEmailLimit ?? 500,
+    email_usage_this_month: b.emailUsageThisMonth ?? 0,
     created_at: b.createdAt,
     updated_at: b.createdAt,
   };
@@ -620,7 +624,12 @@ export function useUpdateOrderStatus() {
       location?: string;
       userId?: string;
     }) => {
-      await apiFetch(`/api/orders/${orderId}/status`, {
+      return await apiFetch<{
+        emailStatus: "sent" | "failed" | "skipped" | "limit_reached";
+        emailNotificationId?: string;
+        emailUsage?: number;
+        emailLimit?: number;
+      }>(`/api/orders/${orderId}/status`, {
         method: "POST",
         body: {
           status,
@@ -1119,14 +1128,22 @@ export function useSendNotification() {
       if (channel !== "email") {
         notSupported(`Sending ${channel} notifications`);
       }
-      const res = await apiFetch<{ success: boolean; emailNotificationId?: string; message: string }>(
-        `/api/orders/${orderId}/resend-email`,
-        { method: "POST" },
-      );
+      const res = await apiFetch<{
+        success: boolean;
+        emailNotificationId?: string;
+        message: string;
+        emailStatus?: "sent" | "failed" | "limit_reached";
+        emailUsage?: number;
+        emailLimit?: number;
+      }>(`/api/orders/${orderId}/resend-email`, { method: "POST" });
       return {
         success: res.success,
         provider_message_id: res.emailNotificationId,
-      } as { success: boolean; provider_message_id?: string };
+        message: res.message,
+        emailStatus: res.emailStatus,
+        emailUsage: res.emailUsage,
+        emailLimit: res.emailLimit,
+      };
     },
   });
 }

@@ -202,8 +202,16 @@ export default function OrderDetailPage() {
         userId: user!.id,
       },
       {
-        onSuccess: () => {
-          toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
+        onSuccess: (data) => {
+          if (data?.emailStatus === "limit_reached") {
+            toast.warning(
+              `Status updated, but the email wasn't sent — you've reached this month's email limit (${data.emailUsage ?? ""}/${data.emailLimit ?? ""}). Upgrade to keep notifying customers.`,
+            );
+          } else if (data?.emailStatus === "failed") {
+            toast.warning(`Status updated to "${statusForm.status}", but the email failed to send.`);
+          } else {
+            toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
+          }
           setStatusForm({ status: "", location: "" });
           refetch();
         },
@@ -216,7 +224,19 @@ export default function OrderDetailPage() {
     resendMutation.mutate(
       { orderId: id! },
       {
-        onSuccess: () => { toast.success("Email resent to customer"); refetch(); },
+        onSuccess: (data) => {
+          if (data?.emailStatus === "limit_reached") {
+            toast.warning(
+              data.message ||
+                "Monthly email limit reached. Upgrade to send more emails.",
+            );
+          } else if (!data?.success) {
+            toast.error(data?.message || "Failed to resend email");
+          } else {
+            toast.success("Email resent to customer");
+          }
+          refetch();
+        },
         onError: () => toast.error("Failed to resend email"),
       }
     );

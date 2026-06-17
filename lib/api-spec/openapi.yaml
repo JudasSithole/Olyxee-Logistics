@@ -566,6 +566,12 @@ components:
         allowedOrigins:
           type: string
           nullable: true
+        monthlyEmailLimit:
+          type: integer
+          description: Maximum status emails this business may send per calendar month.
+        emailUsageThisMonth:
+          type: integer
+          description: Status emails actually sent this calendar month.
         onboardingCompleted:
           type: boolean
         createdAt:
@@ -930,8 +936,15 @@ components:
             - sent
             - failed
             - skipped
+            - limit_reached
         emailNotificationId:
           type: string
+        emailUsage:
+          type: integer
+          description: Status emails sent this month after this update.
+        emailLimit:
+          type: integer
+          description: This business's monthly email allowance.
       required:
         - order
         - trackingEvent
@@ -946,6 +959,16 @@ components:
           type: string
         message:
           type: string
+        emailStatus:
+          type: string
+          enum:
+            - sent
+            - failed
+            - limit_reached
+        emailUsage:
+          type: integer
+        emailLimit:
+          type: integer
       required:
         - success
         - message
@@ -992,6 +1015,7 @@ components:
             - sent
             - failed
             - pending
+            - limit_reached
         providerMessageId:
           type: string
         createdAt:
