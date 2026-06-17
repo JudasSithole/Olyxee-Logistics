@@ -21,13 +21,13 @@ import repairPhoto from "@assets/image_1781655658557.png";
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
 const statusWords = [
+  "ORDER PLACED",
   "CONFIRMED",
   "IN PROGRESS",
-  "READY",
-  "OUT FOR DELIVERY",
-  "COLLECTED",
-  "DELIVERED",
+  "READY FOR COLLECTION",
   "NOTIFIED",
+  "PICKED UP",
+  "COLLECTED",
 ];
 
 const serif = { fontFamily: '"Lora", ui-serif, Georgia, serif', fontWeight: 500 };
