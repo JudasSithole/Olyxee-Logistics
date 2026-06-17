@@ -15,9 +15,10 @@ const ease = [0.25, 0.1, 0.25, 1] as const;
 
 const statusWords = [
   "CONFIRMED",
-  "PACKED",
-  "SHIPPED",
+  "IN PROGRESS",
+  "READY",
   "OUT FOR DELIVERY",
+  "COLLECTED",
   "DELIVERED",
   "NOTIFIED",
 ];
@@ -106,7 +107,7 @@ const UPCOMING: UpcomingItem[] = [
     tag: "Q4 · 2026",
     icon: Route,
     title: "Route optimizer",
-    body: "Drag a day's worth of orders onto the map and Courier Loop builds the fastest multi-stop route for every driver — accounting for traffic, time windows, and vehicle load.",
+    body: "Drag a day's worth of orders onto the map and Order Loop builds the fastest multi-stop route for every team member — accounting for traffic, time windows, and vehicle load.",
     bullets: ["Multi-stop sequencing", "Live traffic & ETA recalc", "Driver mobile handoff"],
     accent: "from-sky-400 to-indigo-500",
   },
@@ -114,8 +115,8 @@ const UPCOMING: UpcomingItem[] = [
     tag: "2027",
     icon: BarChart3,
     title: "Insights & forecasting",
-    body: "Know which lanes are slipping, which couriers are crushing it, and what next week's volume will look like — before it lands.",
-    bullets: ["SLA scorecards", "Volume forecasts", "Cost-per-delivery breakdowns"],
+    body: "Know which orders are slipping, which team members are crushing it, and what next week's volume will look like — before it lands.",
+    bullets: ["SLA scorecards", "Volume forecasts", "Cost-per-order breakdowns"],
     accent: "from-emerald-400 to-teal-500",
   },
 ];
@@ -174,7 +175,7 @@ const UpcomingSection: FC = () => {
                     <Icon className="w-5 h-5" />
                   </span>
                   <span style={mono} className="text-[10px] tracking-[0.3em] text-neutral-400">{item.tag}</span>
-                  <span style={mono} className="text-[10px] tracking-[0.25em] px-2 py-1 rounded-full bg-orange-100 text-orange-700">COMING SOON</span>
+                  <span style={mono} className="text-[10px] tracking-[0.25em] px-2 py-1 rounded-full bg-orange-100 text-orange-700">PLANNED</span>
                 </div>
                 <h3 style={serif} className="text-3xl sm:text-5xl tracking-tight leading-tight mb-5">{item.title}</h3>
                 <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mb-8">{item.body}</p>
@@ -217,12 +218,12 @@ const Landing: FC = () => {
           <Link href="/" className="flex items-center">
             <img
               src={navLogo}
-              alt="Courier Loop"
+              alt="Order Loop"
               className="h-7 sm:h-9 w-auto object-contain"
             />
           </Link>
           <Link href="/login" className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
-            Sign in
+            Log In
           </Link>
         </div>
       </header>
@@ -250,7 +251,7 @@ const Landing: FC = () => {
               className="col-span-12 lg:col-span-3 lg:pb-6"
             >
               <p className="text-lg sm:text-xl text-neutral-700 leading-relaxed max-w-sm">
-                Order status updates that keep every customer in the loop, from confirmed to delivered.
+                Order Loop helps businesses manage customer orders, update statuses, and keep customers informed — all from one simple dashboard.
               </p>
             </motion.div>
           </div>
@@ -263,7 +264,7 @@ const Landing: FC = () => {
               transition={{ duration: 1, delay: 0.4, ease }}
               className="col-span-12 lg:col-span-8 relative aspect-[4/3] sm:aspect-[16/10]"
             >
-              <img src={heroPhoto} alt="Isometric illustration of the Courier Loop logistics network" className="absolute inset-0 w-full h-full object-contain" />
+              <img src={heroPhoto} alt="Isometric illustration of the Order Loop order operations network" className="absolute inset-0 w-full h-full object-contain" />
             </motion.div>
 
             <motion.div
@@ -276,7 +277,7 @@ const Landing: FC = () => {
                 href="/login?mode=signup"
                 className="group inline-flex items-center justify-between gap-6 px-7 py-5 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
               >
-                <span className="text-sm font-medium tracking-wide">Try Courier Loop</span>
+                <span className="text-sm font-medium tracking-wide">Start Managing Orders</span>
                 <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
                   <ArrowUpRight className="w-4 h-4" />
                 </span>
@@ -286,7 +287,7 @@ const Landing: FC = () => {
                 style={mono}
                 className="text-[11px] tracking-[0.22em] text-neutral-400 hover:text-neutral-900 transition-colors pl-2"
               >
-                → LOGISTICS.OLYXEE.COM
+                → OPEN DASHBOARD
               </Link>
             </motion.div>
           </div>
@@ -418,7 +419,7 @@ const Landing: FC = () => {
             transition={{ duration: 0.9, ease }}
             className="col-span-12 lg:col-span-7 relative aspect-[4/5] lg:aspect-auto lg:min-h-[640px] rounded-[2rem] overflow-hidden"
           >
-            <img src={handoffPhoto} alt="Courier handing a package to a smiling customer" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={handoffPhoto} alt="Team member handing an order to a smiling customer" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
               <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">DELIVERED · 14:02</p>
@@ -462,7 +463,7 @@ const Landing: FC = () => {
                   href="/login"
                   className="group inline-flex items-center justify-between gap-6 px-7 py-5 bg-white text-neutral-900 rounded-full hover:bg-orange-400 transition-colors"
                 >
-                  <span className="text-sm font-medium tracking-wide">Open the app</span>
+                  <span className="text-sm font-medium tracking-wide">Open Dashboard</span>
                   <span className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
                     <ArrowUpRight className="w-4 h-4" />
                   </span>
@@ -501,8 +502,8 @@ export const SiteFooter: FC = () => (
             <span style={serif} className="text-xl tracking-tight">Olyxee</span>
           </Link>
           <p className="mt-5 text-sm text-neutral-600 leading-relaxed max-w-sm">
-            Courier Loop is the order-tracking and customer-notification layer
-            for modern logistics teams — from confirmed to delivered, in one loop.
+            Order Loop is the order-tracking and customer-notification layer
+            for businesses and operations teams — from confirmed to delivered, in one loop.
           </p>
         </div>
 
@@ -529,7 +530,7 @@ export const SiteFooter: FC = () => (
             </li>
             <li>
               <Link href="/login" className="text-neutral-700 hover:text-neutral-950">
-                Sign in
+                Log In
               </Link>
             </li>
           </ul>
@@ -595,7 +596,7 @@ export const SiteFooter: FC = () => (
       {/* Divider + bottom row */}
       <div className="mt-14 pt-6 border-t border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
-          © {new Date().getFullYear()} COURIER LOOP · ALL RIGHTS RESERVED
+          © {new Date().getFullYear()} ORDER LOOP · ALL RIGHTS RESERVED
         </p>
         <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
           MADE IN SOUTH AFRICA
