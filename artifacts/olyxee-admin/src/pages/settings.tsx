@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw, History, Trash2, ShieldAlert,
-  Code2, Copy, Download, Globe, Tag,
+  Code2, Copy, Download, Globe, Tag, CreditCard,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -515,6 +515,7 @@ const NAV_ITEMS = [
   { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
+  { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
   { id: "activity", label: "Activity", icon: History, tint: TINTS.teal },
   { id: "danger", label: "Danger zone", icon: ShieldAlert, tint: TINTS.red },
 ] as const;
@@ -653,7 +654,122 @@ function DangerZone({ businessName }: { businessName: string }) {
   );
 }
 
-// ─── Settings page ────────────────────────────────────────────────────────────
+// ─── Billing & usage ──────────────────────────────────────────────────────────
+// Shows the current plan, this month's email usage against the included limit,
+// and the overage policy ($20 once you exceed the monthly limit). Billing is
+// handled manually today, so this surface is informational - not a checkout flow.
+function BillingSection() {
+  const { user } = useAuth();
+  const { data: business, isLoading } = useBusiness(user?.businessId);
+
+  const used = business?.email_usage_this_month ?? 0;
+  const limit = business?.monthly_email_limit ?? 500;
+  // The $20 charge only kicks in once usage strictly exceeds the limit. Hitting
+  // the limit exactly is a neutral "you're at your cap" state, not an overage.
+  const exceeded = used > limit;
+  const atLimit = used === limit;
+  const near = used >= limit * 0.8 && used < limit;
+  const danger = exceeded || atLimit;
+  const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+  const remaining = Math.max(0, limit - used);
+  const over = Math.max(0, used - limit);
+
+  return (
+    <SectionShell
+      icon={CreditCard}
+      tint={TINTS.green}
+      title="Billing & usage"
+      description="Your plan, this month's email usage, and what happens if you go over."
+    >
+      {/* Current plan */}
+      <div className="px-4 py-4 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Free plan</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Includes {limit.toLocaleString()} customer emails every month.
+          </p>
+        </div>
+        <span className="flex-shrink-0 inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+          Current
+        </span>
+      </div>
+
+      {/* Email usage meter */}
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium text-foreground">Emails sent this month</span>
+          <span
+            className={cn(
+              "font-mono",
+              danger ? "text-destructive" : near ? "text-amber-600" : "text-muted-foreground",
+            )}
+          >
+            {used.toLocaleString()} / {limit.toLocaleString()}
+          </span>
+        </div>
+        <div
+          className="mt-2 h-2 w-full bg-muted overflow-hidden rounded-full"
+          role="progressbar"
+          aria-valuenow={used}
+          aria-valuemin={0}
+          aria-valuemax={limit}
+          aria-label="Monthly email usage"
+        >
+          <div
+            className={cn(
+              "h-full transition-all",
+              danger ? "bg-destructive" : near ? "bg-amber-500" : "bg-foreground",
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {isLoading
+            ? "Loading your usage…"
+            : exceeded
+              ? `You're ${over.toLocaleString()} over your monthly allowance.`
+              : atLimit
+                ? "You've reached your included limit."
+                : `${remaining.toLocaleString()} emails left · resets on the 1st of each month.`}
+        </p>
+      </div>
+
+      {/* Overage policy - the $20 charge once usage exceeds the limit */}
+      <div className="px-4 py-4">
+        <div
+          className={cn(
+            "rounded-[12px] border p-4 flex items-start gap-3",
+            exceeded
+              ? "border-destructive/40 bg-destructive/[0.04]"
+              : "border-amber-300/60 bg-amber-50",
+          )}
+        >
+          <CreditCard
+            className={cn(
+              "h-5 w-5 flex-shrink-0 mt-0.5",
+              exceeded ? "text-destructive" : "text-amber-600",
+            )}
+            aria-hidden="true"
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              {exceeded
+                ? "You've gone over - a $20 charge applies"
+                : "If you go over your monthly limit"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Your plan includes {limit.toLocaleString()} emails each month. If you go over that, a
+              one-time <span className="font-semibold text-foreground">$20</span> charge applies to
+              keep sending customer order updates for the rest of the month. Usage resets to zero on
+              the 1st, with no charge as long as you stay within your limit.
+            </p>
+          </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 export default function SettingsPage() {
   const theme = useTheme();
 
@@ -1003,6 +1119,11 @@ export default function SettingsPage() {
               </div>
             </div>
           </SectionShell>
+        </TabsContent>
+
+        {/* ─── Billing ──────────────────────────────────────────────── */}
+        <TabsContent value="billing" className="mt-6 focus-visible:outline-none">
+          <BillingSection />
         </TabsContent>
 
         {/* ─── Activity ─────────────────────────────────────────────── */}

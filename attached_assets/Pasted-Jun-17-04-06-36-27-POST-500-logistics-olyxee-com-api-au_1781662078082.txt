@@ -1,0 +1,51 @@
+Jun 17 04:06:36.27
+POST
+500
+logistics.olyxee.com
+/api/auth/login
+3
+[login] failed: undefined Failed query: select "id", "business_id", "auth_user_id", "password_hash", "name", "email", "role", "created_at" from "users" "usersTable" where "usersTable"."email" = $1 limit $2 params: scofieldx911@gmail.com,1 undefined
+Jun 17 04:06:29.27
+GET
+401
+order-loop-eggcjl7zq-olyxee.vercel.app
+/api/auth/me
+{"level":30,"time":1781661989393,"pid":4,"hostname":"169.254.0.73","req":{"id":4,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+Jun 17 04:06:26.38
+GET
+401
+order-loop-eggcjl7zq-olyxee.vercel.app
+/api/auth/me
+{"level":30,"time":1781661986536,"pid":4,"hostname":"169.254.0.73","req":{"id":3,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+Jun 17 04:06:17.41
+GET
+401
+logistics.olyxee.com
+/api/auth/me
+{"level":30,"time":1781661977825,"pid":4,"hostname":"169.254.0.73","req":{"id":2,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":5,"msg":"request completed"}
+Jun 17 04:06:06.53
+POST
+500
+logistics.olyxee.com
+/api/auth/login
+4
+[login] failed: undefined Failed query: select "id", "business_id", "auth_user_id", "password_hash", "name", "email", "role", "created_at" from "users" "usersTable" where "usersTable"."email" = $1 limit $2 params: scofieldx911@gmail.com,1 undefined
+Jun 17 03:41:41.15
+POST
+500
+logistics.olyxee.com
+/api/auth/login
+3
+[login] failed: undefined Failed query: select "id", "business_id", "auth_user_id", "password_hash", "name", "email", "role", "created_at" from "users" "usersTable" where "usersTable"."email" = $1 limit $2 params: scofieldx911@gmail.com,1 undefined
+Jun 17 03:41:38.37
+POST
+500
+logistics.olyxee.com
+/api/auth/login
+3
+[login] failed: undefined Failed query: select "id", "business_id", "auth_user_id", "password_hash", "name", "email", "role", "created_at" from "users" "usersTable" where "usersTable"."email" = $1 limit $2 params: scofieldx911@gmail.com,1 undefined
+Jun 17 03:38:22.45
+GET
+401
+logistics.olyxee.com
+/api/auth/me
