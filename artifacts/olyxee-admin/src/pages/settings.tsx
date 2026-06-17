@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
-  Building2, Mail, SunMoon, RotateCcw, History,
+  Building2, Mail, SunMoon, RotateCcw,
   Code2, Copy, Download, Globe, Tag, CreditCard,
 } from "lucide-react";
 import {
@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import { ActivityFeed } from "@/components/activity-feed";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
 
@@ -504,7 +503,6 @@ const NAV_ITEMS = [
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
-  { id: "activity", label: "Activity", icon: History, tint: TINTS.teal },
 ] as const;
 
 // ─── Billing & usage ──────────────────────────────────────────────────────────
@@ -977,18 +975,6 @@ export default function SettingsPage() {
         {/* ─── Billing ──────────────────────────────────────────────── */}
         <TabsContent value="billing" className="mt-6 focus-visible:outline-none">
           <BillingSection />
-        </TabsContent>
-
-        {/* ─── Activity ─────────────────────────────────────────────── */}
-        <TabsContent value="activity" className="mt-6 focus-visible:outline-none">
-          <SectionShell
-            icon={History}
-            tint={TINTS.teal}
-            title="Activity"
-            description="A plain-English log of what's happened in your account."
-          >
-            <ActivityFeed />
-          </SectionShell>
         </TabsContent>
       </Tabs>
 
