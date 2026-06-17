@@ -158,6 +158,32 @@ router.put("/business", requireAuth, async (req, res) => {
           parse.data.onboardingCompleted ?? existing.onboardingCompleted,
       };
 
+      // Auto-allow the business's own website to call the public tracking API.
+      // We derive the origin (scheme + host) from their websiteUrl and merge it
+      // into allowedOrigins so a business with a site never has to manually
+      // configure CORS to embed order tracking. Any manually-added origins are
+      // preserved alongside it.
+      const websiteOrigin = (() => {
+        const v = (next.websiteUrl || "").trim();
+        if (!v) return null;
+        try {
+          const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+          if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+          return u.origin;
+        } catch {
+          return null;
+        }
+      })();
+      if (websiteOrigin) {
+        const current = (next.allowedOrigins || "")
+          .split(",")
+          .map((s) => s.trim().replace(/\/+$/, ""))
+          .filter(Boolean);
+        next.allowedOrigins = Array.from(
+          new Set([...current, websiteOrigin]),
+        ).join(",");
+      }
+
       const rows = await tx
         .update(businessesTable)
         .set(next)

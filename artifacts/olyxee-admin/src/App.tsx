@@ -13,6 +13,7 @@ import LandingPage from "@/pages/landing";
 import ContactPage from "@/pages/contact";
 import LoginPage from "@/pages/login";
 import ResetPasswordPage from "@/pages/reset-password";
+import TrackPage from "@/pages/track";
 import BusinessTypePage from "@/pages/business-type";
 import OnboardingPage from "@/pages/onboarding";
 import DashboardPage from "@/pages/dashboard";
@@ -108,6 +109,8 @@ function AppRoutes() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/login" component={() => <PublicOnly component={LoginPage} />} />
       <Route path="/reset-password" component={ResetPasswordPage} />
+      <Route path="/track" component={TrackPage} />
+      <Route path="/track/:trackingId" component={TrackPage} />
       <Route path="/signup"><Redirect to="/login" /></Route>
       <Route
         path="/business-type"

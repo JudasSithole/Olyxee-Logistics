@@ -28,8 +28,32 @@ import {
 
 const router = Router();
 
+// Where customers go to see their order status. Businesses with their own
+// website link to their own /track page; businesses without one fall back to
+// the Olyxee-hosted tracking page so the email link always works even when
+// the business has no site of its own.
+const HOSTED_TRACKING_BASE = (
+  process.env.PUBLIC_TRACKING_URL || "https://logistics.olyxee.com"
+).replace(/\/$/, "");
+
 function buildTrackingLink(websiteUrl: string, trackingId: string): string {
-  const base = websiteUrl.replace(/\/$/, "");
+  // Normalize the business's website the same way the CORS origin derivation
+  // does: accept a bare domain (example.com) or a full URL, require http(s),
+  // and fall back to the Olyxee-hosted page if it's empty or unparseable. This
+  // guarantees the email template's safeTrackingLink() always sees a valid
+  // absolute URL, so the "Track your order" CTA is never silently dropped.
+  let base = HOSTED_TRACKING_BASE;
+  const raw = (websiteUrl || "").trim();
+  if (raw) {
+    try {
+      const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      if (u.protocol === "http:" || u.protocol === "https:") {
+        base = (u.origin + u.pathname).replace(/\/$/, "");
+      }
+    } catch {
+      base = HOSTED_TRACKING_BASE;
+    }
+  }
   return `${base}/track?code=${trackingId}`;
 }
 
