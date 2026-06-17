@@ -571,11 +571,9 @@ const Landing: FC = () => {
                 style={serif}
                 className="text-[3rem] sm:text-[4.75rem] lg:text-[6rem] xl:text-[6.75rem] leading-[0.85] tracking-[-0.035em]"
               >
-                Nothing
+                Keep customers
                 <br />
-                falls through
-                <br />
-                the{" "}
+                in the{" "}
                 <span className="relative inline-block">
                   <em className="italic text-orange-500">loop</em>
                   <svg
@@ -598,7 +596,7 @@ const Landing: FC = () => {
                 transition={{ duration: 0.8, delay: 0.35, ease }}
                 className="mt-10 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md"
               >
-                From the moment an order comes in to the second it is picked up, Order Loop keeps your team and your customers on the same page. One screen. Every status. No chasing.
+                Manage orders and keep customers updated, all from one simple dashboard.
               </motion.p>
 
               <motion.div
@@ -609,10 +607,10 @@ const Landing: FC = () => {
               >
                 <Link
                   href="/login?mode=signup"
-                  className="group inline-flex items-center gap-4 bg-neutral-900 text-white pl-6 pr-2 py-2 hover:bg-orange-500 transition-colors duration-300"
+                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
                 >
-                  <span className="text-sm tracking-wide">Start managing orders</span>
-                  <span className="w-8 h-8 bg-white text-neutral-900 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-sm font-medium tracking-wide">Start Managing Orders</span>
+                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
                     <ArrowUpRight className="w-4 h-4" />
                   </span>
                 </Link>
