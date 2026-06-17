@@ -10,28 +10,46 @@ import {
   Loader2,
   LogOut,
   KeyRound,
-  ChevronDown,
   Eye,
   EyeOff,
   ShieldCheck,
+  Building2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
+import { useBusiness, useDeleteBusiness } from "@/hooks/use-supabase-queries";
 
-// Self-service profile editing for the signed-in admin: name, email,
-// and password. Reachable from the sidebar (click your name) or /profile.
+// Self-service profile editing for the signed-in admin: name, email, password,
+// and account deletion. Reachable from the sidebar (click your name) or /profile.
 //
 // UX choices:
 //  - Big avatar + identity card at the top so you see "this is me" instantly.
+//  - Each concern lives in its own bordered card so the page reads top-to-bottom
+//    as a clear checklist: who you are, your details, your password, sign out,
+//    and - last, walled off in red - deleting the account.
 //  - Password is collapsed by default behind a "Change password" toggle -
 //    most visits are just to update name/email.
-//  - Live, inline feedback for password strength + match so users don't have
-//    to guess why Save is disabled.
-//  - Sign-out lives here too as a convenience (it's also in the sidebar).
+//  - Account deletion sits here (not in Settings) because it's a personal,
+//    account-level action. It's guarded by a type-to-confirm dialog.
 export default function ProfilePage() {
   const { user, updateProfile, signOut } = useAuth();
   const [, setLocation] = useLocation();
+  const { data: business } = useBusiness(user?.businessId);
+  const deleteMutation = useDeleteBusiness();
 
   // ── Account info ─────────────────────────────────────────────
   const [info, setInfo] = useState({ name: "", email: "" });
@@ -43,6 +61,10 @@ export default function ProfilePage() {
   const [pwd, setPwd] = useState({ current: "", next: "", confirm: "" });
   const [showPwd, setShowPwd] = useState({ current: false, next: false, confirm: false });
   const [savingPwd, setSavingPwd] = useState(false);
+
+  // ── Delete account ───────────────────────────────────────────
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   useEffect(() => {
     if (user && !loaded) {
@@ -83,6 +105,11 @@ export default function ProfilePage() {
     pwd.next.length >= 8 &&
     pwd.confirm.length > 0 &&
     pwdMatchState === "match";
+
+  const businessName = business?.name ?? "";
+  const deleteMatches =
+    confirmText.trim().toLowerCase() === businessName.trim().toLowerCase() &&
+    businessName.trim().length > 0;
 
   const handleSaveInfo = async () => {
     if (!info.name.trim()) {
@@ -129,13 +156,28 @@ export default function ProfilePage() {
     setLocation("/login");
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deleteMatches || deleteMutation.isPending) return;
+    try {
+      await deleteMutation.mutateAsync(user!.businessId);
+      toast.success("Account deleted");
+      // Cookie is cleared server-side; clear client-side auth state too so the
+      // protected routes stop hitting the API with a now-invalid session.
+      await signOut().catch(() => {});
+      setDeleteOpen(false);
+      setLocation("/");
+    } catch {
+      toast.error("Couldn't delete your account. Please try again.");
+    }
+  };
+
   if (!user) return null;
 
   const fullName = user.name || user.email;
   const initial = (fullName || "U").charAt(0).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-8">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* ─── Identity card ──────────────────────────────────────── */}
       <header className="flex items-center gap-4 border border-border bg-card p-5">
         <Avatar className="h-16 w-16 flex-shrink-0">
@@ -151,6 +193,12 @@ export default function ProfilePage() {
               <ShieldCheck className="h-3 w-3" />
               {user.role}
             </Badge>
+            {businessName && (
+              <Badge variant="outline" className="gap-1 font-normal">
+                <Building2 className="h-3 w-3" />
+                {businessName}
+              </Badge>
+            )}
             <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-500">
               <span className="h-1.5 w-1.5 bg-emerald-500 inline-block" />
               Signed in
@@ -160,72 +208,74 @@ export default function ProfilePage() {
       </header>
 
       {/* ─── Account info form ──────────────────────────────────── */}
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <Label className="text-sm font-medium">Account details</Label>
-          <p className="text-xs text-muted-foreground">
-            These are saved as soon as you hit Save - no waiting.
+      <section className="border border-border bg-card">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Account details</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            These save as soon as you hit Save - no waiting.
           </p>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="profileName" className="text-xs font-normal text-muted-foreground">
-            Full name
-          </Label>
-          <Input
-            id="profileName"
-            value={info.name}
-            onChange={(e) => setInfo((f) => ({ ...f, name: e.target.value }))}
-            placeholder="e.g. Jane Smith"
-            className="h-11"
-          />
-        </div>
+        <div className="p-5 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="profileName" className="text-xs font-normal text-muted-foreground">
+              Full name
+            </Label>
+            <Input
+              id="profileName"
+              value={info.name}
+              onChange={(e) => setInfo((f) => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Jane Smith"
+              className="h-11"
+            />
+          </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="profileEmail" className="text-xs font-normal text-muted-foreground">
-            Email
-          </Label>
-          <Input
-            id="profileEmail"
-            type="email"
-            value={info.email}
-            onChange={(e) => setInfo((f) => ({ ...f, email: e.target.value }))}
-            placeholder="you@example.com"
-            className="h-11"
-          />
-          <p className="text-[11px] text-muted-foreground">Used to sign in.</p>
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="profileEmail" className="text-xs font-normal text-muted-foreground">
+              Email
+            </Label>
+            <Input
+              id="profileEmail"
+              type="email"
+              value={info.email}
+              onChange={(e) => setInfo((f) => ({ ...f, email: e.target.value }))}
+              placeholder="you@example.com"
+              className="h-11"
+            />
+            <p className="text-[11px] text-muted-foreground">Used to sign in.</p>
+          </div>
 
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <span
-            className={cn(
-              "text-xs transition-opacity",
-              infoDirty ? "text-amber-600 dark:text-amber-500 opacity-100" : "opacity-0",
-            )}
-            aria-live="polite"
-          >
-            {infoDirty ? "You have unsaved changes." : ""}
-          </span>
-          <Button
-            size="sm"
-            onClick={handleSaveInfo}
-            disabled={!infoDirty || savingInfo}
-            className="gap-1.5"
-          >
-            {savingInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            {savingInfo ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <span
+              className={cn(
+                "text-xs transition-opacity",
+                infoDirty ? "text-amber-600 dark:text-amber-500 opacity-100" : "opacity-0",
+              )}
+              aria-live="polite"
+            >
+              {infoDirty ? "You have unsaved changes." : ""}
+            </span>
+            <Button
+              size="sm"
+              onClick={handleSaveInfo}
+              disabled={!infoDirty || savingInfo}
+              className="gap-1.5"
+            >
+              {savingInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {savingInfo ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* ─── Password (collapsed by default) ─────────────────────── */}
-      <section className="border-t pt-8">
+      <section className="border border-border bg-card p-5">
         {!showPwdSection ? (
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-1">
               <Label className="text-sm font-medium">Password</Label>
               <p className="text-xs text-muted-foreground">
-                Last changed: kept private. Update it any time.
+                Update it any time - your current password is kept private.
               </p>
             </div>
             <Button
@@ -335,7 +385,7 @@ export default function ProfilePage() {
       </section>
 
       {/* ─── Sign out ───────────────────────────────────────────── */}
-      <section className="border-t pt-6 flex items-center justify-between gap-3">
+      <section className="border border-border bg-card p-5 flex items-center justify-between gap-3">
         <div className="space-y-0.5">
           <Label className="text-sm font-medium">Sign out</Label>
           <p className="text-xs text-muted-foreground">
@@ -352,6 +402,112 @@ export default function ProfilePage() {
           <LogOut className="h-3.5 w-3.5" />
           Sign out
         </Button>
+      </section>
+
+      {/* ─── Danger zone: delete account ─────────────────────────── */}
+      <section className="border border-destructive/40 bg-destructive/[0.03]">
+        <div className="px-5 py-4 border-b border-destructive/20">
+          <h2 className="text-sm font-semibold text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Danger zone
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Irreversible actions for your whole account.
+          </p>
+        </div>
+
+        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-semibold text-foreground flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Delete account
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-xl">
+              Permanently delete{" "}
+              <span className="font-medium text-foreground">{businessName || "this account"}</span>,
+              along with all customers, orders, tracking events, email notifications,
+              audit logs, and team members. This cannot be undone.
+            </p>
+          </div>
+
+          <AlertDialog
+            open={deleteOpen}
+            onOpenChange={(next) => {
+              setDeleteOpen(next);
+              if (!next) setConfirmText("");
+            }}
+          >
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="gap-2 self-start sm:self-auto whitespace-nowrap"
+                data-testid="button-open-delete-account"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Delete your account?
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>
+                      This action is <span className="font-medium text-foreground">permanent</span>.
+                      Everything in your account - customers, orders, tracking events,
+                      email logs, and team members - will be erased.
+                    </p>
+                    <p>
+                      To confirm, type the business name{" "}
+                      <span className="font-medium text-foreground">{businessName}</span>{" "}
+                      below.
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <div className="space-y-2 py-2">
+                <Label htmlFor="confirm-account" className="text-[13px]">
+                  Business name
+                </Label>
+                <Input
+                  id="confirm-account"
+                  autoComplete="off"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder={businessName}
+                  className="h-10"
+                  data-testid="input-confirm-account-name"
+                />
+              </div>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteMutation.isPending}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void handleDeleteAccount();
+                  }}
+                  disabled={!deleteMatches || deleteMutation.isPending}
+                  className="bg-destructive text-white hover:bg-destructive/90 gap-2"
+                  data-testid="button-confirm-delete-account"
+                >
+                  {deleteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Delete forever
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </section>
     </div>
   );
@@ -396,7 +552,6 @@ function PasswordField({
         />
         <button
           type="button"
-          tabIndex={-1}
           onClick={onToggleVisible}
           className="absolute right-0 top-0 h-11 w-10 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           aria-label={visible ? "Hide password" : "Show password"}

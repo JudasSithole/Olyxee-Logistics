@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
-  Building2, Mail, SunMoon, RotateCcw, History, Trash2, ShieldAlert,
+  Building2, Mail, SunMoon, RotateCcw, History,
   Code2, Copy, Download, Globe, Tag, CreditCard,
 } from "lucide-react";
 import {
@@ -17,21 +17,9 @@ import {
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useBusiness, useUpdateBusiness, useDeleteBusiness } from "@/hooks/use-supabase-queries";
+import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { ActivityFeed } from "@/components/activity-feed";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
@@ -517,142 +505,7 @@ const NAV_ITEMS = [
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
   { id: "activity", label: "Activity", icon: History, tint: TINTS.teal },
-  { id: "danger", label: "Danger zone", icon: ShieldAlert, tint: TINTS.red },
 ] as const;
-
-// ─── Danger zone ──────────────────────────────────────────────────────────────
-// Permanently deletes the current business and every row tied to it. Requires
-// the operator to type the exact business name to guard against muscle-memory
-// clicks. After a successful delete we sign out client-side and bounce home.
-function DangerZone({ businessName }: { businessName: string }) {
-  const [, setLocation] = useLocation();
-  const { user, signOut } = useAuth();
-  const deleteMutation = useDeleteBusiness();
-  const [open, setOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
-
-  const matches =
-    confirmText.trim().toLowerCase() === businessName.trim().toLowerCase() &&
-    businessName.trim().length > 0;
-
-  async function handleDelete() {
-    try {
-      await deleteMutation.mutateAsync(user!.businessId);
-      toast.success("Business deleted");
-      // Cookie is cleared server-side; clear client-side auth state too so the
-      // protected routes stop hitting /business with a now-invalid session.
-      await signOut().catch(() => {});
-      setOpen(false);
-      setLocation("/");
-    } catch {
-      toast.error("Couldn't delete the business. Please try again.");
-    }
-  }
-
-  return (
-    <SectionShell
-      icon={ShieldAlert}
-      tint={TINTS.red}
-      title="Danger zone"
-      description="Irreversible actions that affect the entire business account."
-    >
-      <div className="border border-destructive/40 bg-destructive/[0.03] rounded-md">
-        <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold text-foreground flex items-center gap-2">
-              <Trash2 className="h-4 w-4 text-destructive" />
-              Delete this business
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-xl">
-              Permanently delete <span className="font-medium text-foreground">{businessName || "this business"}</span>,
-              all customers, orders, tracking events, email notifications,
-              audit logs, and user accounts. This cannot be undone.
-            </p>
-          </div>
-
-          <AlertDialog
-            open={open}
-            onOpenChange={(next) => {
-              setOpen(next);
-              if (!next) setConfirmText("");
-            }}
-          >
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="gap-2 self-start sm:self-auto whitespace-nowrap"
-                data-testid="button-open-delete-business"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete business
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Delete this business?
-                </AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>
-                      This action is <span className="font-medium text-foreground">permanent</span>.
-                      Everything in your account - customers, orders, tracking events,
-                      email logs, and team members - will be erased.
-                    </p>
-                    <p>
-                      To confirm, type the business name{" "}
-                      <span className="font-medium text-foreground">{businessName}</span>{" "}
-                      below.
-                    </p>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <div className="space-y-2 py-2">
-                <Label htmlFor="confirm-business" className="text-[13px]">
-                  Business name
-                </Label>
-                <Input
-                  id="confirm-business"
-                  autoComplete="off"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder={businessName}
-                  className="h-10"
-                  data-testid="input-confirm-business-name"
-                />
-              </div>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleteMutation.isPending}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (!matches || deleteMutation.isPending) return;
-                    void handleDelete();
-                  }}
-                  disabled={!matches || deleteMutation.isPending}
-                  className="bg-destructive text-white hover:bg-destructive/90 gap-2"
-                  data-testid="button-confirm-delete-business"
-                >
-                  {deleteMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  Delete forever
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-    </SectionShell>
-  );
-}
 
 // ─── Billing & usage ──────────────────────────────────────────────────────────
 // Shows the current plan, this month's email usage against the included limit,
@@ -1136,11 +989,6 @@ export default function SettingsPage() {
           >
             <ActivityFeed />
           </SectionShell>
-        </TabsContent>
-
-        {/* ─── Danger zone ──────────────────────────────────────────── */}
-        <TabsContent value="danger" className="mt-6 focus-visible:outline-none">
-          <DangerZone businessName={theme.businessName} />
         </TabsContent>
       </Tabs>
 
