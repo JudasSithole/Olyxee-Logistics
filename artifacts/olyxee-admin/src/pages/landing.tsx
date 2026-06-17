@@ -545,25 +545,12 @@ const Landing: FC = () => {
             className="flex items-center justify-between border-t-2 border-neutral-900 pt-3 mb-12 sm:mb-16"
           >
             <span style={mono} className="text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-900">OLYXEE / ORDER LOOP</span>
-            <span style={mono} className="hidden sm:block text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-400">FOR LOCAL BUSINESS</span>
-            <span style={mono} className="flex items-center gap-2 text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-900">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" /> LIVE
-            </span>
+            <span style={mono} className="text-[10px] sm:text-[11px] tracking-[0.25em] text-neutral-400">FOR LOCAL BUSINESS</span>
           </motion.div>
 
           <div className="grid grid-cols-12 gap-y-16 gap-x-8 items-start">
             {/* Headline block */}
             <div className="col-span-12 lg:col-span-7">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.15, ease }}
-                className="flex items-center gap-4 mb-7"
-              >
-                <span style={mono} className="text-[11px] tracking-[0.25em] text-orange-500">01 / THE PROMISE</span>
-                <span className="h-px flex-1 bg-neutral-200" />
-              </motion.div>
-
               <motion.h1
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -632,7 +619,7 @@ const Landing: FC = () => {
                 transition={{ duration: 0.7, delay: 0.3, ease }}
                 className="flex items-center gap-4 mb-7"
               >
-                <span style={mono} className="text-[11px] tracking-[0.25em] text-orange-500">02 / THE RAIL</span>
+                <span style={mono} className="text-[11px] tracking-[0.25em] text-orange-500">THE RAIL</span>
                 <span className="h-px flex-1 bg-neutral-200" />
               </motion.div>
 
