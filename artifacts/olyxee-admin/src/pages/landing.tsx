@@ -548,6 +548,12 @@ export const SiteFooter: FC = () => (
             Order Loop is the order-tracking and customer-notification layer
             for businesses and operations teams — from confirmed to delivered, in one loop.
           </p>
+          <Link
+            href="/login?mode=signup"
+            className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-900 hover:gap-2.5 transition-all"
+          >
+            Start free <ArrowUpRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {/* Company */}
@@ -641,9 +647,21 @@ export const SiteFooter: FC = () => (
         <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
           © {new Date().getFullYear()} ORDER LOOP · ALL RIGHTS RESERVED
         </p>
-        <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
-          MADE IN SOUTH AFRICA
-        </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-x-6 gap-y-2">
+          <a
+            href="https://olyxee.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={mono}
+            className="group text-[11px] tracking-[0.2em] text-neutral-400 hover:text-neutral-900 transition-colors inline-flex items-center gap-1.5"
+          >
+            DEVELOPED BY OLYXEE
+            <ArrowUpRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </a>
+          <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
+            MADE IN SOUTH AFRICA
+          </p>
+        </div>
       </div>
     </div>
   </footer>
