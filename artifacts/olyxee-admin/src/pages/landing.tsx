@@ -629,13 +629,31 @@ const Landing: FC = () => {
                       : t.tone === "done"
                         ? "border-emerald-500 text-emerald-600"
                         : "border-neutral-400 text-neutral-500";
+                  // Resting tilt + a pendulum swing that overshoots and settles,
+                  // as if the ticket was just dropped onto the spike and is
+                  // swinging from its punch-hole (transform origin = top center).
+                  const rest = parseFloat(t.rot);
+                  const swingDelay = 0.4 + i * 0.12;
                   return (
                     <motion.div
                       key={t.ref}
-                      initial={{ opacity: 0, y: 24, rotate: 0 }}
-                      animate={{ opacity: t.tone === "done" ? 0.82 : 1, y: 0, rotate: parseFloat(t.rot) }}
+                      initial={{ opacity: 0, y: -30, rotate: rest - 11 }}
+                      animate={{
+                        opacity: t.tone === "done" ? 0.82 : 1,
+                        y: 0,
+                        rotate: [rest - 11, rest + 6, rest - 4, rest + 2.5, rest - 1.5, rest],
+                      }}
                       whileHover={{ rotate: 0, y: -5 }}
-                      transition={{ duration: 0.7, delay: 0.4 + i * 0.12, ease }}
+                      transition={{
+                        opacity: { duration: 0.5, delay: swingDelay, ease },
+                        y: { type: "spring", stiffness: 130, damping: 9, delay: swingDelay },
+                        rotate: {
+                          duration: 1.7,
+                          delay: swingDelay,
+                          ease: "easeOut",
+                          times: [0, 0.24, 0.45, 0.64, 0.82, 1],
+                        },
+                      }}
                       style={{ transformOrigin: "top center" }}
                       className="group relative bg-[#fdfcf7] border border-neutral-900/90 px-4 pt-6 pb-4 shadow-[0_12px_26px_-14px_rgba(23,23,23,0.5),4px_4px_0_0_rgba(23,23,23,0.06)]"
                     >
