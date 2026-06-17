@@ -16,7 +16,11 @@ let _db: NodePgDatabase<typeof schema> | null = null;
 function initPool(): pg.Pool {
   if (_pool) return _pool;
 
-  if (!process.env.DATABASE_URL) {
+  // Prefer an explicit app-provided connection (e.g. an external Supabase DB)
+  // over the platform-managed DATABASE_URL so the app can point at a custom
+  // database without touching the runtime-managed variable.
+  const dbUrl = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!dbUrl) {
     throw new Error(
       "DATABASE_URL must be set. Did you forget to provision a database?",
     );
@@ -24,7 +28,6 @@ function initPool(): pg.Pool {
 
   // Enable SSL for hosted Postgres (Supabase, Neon, RDS, etc.). Skip only for
   // explicitly local connections so dev against a local pg server keeps working.
-  const dbUrl = process.env.DATABASE_URL;
   const isLocal = /@(localhost|127\.0\.0\.1|::1)/i.test(dbUrl);
   _pool = new Pool({
     connectionString: dbUrl,
