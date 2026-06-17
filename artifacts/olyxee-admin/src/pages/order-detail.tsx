@@ -430,11 +430,11 @@ export default function OrderDetailPage() {
                 </div>
               ) : (
                 <ol className="space-y-0">
-                  {order.trackingEvents.map((event: any, idx: number) => {
+                  {(order.tracking_events as any[]).map((event: any, idx: number) => {
                     const cfg = getStatusVisual(event.status);
                     const Icon = cfg.icon;
                     const isLatest = idx === 0;
-                    const isLast = idx === order.trackingEvents!.length - 1;
+                    const isLast = idx === (order.tracking_events as any[]).length - 1;
 
                     return (
                       <li key={event.id} className="flex gap-4">
