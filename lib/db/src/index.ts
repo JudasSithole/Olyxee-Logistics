@@ -26,13 +26,35 @@ function initPool(): pg.Pool {
     );
   }
 
-  // Enable SSL for hosted Postgres (Supabase, Neon, RDS, etc.). Skip only for
-  // explicitly local connections so dev against a local pg server keeps working.
+  // Read the connection's `sslmode` (if present), then strip it from the URL.
+  // node-postgres now treats `sslmode=require` as `verify-full` (strict cert
+  // verification), which would override the explicit `ssl` config below and
+  // fail against providers like Supabase that present a self-signed cert in
+  // the chain (SELF_SIGNED_CERT_IN_CHAIN). We re-derive SSL ourselves so the
+  // explicit `ssl` setting is authoritative.
+  let sslmode: string | null = null;
+  let connectionString = dbUrl;
+  try {
+    const u = new URL(dbUrl);
+    sslmode = u.searchParams.get("sslmode");
+    u.searchParams.delete("sslmode");
+    connectionString = u.toString();
+  } catch {
+    // Not a parseable URL (rare); fall back to the raw value unchanged.
+  }
+
+  // Decide SSL:
+  // - `sslmode=disable` or an explicitly local host -> no SSL (local dev,
+  //   Replit's internal `helium` DB which does not speak SSL).
+  // - everything else -> SSL on, but don't reject self-signed certs (Supabase,
+  //   Neon, RDS, etc. commonly present a self-signed cert in the chain).
   const isLocal = /@(localhost|127\.0\.0\.1|::1)/i.test(dbUrl);
-  _pool = new Pool({
-    connectionString: dbUrl,
-    ssl: isLocal ? undefined : { rejectUnauthorized: false },
-  });
+  const ssl =
+    sslmode?.toLowerCase() === "disable" || isLocal
+      ? false
+      : { rejectUnauthorized: false };
+
+  _pool = new Pool({ connectionString, ssl });
   return _pool;
 }
 
