@@ -36,6 +36,49 @@ function hashResetToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+// The demo account is hardcoded and bypasses the DB for auth, but writes
+// (creating customers/orders) need a real `businesses` row to exist or they
+// fail the `business_id` foreign key. Seed that row (and a matching demo user)
+// lazily on demo login so the demo is fully read/write. Idempotent via ON
+// CONFLICT DO NOTHING, best-effort so a DB hiccup never breaks demo login, and
+// memoized so it runs at most once per warm process. Demo login is gated to
+// non-production, so this never seeds a deployed database.
+let _demoSeedReady: Promise<void> | null = null;
+async function ensureDemoSeed(): Promise<void> {
+  if (_demoSeedReady) return _demoSeedReady;
+  _demoSeedReady = (async () => {
+    await db
+      .insert(businessesTable)
+      .values({
+        id: DEMO_BUSINESS_ID,
+        name: "Demo Business",
+        slug: "demo-business",
+        websiteUrl: "",
+        supportEmail: "demo@demo.com",
+        trackingIdPrefix: "TRK",
+        monthlyEmailLimit: 500,
+        onboardingCompleted: true,
+        createdAt: new Date("2024-01-01"),
+      })
+      .onConflictDoNothing();
+    await db
+      .insert(usersTable)
+      .values({
+        id: DEMO_USER_ID,
+        businessId: DEMO_BUSINESS_ID,
+        name: DEMO_USER.name,
+        email: DEMO_USER.email,
+        role: DEMO_USER.role,
+      })
+      .onConflictDoNothing();
+  })().catch((err) => {
+    // Allow a retry on the next demo login rather than caching the failure.
+    _demoSeedReady = null;
+    throw err;
+  });
+  return _demoSeedReady;
+}
+
 // Self-healing schema guard. The production database may predate the
 // password-auth migration and be missing the `password_hash` / `auth_user_id`
 // columns, which makes every real login/signup query fail with Postgres code
@@ -223,6 +266,15 @@ router.post("/auth/login", async (req, res) => {
     (rawEmail === "demo" || rawEmail === "demo@demo.com") &&
     rawPassword === "demo"
   ) {
+    // Best-effort: make sure the demo business/user rows exist so demo writes
+    // (create customer/order) don't fail the business_id foreign key. A DB
+    // failure here must not block login, which is meant to work even when the
+    // database is unavailable.
+    try {
+      await ensureDemoSeed();
+    } catch (err) {
+      req.log.warn({ err }, "Demo seed failed; demo writes may not work");
+    }
     const token = signSession(DEMO_USER_ID);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
     res.json({ user: DEMO_USER });
