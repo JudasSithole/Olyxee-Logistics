@@ -217,7 +217,12 @@ router.post("/auth/login", async (req, res) => {
   const rawPassword = typeof req.body?.password === "string" ? req.body.password : "";
 
   // Hardcoded demo credentials - works even when the database is unavailable.
-  if ((rawEmail === "demo" || rawEmail === "demo@demo.com") && rawPassword === "demo") {
+  // Gated to non-production so it is never an auth-bypass path in a deployed app.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (rawEmail === "demo" || rawEmail === "demo@demo.com") &&
+    rawPassword === "demo"
+  ) {
     const token = signSession(DEMO_USER_ID);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
     res.json({ user: DEMO_USER });
