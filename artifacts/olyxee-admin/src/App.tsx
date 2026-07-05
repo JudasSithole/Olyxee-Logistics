@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout";
+import { PublicShell } from "@/components/public-shell";
 import { ThemeProvider, useTheme } from "@/contexts/theme-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
@@ -104,6 +105,28 @@ function PublicOnly({ component: Component }: { component: React.ComponentType }
   return <Component />;
 }
 
+// Announcement / pricing pages are public: logged-out visitors see them wrapped
+// in the public site chrome (header + nav tabs), while authenticated users see
+// them inside the app sidebar layout.
+function PublicOrApp({ component: Component }: { component: React.ComponentType }) {
+  const { status } = useAuth();
+  if (status === "loading") {
+    return null;
+  }
+  if (status === "authenticated") {
+    return (
+      <AppLayout>
+        <Component />
+      </AppLayout>
+    );
+  }
+  return (
+    <PublicShell>
+      <Component />
+    </PublicShell>
+  );
+}
+
 function AppRoutes() {
   return (
     <Switch>
@@ -140,9 +163,9 @@ function AppRoutes() {
           return null;
         }}
       </Route>
-      <Route path="/whats-new" component={() => <Protected component={WhatsNewPage} />} />
-      <Route path="/coming-soon" component={() => <Protected component={ComingSoonPage} />} />
-      <Route path="/upgrade" component={() => <Protected component={UpgradePage} />} />
+      <Route path="/whats-new" component={() => <PublicOrApp component={WhatsNewPage} />} />
+      <Route path="/coming-soon" component={() => <PublicOrApp component={ComingSoonPage} />} />
+      <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
       <Route path="/settings" component={() => <Protected component={SettingsPage} />} />
       <Route path="/profile" component={() => <Protected component={ProfilePage} />} />
       <Route component={NotFound} />

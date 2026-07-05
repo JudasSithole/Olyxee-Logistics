@@ -203,11 +203,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
         </div>
 
-        {/* Launch announcement: current plan + live countdown, linking to the
-            What's New page. Purely informational. */}
-        <Link
-          href="/whats-new"
-          className="mt-4 block rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 transition-colors hover:bg-sidebar-accent/60"
+        {/* Launch announcement: current plan + live countdown with a distinct
+            call-to-action to the Coming Soon page. Purely informational. */}
+        <div
+          className="mt-4 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3"
           data-testid="sidebar-launch-card"
         >
           <div className="flex items-center justify-between">
@@ -217,13 +216,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <PlanBadge />
           </div>
           <p className="mt-2 text-xs font-medium text-sidebar-foreground">
-            Launching soon
+            New features are coming
           </p>
           <LaunchCountdown
             variant="compact"
             className="mt-0.5 block text-xs tabular-nums text-sidebar-foreground/60"
           />
-        </Link>
+          <Link
+            href="/coming-soon"
+            className="mt-3 flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            data-testid="button-see-whats-coming"
+          >
+            See what&apos;s coming
+          </Link>
+        </div>
       </nav>
 
       {/* Footer */}

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
+import { plans, type PlanId } from "@/lib/launch";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
 
@@ -515,6 +516,8 @@ function BillingSection() {
 
   const used = business?.email_usage_this_month ?? 0;
   const limit = business?.monthly_email_limit ?? 500;
+  const planId = (business?.plan as PlanId | undefined) ?? "beta";
+  const planName = plans[planId]?.name ?? "Beta";
   // The $20 charge only kicks in once usage strictly exceeds the limit. Hitting
   // the limit exactly is a neutral "you're at your cap" state, not an overage.
   const exceeded = used > limit;
@@ -535,7 +538,7 @@ function BillingSection() {
       {/* Current plan */}
       <div className="px-4 py-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">Free plan</p>
+          <p className="text-sm font-semibold text-foreground">{planName} plan</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Includes {limit.toLocaleString()} customer emails every month.
           </p>

@@ -530,9 +530,20 @@ const Landing: FC = () => {
               className="h-8 sm:h-10 w-auto object-contain"
             />
           </Link>
-          <Link href="/login" className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
-            Log In
-          </Link>
+          <nav className="flex items-center gap-0.5 sm:gap-1">
+            <Link href="/whats-new" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+              What's New
+            </Link>
+            <Link href="/coming-soon" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+              Coming Soon
+            </Link>
+            <Link href="/upgrade" className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+              Upgrade Plan
+            </Link>
+            <Link href="/login" className="ml-1 text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
+              Log In
+            </Link>
+          </nav>
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,9 @@ function featureList(id: PlanId): string[] {
 const TIERS: PlanId[] = ["free", "pro", "business"];
 
 export default function UpgradePage() {
-  const { user } = useAuth();
+  const { status, user } = useAuth();
+  const isAuthed = status === "authenticated";
+  const [, navigate] = useLocation();
   const { data: business } = useBusiness(user?.businessId);
   const currentPlan = business?.plan ?? "beta";
   const billingLive = featureFlags.subscriptionBilling;
@@ -52,12 +55,18 @@ export default function UpgradePage() {
   // still exercise the Paystack test flow if the server has ENABLE_TEST_BILLING
   // set. In production (flag off, not DEV) the buttons stay "Available <date>".
   const devTestBilling = import.meta.env.DEV && !billingLive;
-  const canCheckout = billingLive || devTestBilling;
+  // Checkout requires an authenticated business; public visitors are routed to
+  // login first.
+  const canCheckout = isAuthed && (billingLive || devTestBilling);
 
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function handleChoose(id: PlanId) {
+    if (!isAuthed) {
+      navigate("/login");
+      return;
+    }
     setErrorMsg(null);
     setPendingPlan(id);
     try {
@@ -97,7 +106,7 @@ export default function UpgradePage() {
         </div>
       </div>
 
-      {currentPlan === "beta" && (
+      {isAuthed && currentPlan === "beta" && (
         <Card className="border-primary/20 bg-primary/5 p-5">
           <div className="flex items-start gap-3">
             <Badge className="mt-0.5">BETA</Badge>
@@ -156,20 +165,22 @@ export default function UpgradePage() {
               <Button
                 className="w-full"
                 variant={isPro ? "default" : "outline"}
-                disabled={isCurrent || !canCheckout || pendingPlan !== null}
+                disabled={pendingPlan !== null || (isAuthed && (isCurrent || !canCheckout))}
                 onClick={() => handleChoose(id)}
                 data-testid={`button-choose-${id}`}
               >
                 {pendingPlan === id && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isCurrent
-                  ? "Current plan"
-                  : !canCheckout
-                    ? `Available ${LAUNCH_LABEL}`
-                    : devTestBilling
-                      ? `Test checkout (dev)`
-                      : `Choose ${p.name}`}
+                {!isAuthed
+                  ? "Log in to get started"
+                  : isCurrent
+                    ? "Current plan"
+                    : !canCheckout
+                      ? `Available ${LAUNCH_LABEL}`
+                      : devTestBilling
+                        ? `Test checkout (dev)`
+                        : `Choose ${p.name}`}
               </Button>
             </Card>
           );

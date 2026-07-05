@@ -1,18 +1,16 @@
 ---
 name: Launch-prep feature-flag foundations
-description: How the disabled launch-prep foundations (billing, SMS, branding, public API, call centre, enforcement) are gated so they can't leak while off.
+description: Durable rules for the disabled launch-prep foundations (billing, SMS, branding, public API, call centre, enforcement) so they can't leak while off.
 ---
 
-The launch-prep release ships DISABLED foundations. Central config is `@workspace/plans` (`lib/plans/src/index.ts`): plan catalog, `featureFlags` (all false), `orderLoopLaunch` dates, `computeCountdown`.
+The launch-prep release ships DISABLED foundations. All future capabilities are gated by a central `featureFlags` map (all false) that also holds the plan catalog and launch/trial dates.
 
 **Rule:** every new capability must self-gate and no-op / return 503 / fall back to defaults while its flag is false. Never let credentials alone activate a feature.
-
 **Why:** the release must not change current product behaviour or move real money; flags are the single kill-switch.
 
-**How to apply:**
-- Backend service modules live in `artifacts/api-server/src/lib/` (sms, notifications, branding, paystack, call-centre, plan-enforcement). Each checks `isFeatureEnabled(...)` and returns an inert result when off.
-- Route-level gates must be PATH-SCOPED: use `router.use("/v1", gate)` not `router.use(gate)`. An unscoped `router.use` gate mounted via `router.use(childRouter)` becomes a catch-all for ALL unmatched routes (once caused `/api/nope` → 503 instead of 404).
-- Billing is TEST-ONLY and intentionally gated by env, NOT the `subscriptionBilling` flag: `isTestBillingEnabled()` requires `ENABLE_TEST_BILLING=1` AND a `sk_test_` key. A live key is refused, so production (env unset) is safe. This is the deliberate "dev test control"; the frontend enables the checkout button only when `import.meta.env.DEV && !subscriptionBilling`.
-- Paystack webhook verifies HMAC-SHA512 over the RAW body — `express.json({ verify })` stashes `req.rawBody` for this.
-- Plan activation (verify + webhook) must validate `amountMinor === planAmountMinor(plan)` before activating, and `activatePlan` idempotency must only swallow Postgres unique violations (`err.code === "23505"`) — rethrow other DB errors.
-- Notification service (`lib/notifications.ts`) is wired into the order-status handler ADDITIVELY and best-effort (never throws into the request path); the legacy `email_notifications` write stays the source of truth for existing UI.
+Durable decisions worth keeping consistent:
+- **Route gates must be path-scoped, not catch-all.** An unscoped middleware gate mounted on a parent router silently swallows ALL unmatched routes (turned a 404 into a 503 once). Always scope the gate to the feature's path prefix.
+- **Billing is intentionally TEST-only and env-gated, NOT flag-gated.** It runs only with an explicit test-mode env flag AND a test-mode secret key; a live key is refused, so production (env unset) is safe. This is the deliberate "dev test control" — flipping the public billing flag is a separate future step.
+- **Money integrity is non-negotiable:** activation must validate the amount actually paid against the plan's price, and idempotency logic must only treat unique-constraint violations as "already processed" — any other DB error must propagate.
+- **New announcement/pricing pages are public.** Logged-out visitors get them (with public site chrome + nav tabs); authenticated users get the same pages inside the app layout. Don't wrap them auth-only.
+- **The shared notification service records additively/best-effort** and must never throw into the request path; the legacy email flow stays the source of truth for existing UI.
