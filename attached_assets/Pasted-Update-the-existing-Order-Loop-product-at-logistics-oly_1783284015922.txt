@@ -1,0 +1,944 @@
+Update the existing Order Loop product at `logistics.olyxee.com`.
+
+The goal is to prepare Order Loop for new plans and upcoming features launching on **1 August 2026**, while keeping the current product stable and unchanged for existing users.
+
+## Core rule
+
+Do not redesign or replace the current Order Loop product.
+
+Keep the current:
+
+* Dashboard
+* Sidebar structure
+* Order creation flow
+* Customer management
+* Status update flow
+* Email notification functionality
+* Visual style
+* Typography
+* Colours
+* Responsive behaviour
+
+This release should add announcement UI, pricing visibility, billing foundations, future integration foundations, and disabled feature code.
+
+Nothing unfinished should affect current users.
+
+---
+
+# 1. Current plan: BETA
+
+All existing users must remain on the current BETA experience.
+
+Display:
+
+**Current Plan: BETA**
+
+Show the BETA plan badge in:
+
+* Dashboard sidebar
+* Account settings
+* Billing page
+* Upgrade Plan page
+
+Existing accounts must default to:
+
+```ts
+plan: "beta"
+subscriptionStatus: "beta"
+```
+
+BETA users must keep their current access until **31 July 2026**.
+
+Do not enforce Free, Pro, or Business limits during BETA.
+
+Do not delete or modify existing:
+
+* Customers
+* Orders
+* Email history
+* Business settings
+* User accounts
+
+---
+
+# 2. Sidebar announcement
+
+Add a compact announcement card near the top of the dashboard sidebar.
+
+Use this content:
+
+**New features are coming**
+
+SMS notifications, better business branding, website integration, and an automated call centre launch on 1 August 2026.
+
+Button:
+
+**See what’s coming**
+
+The button should open the new `What’s New` page.
+
+The announcement card must use the current Order Loop design system and must not crowd the sidebar.
+
+---
+
+# 3. Public website navigation
+
+Add the following navigation tabs to the main Order Loop website:
+
+* What’s New
+* Coming Soon
+* Upgrade Plan
+
+Do not remove or restructure the current website navigation.
+
+---
+
+# 4. What’s New page
+
+Create a page titled:
+
+**A better Order Loop is coming**
+
+Supporting copy:
+
+Order Loop is expanding from email order updates into a more complete customer communication system.
+
+Show the following upcoming features:
+
+* SMS status notifications
+* Business logos on customer emails
+* Removal of Olyxee branding on paid plans
+* Better message customization
+* Website and system integration through the Order Loop API
+* Automated customer call centre
+
+Show:
+
+**Launching 1 August 2026**
+
+Also show:
+
+**Existing users receive Pro free from 1–7 August 2026.**
+
+Add the launch countdown to this page.
+
+---
+
+# 5. Coming Soon page
+
+Create short preview sections for the following features.
+
+## SMS notifications
+
+Businesses will be able to send customer status updates through both SMS and email.
+
+Customer records must support:
+
+```ts
+customerName
+customerEmail
+customerPhone
+```
+
+Phone numbers should use international format, for example:
+
+```text
++27821234567
+```
+
+The phone number field must remain optional during BETA.
+
+## Business branding
+
+Paid accounts will be able to:
+
+* Add a business logo to customer emails
+* Customize customer messages
+* Remove Olyxee branding
+
+## Order Loop API
+
+Business accounts will be able to connect Order Loop to an existing website or internal system.
+
+## Automated call centre
+
+Business customers will be able to configure an automated call centre using Retell AI.
+
+Customers will be able to call about:
+
+* Order status
+* Deliveries
+* Collections
+* Delays
+* Business information
+* Customer support problems
+
+The automated agent should eventually use:
+
+* Live order information
+* Business knowledge
+* Call transcripts
+* Call summaries
+* Escalation rules
+
+A reference video will be attached. Use it only to understand the future behaviour of the automated call centre.
+
+Do not copy the video’s interface.
+
+Do not activate the automated call centre in this release.
+
+---
+
+# 6. Upgrade Plan page
+
+Create a short and easy-to-understand pricing page.
+
+## BETA
+
+Mark this as the current plan for existing users.
+
+Display:
+
+**Current Plan**
+
+* Existing Order Loop access
+* No plan limits enforced
+* Available until 31 July 2026
+
+## Free — R0/month
+
+* Up to 30 customers
+* 100 email notifications per month
+* Limited customization
+* Olyxee branding included
+
+Button:
+
+**Available 1 August**
+
+## Pro — R80/month
+
+Mark this plan as:
+
+**Most Popular**
+
+Features:
+
+* Unlimited customers
+* 500 email notifications per month
+* 100 SMS notifications per month
+* Add your business logo
+* Remove Olyxee branding
+* Better customization
+
+Button:
+
+**Available 1 August**
+
+## Business — R299/month
+
+Features:
+
+* Everything in Pro
+* Unlimited email notifications
+* Order Loop API
+* Automated call centre
+* Business knowledge base
+* Call history and summaries
+
+Add this note:
+
+**Call usage limits and additional call charges will be confirmed before launch.**
+
+Button:
+
+**Available 1 August**
+
+Keep the cards concise.
+
+Do not overcrowd the pricing page with unnecessary features.
+
+---
+
+# 7. Countdown
+
+Add a countdown to:
+
+**1 August 2026 at 00:00 Africa/Johannesburg time**
+
+Show:
+
+* Days
+* Hours
+* Minutes
+* Seconds
+
+Display the countdown on:
+
+* What’s New page
+* Upgrade Plan page
+* Public website announcement section
+
+Use:
+
+```ts
+export const orderLoopLaunch = {
+  launchDate: "2026-08-01T00:00:00+02:00",
+  trialStartDate: "2026-08-01T00:00:00+02:00",
+  trialEndDate: "2026-08-07T23:59:59+02:00",
+};
+```
+
+After the countdown reaches zero, display:
+
+**The new Order Loop plans are now available.**
+
+---
+
+# 8. Existing-user trial
+
+Prepare the existing-user Pro trial.
+
+Dates:
+
+```ts
+trialStartDate: "2026-08-01T00:00:00+02:00"
+trialEndDate: "2026-08-07T23:59:59+02:00"
+```
+
+Existing users should receive Pro access during this period.
+
+On **8 August 2026**, existing users should move to the Free plan unless they have upgraded.
+
+Do not activate this migration yet.
+
+Prepare the logic, but keep it disabled behind a feature flag.
+
+---
+
+# 9. Central plan configuration
+
+Create one reusable plan configuration file.
+
+Do not hardcode plan details separately across components.
+
+```ts
+export const plans = {
+  beta: {
+    name: "BETA",
+    price: 0,
+    active: true,
+    enforceLimits: false,
+  },
+
+  free: {
+    name: "Free",
+    price: 0,
+    customerLimit: 30,
+    emailLimit: 100,
+    smsLimit: 0,
+    advancedCustomization: false,
+    removeOlyxeeBranding: false,
+    availableFrom: "2026-08-01",
+  },
+
+  pro: {
+    name: "Pro",
+    price: 80,
+    customerLimit: null,
+    emailLimit: 500,
+    smsLimit: 100,
+    advancedCustomization: true,
+    removeOlyxeeBranding: true,
+    availableFrom: "2026-08-01",
+  },
+
+  business: {
+    name: "Business",
+    price: 299,
+    customerLimit: null,
+    emailLimit: null,
+    smsLimit: 100,
+    advancedCustomization: true,
+    removeOlyxeeBranding: true,
+    apiAccess: true,
+    automatedCallCentre: true,
+    availableFrom: "2026-08-01",
+  },
+};
+```
+
+Use `null` to represent unlimited usage.
+
+---
+
+# 10. Feature flags
+
+Create feature flags so unfinished features can exist safely without affecting the current product.
+
+```ts
+export const featureFlags = {
+  smsNotifications: false,
+  subscriptionBilling: false,
+  planEnforcement: false,
+  businessBranding: false,
+  customTemplates: false,
+  publicApi: false,
+  automatedCallCentre: false,
+  existingUserTrial: false,
+};
+```
+
+Every unfinished route, component, service, API call, background job, or migration must check the relevant feature flag.
+
+---
+
+# 11. Database preparation
+
+Prepare the database for future plan management.
+
+Add fields such as:
+
+```ts
+plan: "beta" | "free" | "pro" | "business"
+
+subscriptionStatus:
+  | "beta"
+  | "trial"
+  | "active"
+  | "past_due"
+  | "cancelled"
+
+trialStartsAt
+trialEndsAt
+billingCustomerCode
+billingSubscriptionCode
+billingEmailToken
+currentPeriodStart
+currentPeriodEnd
+```
+
+Existing businesses must default to:
+
+```ts
+plan: "beta"
+subscriptionStatus: "beta"
+```
+
+Prepare monthly usage fields:
+
+```ts
+emailNotificationsUsed
+smsNotificationsUsed
+usagePeriodStart
+usagePeriodEnd
+```
+
+Do not enforce these limits while:
+
+```ts
+plan === "beta"
+```
+
+or while:
+
+```ts
+featureFlags.planEnforcement === false
+```
+
+---
+
+# 12. Notification architecture
+
+Prepare one shared notification service.
+
+Current email notifications must continue working exactly as they do now.
+
+Future flow:
+
+```text
+Order status changes
+→ create notification event
+→ send email
+→ send SMS when enabled
+→ save each channel result separately
+```
+
+Use separate delivery records for:
+
+```ts
+channel: "email" | "sms"
+status: "pending" | "queued" | "sent" | "delivered" | "failed"
+providerMessageId
+failureReason
+sentAt
+deliveredAt
+```
+
+A failure on one channel must not block the other channel.
+
+SMS must remain disabled during BETA.
+
+---
+
+# 13. SMSPortal foundation
+
+Create an SMS provider interface.
+
+```ts
+interface SmsProvider {
+  send(input: {
+    to: string;
+    message: string;
+    reference: string;
+  }): Promise<{
+    providerMessageId?: string;
+    status: "queued" | "sent" | "failed" | "mocked";
+  }>;
+}
+```
+
+Create:
+
+```text
+SMSPortalProvider
+MockSmsProvider
+```
+
+Use the mocked provider during BETA.
+
+Do not send real SMS messages yet.
+
+Prepare environment variables:
+
+```env
+SMS_PROVIDER=mock
+SMSPORTAL_CLIENT_ID=
+SMSPORTAL_API_SECRET=
+```
+
+Do not expose SMSPortal credentials to the frontend.
+
+---
+
+# 14. Branding foundation
+
+Prepare these business fields:
+
+```ts
+businessLogoUrl
+emailSenderName
+primaryBrandColour
+removeOlyxeeBranding
+```
+
+Current emails must remain unchanged while:
+
+```ts
+featureFlags.businessBranding === false
+```
+
+During BETA, continue showing the current Order Loop and Olyxee branding.
+
+---
+
+# 15. Public API foundation
+
+Create a protected `/api/v1` structure for future Business-plan integrations.
+
+Prepare endpoints such as:
+
+```text
+POST  /api/v1/orders
+GET   /api/v1/orders/:id
+PATCH /api/v1/orders/:id/status
+GET   /api/v1/customers/:id
+```
+
+Requirements:
+
+* Use API-key authentication
+* Scope API keys per business
+* Log API requests
+* Rate-limit requests
+* Never expose another business’s data
+
+These routes must remain disabled in production while:
+
+```ts
+featureFlags.publicApi === false
+```
+
+---
+
+# 16. Automated call-centre foundation
+
+Prepare the internal data structure for Retell AI.
+
+Add fields such as:
+
+```ts
+callCentreEnabled
+retellAgentId
+retellPhoneNumber
+retellKnowledgeBaseId
+```
+
+Prepare placeholder services for:
+
+* Incoming call webhooks
+* Order lookup
+* Customer lookup
+* Business knowledge retrieval
+* Call transcript storage
+* Call summary storage
+* Escalation handling
+
+Do not provision a Retell phone number.
+
+Do not create a live Retell agent.
+
+Do not accept live calls yet.
+
+Keep the feature disabled while:
+
+```ts
+featureFlags.automatedCallCentre === false
+```
+
+---
+
+# 17. Paystack test integration
+
+Paystack test credentials are available.
+
+Do not hardcode the credentials into source files.
+
+Store them only in **Replit Secrets**.
+
+Use these environment-variable names:
+
+```env
+PAYSTACK_PUBLIC_KEY=<provided Paystack test public key>
+PAYSTACK_SECRET_KEY=<provided Paystack test secret key>
+PAYSTACK_MODE=test
+APP_URL=https://logistics.olyxee.com
+```
+
+The provided test secret key must only be entered into Replit Secrets.
+
+Do not place it in:
+
+* Frontend source code
+* GitHub
+* Configuration files committed to Git
+* API responses
+* Console logs
+* Screenshots
+* Public environment variables
+
+The frontend may access only the Paystack public key.
+
+The backend must access the secret key using:
+
+```ts
+const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+
+if (!paystackSecretKey) {
+  throw new Error("PAYSTACK_SECRET_KEY is not configured");
+}
+```
+
+---
+
+# 18. Paystack plans
+
+Prepare Paystack test plans for:
+
+## Pro
+
+```text
+R80 per month
+```
+
+Use the smallest currency unit:
+
+```ts
+amount: 8000
+currency: "ZAR"
+interval: "monthly"
+```
+
+## Business
+
+```text
+R299 per month
+```
+
+Use:
+
+```ts
+amount: 29900
+currency: "ZAR"
+interval: "monthly"
+```
+
+Save the returned Paystack plan codes in Replit Secrets:
+
+```env
+PAYSTACK_PRO_PLAN_CODE=
+PAYSTACK_BUSINESS_PLAN_CODE=
+```
+
+Do not hardcode plan codes.
+
+---
+
+# 19. Billing endpoints
+
+Create these backend endpoints:
+
+```text
+POST /api/billing/initialize
+GET  /api/billing/verify/:reference
+POST /api/webhooks/paystack
+GET  /api/billing/subscription
+POST /api/billing/cancel
+```
+
+## Initialize payment
+
+The backend must:
+
+* Authenticate the current user
+* Validate the selected plan
+* Use the backend plan price
+* Never trust a price sent from the frontend
+* Create a unique payment reference
+* Initialize the Paystack transaction
+* Return only the authorization URL and reference
+
+## Verify payment
+
+The backend must verify the transaction directly with Paystack.
+
+Only after successful verification may the system update:
+
+```ts
+plan
+subscriptionStatus
+billingCustomerCode
+billingSubscriptionCode
+currentPeriodStart
+currentPeriodEnd
+```
+
+## Webhook
+
+Use:
+
+```text
+https://logistics.olyxee.com/api/webhooks/paystack
+```
+
+Verify the Paystack signature using the server-side secret key.
+
+Reject invalid webhook signatures.
+
+Make webhook processing idempotent so the same event cannot activate a subscription twice.
+
+Handle relevant events such as:
+
+```text
+charge.success
+subscription.create
+invoice.create
+invoice.payment_failed
+subscription.disable
+subscription.not_renew
+```
+
+Store webhook event IDs or transaction references to prevent duplicate processing.
+
+## Callback
+
+Use:
+
+```text
+https://logistics.olyxee.com/billing/callback
+```
+
+The callback page must not trust query parameters as proof of payment.
+
+It must ask the backend to verify the payment.
+
+---
+
+# 20. Billing UI
+
+Prepare billing UI on the Upgrade Plan page.
+
+During this release:
+
+* Show BETA as the current plan
+* Show Free, Pro, and Business as upcoming plans
+* Keep normal upgrade buttons disabled
+* Show `Available 1 August`
+* Allow developers to test Paystack checkout only in development mode
+
+Use:
+
+```ts
+featureFlags.subscriptionBilling === false
+```
+
+for normal users.
+
+Create an optional development-only billing test control that is visible only when:
+
+```env
+NODE_ENV=development
+```
+
+or:
+
+```env
+ENABLE_TEST_BILLING=true
+```
+
+This test control may initialize Paystack test checkout.
+
+Never expose it to production users accidentally.
+
+---
+
+# 21. Subscription rules
+
+When billing is activated later:
+
+## Successful Pro payment
+
+Set:
+
+```ts
+plan: "pro"
+subscriptionStatus: "active"
+```
+
+## Successful Business payment
+
+Set:
+
+```ts
+plan: "business"
+subscriptionStatus: "active"
+```
+
+## Failed renewal
+
+Set:
+
+```ts
+subscriptionStatus: "past_due"
+```
+
+Do not delete business data.
+
+## Cancelled subscription
+
+Keep paid access until the current billing period ends.
+
+After the billing period ends, downgrade the account to Free.
+
+Never delete:
+
+* Customers
+* Orders
+* Notification history
+* Branding data
+* API configuration
+* Call history
+
+Disable paid access instead.
+
+---
+
+# 22. Usage enforcement
+
+Prepare the logic for plan limits, but keep it disabled during BETA.
+
+Future rules:
+
+## Free
+
+```ts
+customerLimit: 30
+emailLimit: 100
+smsLimit: 0
+```
+
+## Pro
+
+```ts
+customerLimit: unlimited
+emailLimit: 500
+smsLimit: 100
+```
+
+## Business
+
+```ts
+customerLimit: unlimited
+emailLimit: unlimited
+smsLimit: 100
+```
+
+Usage should reset monthly according to the subscription billing period.
+
+Do not enforce limits while:
+
+```ts
+featureFlags.planEnforcement === false
+```
+
+---
+
+# 23. Security requirements
+
+* Never expose Paystack secret keys.
+* Never expose SMSPortal secret credentials.
+* Never trust prices from the frontend.
+* Verify all Paystack payments server-side.
+* Verify Paystack webhook signatures.
+* Use authenticated business ownership checks.
+* Make webhook handling idempotent.
+* Add basic rate limiting to billing endpoints.
+* Do not log secrets or full payment authorization data.
+* Do not expose unfinished API endpoints.
+* Do not activate Retell AI yet.
+
+---
+
+# 24. Final acceptance criteria
+
+This release is complete when:
+
+* Existing Order Loop functionality still works.
+* Current users display the BETA plan.
+* No current usage limits are enforced.
+* The sidebar announcement is visible.
+* What’s New, Coming Soon, and Upgrade Plan pages exist.
+* The launch countdown works.
+* Free, Pro, and Business plans are visible.
+* Existing-user trial dates are configured.
+* SMS foundations exist but real SMS is disabled.
+* Business branding foundations exist but are disabled.
+* Public API foundations exist but are disabled.
+* Automated call-centre foundations exist but are disabled.
+* Paystack test checkout can be tested safely in development.
+* Paystack secrets are stored only in Replit Secrets.
+* Billing remains disabled for normal production users.
+* Current email notifications remain unchanged.
+* No customer, order, or historical data is removed.
+
+This must feel like a controlled preparation release, not a product rebuild.
