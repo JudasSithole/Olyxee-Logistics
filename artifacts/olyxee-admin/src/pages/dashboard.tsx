@@ -27,7 +27,7 @@ function LiveClock() {
 
   return (
     <div className="text-right select-none">
-      <p className="text-3xl font-mono font-bold tabular-nums tracking-tight leading-none">
+      <p className="text-3xl font-mono font-semibold tabular-nums tracking-tight leading-none">
         {format(now, "HH:mm:ss")}
       </p>
       <p className="text-xs text-muted-foreground mt-1 tracking-wide">
@@ -278,7 +278,7 @@ function KpiCard({
         {icon}
       </CardHeader>
       <CardContent>
-        <div className={`text-2xl font-bold ${valueClassName ?? ""}`}>{value}</div>
+        <div className={`text-2xl font-semibold ${valueClassName ?? ""}`}>{value}</div>
         {href && (
           <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
             View orders <ArrowRight className="h-3 w-3" />
@@ -323,7 +323,7 @@ export default function DashboardPage() {
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Overview of your logistics operations.</p>
         </div>
         <LiveClock />
@@ -339,13 +339,13 @@ export default function DashboardPage() {
       ) : summary ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <KpiCard
-            label="Total Orders"
+            label="Total orders"
             value={summary.totalOrders}
             icon={<Package className="h-4 w-4 text-muted-foreground" />}
             href="/orders"
           />
           <KpiCard
-            label="Active Deliveries"
+            label="Active deliveries"
             value={summary.activeDeliveries}
             icon={<Truck className="h-4 w-4 text-blue-500" />}
             href={`/orders?status=${encodeURIComponent("In transit")}`}
@@ -365,7 +365,7 @@ export default function DashboardPage() {
             href="/orders?status=Delivered"
           />
           <KpiCard
-            label="Emails Today"
+            label="Emails today"
             value={summary.emailsSentToday}
             icon={<Mail className="h-4 w-4 text-muted-foreground" />}
           />
@@ -377,7 +377,7 @@ export default function DashboardPage() {
         {/* Recent Orders */}
         <Card className="lg:col-span-4">
           <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base">Recent Orders</CardTitle>
+            <CardTitle className="text-base">Recent orders</CardTitle>
             <Link
               href="/orders"
               className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -396,7 +396,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {recentOrders?.map(order => (
                   <Link key={order.id} href={`/orders/${order.id}`}>
-                    <div className="flex items-center justify-between p-3 border hover:bg-muted/40 transition-colors cursor-pointer">
+                    <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
                       <div>
                         <p className="font-mono font-semibold text-sm">{order.tracking_id}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -415,7 +415,7 @@ export default function DashboardPage() {
         {/* Calendar */}
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Delivery Calendar</CardTitle>
+            <CardTitle className="text-base">Delivery calendar</CardTitle>
           </CardHeader>
           <CardContent>
             <CalendarWidget ordersByDate={ordersByDate} />
@@ -426,7 +426,7 @@ export default function DashboardPage() {
       {/* Status breakdown - horizontal */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Status Breakdown</CardTitle>
+          <CardTitle className="text-base">Status breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingSummary ? (
@@ -439,10 +439,10 @@ export default function DashboardPage() {
                 <Link
                   key={status}
                   href={`/orders?status=${encodeURIComponent(status)}`}
-                  className="flex items-center gap-3 border px-4 py-2.5 flex-1 min-w-[160px] hover:bg-muted/40 hover:border-muted-foreground/30 transition-colors"
+                  className="flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-2.5 flex-1 min-w-[160px] hover:bg-muted/60 transition-colors"
                 >
                   <StatusBadge status={status} />
-                  <span className="text-lg font-bold ml-auto">{count}</span>
+                  <span className="text-lg font-semibold ml-auto">{count}</span>
                 </Link>
               ))}
             </div>

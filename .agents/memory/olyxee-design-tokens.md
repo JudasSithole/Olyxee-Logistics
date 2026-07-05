@@ -14,6 +14,12 @@ The orange brand/primary is driven by `--brand-h/--brand-s/--brand-l` (set at ru
 
 **How to apply:** for any future restyle, edit neutral/surface/type/motion tokens and leave the brand chain alone. Note the default `DEFAULTS.primaryColor` in theme-context is `#2b2b2b` (dark), not orange — orange comes from tenant branding/logo, so a plain UI screenshot may show dark primary buttons; that is expected, not a bug.
 
+## Design doc mandates (source: attached_assets Olyxee visual-system PDF)
+- **Sentence case** for all UI titles/labels — avoid Title Case and unnecessary uppercase (e.g. "Recent orders", not "Recent Orders"). App shell + dashboard already normalized; apply the same to any new surface.
+- **Borders sparingly** — prefer surface colour + spacing (e.g. `bg-muted/30`) over a hard border around every row/chip. Data grids (calendar) may keep cell delineation.
+- **≤3 font weights per screen** — titles 600 (`font-semibold`, not `font-bold`), body 400, labels/data 500.
+- Sidebar hierarchy: primary nav pinned top, secondary/utility (news, pricing, settings, plan strip) pinned bottom via `flex-1` nav.
+
 ## Design system alignment (Olyxee visual system)
 - Web font is **Inter** (leads `--font-sans`); Apple SF fonts are intentionally NOT used as web fonts (licensing). `--font-mono` = JetBrains Mono, reserved for technical values (tracking IDs / references — already applied via `font-mono` across order pages).
 - Neutral palette is the guide's cool-neutral hue ~210 (neutral-0..900), not the older blue-purple hue 240.

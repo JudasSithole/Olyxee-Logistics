@@ -77,9 +77,9 @@ const NAV_ITEMS = [
 
 // Launch-prep nav: product news, the roadmap preview, and pricing.
 const GROWTH_ITEMS = [
-  { href: "/whats-new", label: "What's New", icon: Sparkles },
-  { href: "/coming-soon", label: "Coming Soon", icon: Rocket },
-  { href: "/upgrade", label: "Upgrade Plan", icon: ArrowUpCircle },
+  { href: "/whats-new", label: "What's new", icon: Sparkles },
+  { href: "/coming-soon", label: "Coming soon", icon: Rocket },
+  { href: "/upgrade", label: "Upgrade plan", icon: ArrowUpCircle },
 ];
 
 // Small badge in the sidebar showing the business's current plan.
@@ -157,11 +157,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </span>
       </div>
 
-      {/* Nav */}
+      {/* Primary nav - the three core workspace destinations sit at the top on
+          their own so the everyday navigation stays uncluttered. */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-          Menu
-        </p>
         <div className="space-y-0.5">
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -173,28 +171,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             />
           ))}
         </div>
+      </nav>
 
-        <div className="pt-3 mt-3 border-t border-sidebar-border">
-          <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-            Order Loop
-          </p>
-          <div className="space-y-0.5">
-            {GROWTH_ITEMS.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                active={location === item.href || location.startsWith(item.href + "/")}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-3 mt-3 border-t border-sidebar-border">
-          <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-            Workspace
-          </p>
+      {/* Secondary area - product news, pricing and settings live at the bottom,
+          away from the main nav, plus a quiet plan + countdown strip. */}
+      <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-sidebar-border">
+        <div className="space-y-0.5">
+          {GROWTH_ITEMS.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={location === item.href || location.startsWith(item.href + "/")}
+            />
+          ))}
           <NavLink
             href="/settings"
             label="Settings"
@@ -203,34 +194,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
         </div>
 
-        {/* Launch announcement: current plan + live countdown with a distinct
-            call-to-action to the Coming Soon page. Purely informational. */}
-        <div
-          className="mt-4 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3"
+        {/* Launch announcement: current plan + live countdown. Compact and
+            purely informational - the nav links above already lead to details. */}
+        <Link
+          href="/whats-new"
+          className="mt-2 flex items-center gap-2.5 rounded-lg bg-sidebar-accent/40 px-3 py-2 transition-colors hover:bg-sidebar-accent/70"
           data-testid="sidebar-launch-card"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-              Your plan
-            </span>
-            <PlanBadge />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-sidebar-foreground truncate">
+              New features coming
+            </p>
+            <LaunchCountdown
+              variant="compact"
+              className="block text-[11px] tabular-nums text-sidebar-foreground/55"
+            />
           </div>
-          <p className="mt-2 text-xs font-medium text-sidebar-foreground">
-            New features are coming
-          </p>
-          <LaunchCountdown
-            variant="compact"
-            className="mt-0.5 block text-xs tabular-nums text-sidebar-foreground/60"
-          />
-          <Link
-            href="/whats-new"
-            className="mt-3 flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
-            data-testid="button-see-whats-coming"
-          >
-            See what&apos;s coming
-          </Link>
-        </div>
-      </nav>
+          <PlanBadge />
+        </Link>
+      </div>
 
       {/* Footer */}
       <div className="flex-shrink-0 border-t border-sidebar-border">
