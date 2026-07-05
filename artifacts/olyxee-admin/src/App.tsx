@@ -27,6 +27,7 @@ import ProfilePage from "@/pages/profile";
 import WhatsNewPage from "@/pages/whats-new";
 import ComingSoonPage from "@/pages/coming-soon";
 import UpgradePage from "@/pages/upgrade";
+import BillingCallbackPage from "@/pages/billing-callback";
 import NotFound from "@/pages/not-found";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -166,6 +167,12 @@ function AppRoutes() {
       <Route path="/whats-new" component={() => <PublicOrApp component={WhatsNewPage} />} />
       <Route path="/coming-soon" component={() => <PublicOrApp component={ComingSoonPage} />} />
       <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
+      <Route
+        path="/billing/callback"
+        component={() => (
+          <Protected component={BillingCallbackPage} skipOnboardingGuard withLayout={false} />
+        )}
+      />
       <Route path="/settings" component={() => <Protected component={SettingsPage} />} />
       <Route path="/profile" component={() => <Protected component={ProfilePage} />} />
       <Route component={NotFound} />

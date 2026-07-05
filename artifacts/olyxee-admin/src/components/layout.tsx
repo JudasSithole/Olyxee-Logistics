@@ -223,7 +223,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="mt-0.5 block text-xs tabular-nums text-sidebar-foreground/60"
           />
           <Link
-            href="/coming-soon"
+            href="/whats-new"
             className="mt-3 flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
             data-testid="button-see-whats-coming"
           >

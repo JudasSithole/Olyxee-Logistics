@@ -57,10 +57,15 @@ router.post("/billing/initialize", requireAuth, async (req: Request, res: Respon
       return;
     }
     const reference = `olyxee_${businessId}_${Date.now()}`;
+    // Send the buyer back to the admin app's callback page after payment, which
+    // re-verifies the transaction server-side before activating.
+    const origin = req.get("origin") || `${req.protocol}://${req.get("host")}`;
+    const callbackUrl = `${origin}/billing/callback`;
     const init = await initializeTransaction({
       email: business.supportEmail || `billing+${businessId}@olyxee.com`,
       amountMinor: planAmountMinor(planId),
       reference,
+      callbackUrl,
       metadata: { businessId, plan: planId },
     });
     res.json({ authorizationUrl: init.authorizationUrl, reference: init.reference });
