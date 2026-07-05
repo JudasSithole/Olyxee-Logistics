@@ -49,7 +49,7 @@ export const plans: Record<PlanId, PlanConfig> = {
 
   pro: {
     name: "Pro",
-    price: 80,
+    price: 59,
     customerLimit: null,
     emailLimit: 500,
     smsLimit: 100,
