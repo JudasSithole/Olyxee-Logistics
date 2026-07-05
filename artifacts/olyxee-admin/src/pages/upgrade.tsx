@@ -52,13 +52,20 @@ export default function UpgradePage() {
   const { data: business } = useBusiness(user?.businessId);
   const currentPlan = business?.plan ?? "beta";
   const billingLive = featureFlags.subscriptionBilling;
-  // Dev-only test control: when the billing flag is still off, developers can
-  // still exercise the Paystack test flow if the server has ENABLE_TEST_BILLING
-  // set. In production (flag off, not DEV) the buttons stay "Available <date>".
-  const devTestBilling = import.meta.env.DEV && !billingLive;
+  // Test control: when the billing flag is still off, the Paystack test flow can
+  // still be exercised in dev, or in any environment where the server enables
+  // test billing (mirror it to the client via VITE_ENABLE_TEST_BILLING=1|true).
+  // For normal users (flag off, no test billing) the buttons stay
+  // "Available <date>" and disabled.
+  const envTestBilling = ["1", "true"].includes(
+    String(import.meta.env.VITE_ENABLE_TEST_BILLING ?? "").toLowerCase(),
+  );
+  const devTestBilling = (import.meta.env.DEV || envTestBilling) && !billingLive;
+  // Whether checkout is possible at all in this environment (auth-independent).
+  const checkoutEnabled = billingLive || devTestBilling;
   // Checkout requires an authenticated business; public visitors are routed to
   // login first.
-  const canCheckout = isAuthed && (billingLive || devTestBilling);
+  const canCheckout = isAuthed && checkoutEnabled;
 
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -173,21 +180,23 @@ export default function UpgradePage() {
               <Button
                 className="w-full"
                 variant={isPro ? "default" : "outline"}
-                disabled={pendingPlan !== null || (isAuthed && (isCurrent || !canCheckout))}
+                disabled={
+                  pendingPlan !== null || !checkoutEnabled || (isAuthed && isCurrent)
+                }
                 onClick={() => handleChoose(id)}
                 data-testid={`button-choose-${id}`}
               >
                 {pendingPlan === id && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {!isAuthed
-                  ? "Log in to get started"
-                  : isCurrent
-                    ? "Current plan"
-                    : !canCheckout
-                      ? `Available ${LAUNCH_LABEL}`
+                {!checkoutEnabled
+                  ? `Available ${LAUNCH_LABEL}`
+                  : !isAuthed
+                    ? "Log in to get started"
+                    : isCurrent
+                      ? "Current plan"
                       : devTestBilling
-                        ? `Test checkout (dev)`
+                        ? `Test checkout`
                         : `Choose ${p.name}`}
               </Button>
             </Card>

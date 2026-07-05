@@ -12,7 +12,9 @@ const PAYSTACK_BASE = "https://api.paystack.co";
 
 export function isTestBillingEnabled(): boolean {
   const key = process.env.PAYSTACK_SECRET_KEY ?? "";
-  return process.env.ENABLE_TEST_BILLING === "1" && key.startsWith("sk_test_");
+  const flag = (process.env.ENABLE_TEST_BILLING ?? "").trim().toLowerCase();
+  const enabled = flag === "1" || flag === "true";
+  return enabled && key.startsWith("sk_test_");
 }
 
 function secretKey(): string {
