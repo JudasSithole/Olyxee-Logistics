@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useBusiness } from "@/hooks/use-supabase-queries";
+import { LaunchCountdown } from "@/components/launch-countdown";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
   plans,
@@ -105,6 +106,13 @@ export default function UpgradePage() {
           </p>
         </div>
       </div>
+
+      <Card className="border-primary/20 bg-primary/5 p-5 text-center">
+        <p className="text-sm font-medium text-foreground">
+          Paid plans go live on {LAUNCH_LABEL}
+        </p>
+        <LaunchCountdown className="mt-2 justify-center" />
+      </Card>
 
       {isAuthed && currentPlan === "beta" && (
         <Card className="border-primary/20 bg-primary/5 p-5">
