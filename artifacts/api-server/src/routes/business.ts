@@ -8,6 +8,11 @@ import {
   trackingEventsTable,
   emailNotificationsTable,
   usersTable,
+  notificationEventsTable,
+  notificationDeliveriesTable,
+  billingEventsTable,
+  apiKeysTable,
+  callRecordsTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { UpdateBusinessBody } from "@workspace/api-zod";
@@ -271,6 +276,34 @@ router.delete("/business", requireAuth, async (req, res) => {
           .delete(emailNotificationsTable)
           .where(inArray(emailNotificationsTable.orderId, orderIds));
       }
+
+      // Launch-prep foundation tables also reference this business/its orders.
+      // notification_deliveries -> notification_events -> orders, so peel the
+      // deliveries first (scoped via this business's event ids), then events.
+      const eventIds = (
+        await tx
+          .select({ id: notificationEventsTable.id })
+          .from(notificationEventsTable)
+          .where(eq(notificationEventsTable.businessId, businessId))
+      ).map((r) => r.id);
+      if (eventIds.length > 0) {
+        await tx
+          .delete(notificationDeliveriesTable)
+          .where(inArray(notificationDeliveriesTable.eventId, eventIds));
+      }
+      await tx
+        .delete(notificationEventsTable)
+        .where(eq(notificationEventsTable.businessId, businessId));
+      // call_records references orders.id, so it must go before orders.
+      await tx
+        .delete(callRecordsTable)
+        .where(eq(callRecordsTable.businessId, businessId));
+      await tx
+        .delete(apiKeysTable)
+        .where(eq(apiKeysTable.businessId, businessId));
+      await tx
+        .delete(billingEventsTable)
+        .where(eq(billingEventsTable.businessId, businessId));
 
       await tx.delete(ordersTable).where(eq(ordersTable.businessId, businessId));
       await tx.delete(customersTable).where(eq(customersTable.businessId, businessId));
