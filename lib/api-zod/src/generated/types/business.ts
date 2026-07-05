@@ -5,6 +5,8 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { BusinessPlan } from './businessPlan';
+import type { BusinessSubscriptionStatus } from './businessSubscriptionStatus';
 
 export interface Business {
   id: string;
@@ -26,5 +28,18 @@ export interface Business {
   /** Status emails actually sent this calendar month. */
   emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
+  /** Current plan. Every existing business is on "beta" until launch. */
+  plan: BusinessPlan;
+  subscriptionStatus: BusinessSubscriptionStatus;
+  trialStartsAt?: string | null;
+  trialEndsAt?: string | null;
+  currentPeriodEnd?: string | null;
+  emailNotificationsUsed?: number;
+  smsNotificationsUsed?: number;
+  businessLogoUrl?: string | null;
+  emailSenderName?: string | null;
+  primaryBrandColour?: string | null;
+  removeOlyxeeBranding?: boolean;
+  callCentreEnabled?: boolean;
   createdAt: string;
 }

@@ -178,6 +178,18 @@ interface ApiBusiness {
   monthlyEmailLimit?: number;
   emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
+  plan?: string;
+  subscriptionStatus?: string;
+  trialStartsAt?: string | null;
+  trialEndsAt?: string | null;
+  currentPeriodEnd?: string | null;
+  emailNotificationsUsed?: number;
+  smsNotificationsUsed?: number;
+  businessLogoUrl?: string | null;
+  emailSenderName?: string | null;
+  primaryBrandColour?: string | null;
+  removeOlyxeeBranding?: boolean;
+  callCentreEnabled?: boolean;
   createdAt: string;
 }
 
@@ -205,7 +217,18 @@ function mapBusiness(b: ApiBusiness): Business {
     notification_whatsapp: false,
     onboarding_completed: b.onboardingCompleted,
     onboarding_step: 0,
-    plan: "free",
+    plan: b.plan ?? "beta",
+    subscription_status: b.subscriptionStatus ?? "beta",
+    trial_starts_at: b.trialStartsAt ?? null,
+    trial_ends_at: b.trialEndsAt ?? null,
+    current_period_end: b.currentPeriodEnd ?? null,
+    email_notifications_used: b.emailNotificationsUsed ?? 0,
+    sms_notifications_used: b.smsNotificationsUsed ?? 0,
+    business_logo_url: b.businessLogoUrl ?? null,
+    email_sender_name: b.emailSenderName ?? null,
+    primary_brand_colour: b.primaryBrandColour ?? null,
+    remove_olyxee_branding: b.removeOlyxeeBranding ?? false,
+    call_centre_enabled: b.callCentreEnabled ?? false,
     monthly_email_limit: b.monthlyEmailLimit ?? 500,
     email_usage_this_month: b.emailUsageThisMonth ?? 0,
     created_at: b.createdAt,

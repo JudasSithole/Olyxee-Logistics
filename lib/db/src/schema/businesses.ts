@@ -37,6 +37,46 @@ export const businessesTable = pgTable("businesses", {
   // provider's free tier.
   monthlyEmailLimit: integer("monthly_email_limit").notNull().default(500),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+
+  // ─── Plan & subscription (launch-prep) ────────────────────────────────────
+  // Every existing business defaults to the BETA plan/status. Limits are NOT
+  // enforced while plan === "beta" or featureFlags.planEnforcement === false.
+  plan: text("plan", { enum: ["beta", "free", "pro", "business"] })
+    .notNull()
+    .default("beta"),
+  subscriptionStatus: text("subscription_status", {
+    enum: ["beta", "trial", "active", "past_due", "cancelled"],
+  })
+    .notNull()
+    .default("beta"),
+  trialStartsAt: timestamp("trial_starts_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  // Paystack linkage. Populated only after a verified payment; never trusted
+  // from the frontend.
+  billingCustomerCode: text("billing_customer_code"),
+  billingSubscriptionCode: text("billing_subscription_code"),
+  billingEmailToken: text("billing_email_token"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+
+  // ─── Monthly usage counters (enforcement disabled during BETA) ────────────
+  emailNotificationsUsed: integer("email_notifications_used").notNull().default(0),
+  smsNotificationsUsed: integer("sms_notifications_used").notNull().default(0),
+  usagePeriodStart: timestamp("usage_period_start"),
+  usagePeriodEnd: timestamp("usage_period_end"),
+
+  // ─── Business branding (applied only when featureFlags.businessBranding) ──
+  businessLogoUrl: text("business_logo_url"),
+  emailSenderName: text("email_sender_name"),
+  primaryBrandColour: text("primary_brand_colour"),
+  removeOlyxeeBranding: boolean("remove_olyxee_branding").notNull().default(false),
+
+  // ─── Automated call centre (Retell) — disabled foundation ─────────────────
+  callCentreEnabled: boolean("call_centre_enabled").notNull().default(false),
+  retellAgentId: text("retell_agent_id"),
+  retellPhoneNumber: text("retell_phone_number"),
+  retellKnowledgeBaseId: text("retell_knowledge_base_id"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

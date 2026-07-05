@@ -1,0 +1,185 @@
+import { useState } from "react";
+import { Check, Loader2, Sparkles } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { useBusiness } from "@/hooks/use-supabase-queries";
+import { apiFetch, ApiError } from "@/lib/api";
+import {
+  plans,
+  featureFlags,
+  LAUNCH_LABEL,
+  TRIAL_LABEL,
+  type PlanId,
+} from "@/lib/launch";
+
+function formatPrice(price: number): string {
+  return price === 0 ? "Free" : `R${price}`;
+}
+
+function featureList(id: PlanId): string[] {
+  const p = plans[id];
+  const out: string[] = [];
+  out.push(
+    p.customerLimit == null
+      ? "Unlimited customers"
+      : `Up to ${p.customerLimit} customers`,
+  );
+  out.push(
+    p.emailLimit == null
+      ? "Unlimited email notifications"
+      : `${p.emailLimit} email notifications / month`,
+  );
+  if (p.smsLimit && p.smsLimit > 0) {
+    out.push(`${p.smsLimit} SMS notifications / month`);
+  }
+  if (p.advancedCustomization) out.push("Advanced customization");
+  if (p.removeOlyxeeBranding) out.push("Remove Olyxee branding");
+  if (p.apiAccess) out.push("Public API access");
+  if (p.automatedCallCentre) out.push("Automated call centre");
+  return out;
+}
+
+const TIERS: PlanId[] = ["free", "pro", "business"];
+
+export default function UpgradePage() {
+  const { user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
+  const currentPlan = business?.plan ?? "beta";
+  const billingLive = featureFlags.subscriptionBilling;
+  // Dev-only test control: when the billing flag is still off, developers can
+  // still exercise the Paystack test flow if the server has ENABLE_TEST_BILLING
+  // set. In production (flag off, not DEV) the buttons stay "Available <date>".
+  const devTestBilling = import.meta.env.DEV && !billingLive;
+  const canCheckout = billingLive || devTestBilling;
+
+  const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function handleChoose(id: PlanId) {
+    setErrorMsg(null);
+    setPendingPlan(id);
+    try {
+      const res = await apiFetch<{ authorizationUrl: string }>(
+        "/api/billing/initialize",
+        { method: "POST", body: { plan: id } },
+      );
+      if (res.authorizationUrl) {
+        window.location.href = res.authorizationUrl;
+        return;
+      }
+      setErrorMsg("Checkout could not be started.");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 503) {
+        setErrorMsg(
+          "Billing is not enabled yet. Set ENABLE_TEST_BILLING=1 (test mode) on the API server to try checkout.",
+        );
+      } else {
+        setErrorMsg(err instanceof Error ? err.message : "Checkout failed.");
+      }
+    } finally {
+      setPendingPlan(null);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Plans &amp; Pricing</h1>
+          <p className="text-sm text-muted-foreground">
+            Choose the plan that fits your business.
+          </p>
+        </div>
+      </div>
+
+      {currentPlan === "beta" && (
+        <Card className="border-primary/20 bg-primary/5 p-5">
+          <div className="flex items-start gap-3">
+            <Badge className="mt-0.5">BETA</Badge>
+            <p className="text-sm text-muted-foreground">
+              You&apos;re on the <span className="font-medium text-foreground">BETA plan</span>{" "}
+              with unlimited access and no limits. Paid plans go live on{" "}
+              {LAUNCH_LABEL}. As an existing business, you&apos;ll get Pro free
+              during {TRIAL_LABEL}.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {errorMsg && (
+        <Card className="border-destructive/30 bg-destructive/5 p-4" data-testid="billing-error">
+          <p className="text-sm text-destructive">{errorMsg}</p>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {TIERS.map((id) => {
+          const p = plans[id];
+          const isCurrent = currentPlan === id;
+          const isPro = id === "pro";
+          return (
+            <Card
+              key={id}
+              data-testid={`plan-${id}`}
+              className={`relative flex flex-col p-6 ${
+                isPro ? "border-primary shadow-md" : ""
+              }`}
+            >
+              {isPro && (
+                <Badge className="absolute -top-2.5 left-6">Most popular</Badge>
+              )}
+              <h2 className="text-lg font-semibold">{p.name}</h2>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  {formatPrice(p.price)}
+                </span>
+                {p.price > 0 && (
+                  <span className="text-sm text-muted-foreground">/month</span>
+                )}
+              </div>
+
+              <ul className="mt-5 space-y-2.5">
+                {featureList(id).map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="text-muted-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-6 flex-1" />
+              <Button
+                className="w-full"
+                variant={isPro ? "default" : "outline"}
+                disabled={isCurrent || !canCheckout || pendingPlan !== null}
+                onClick={() => handleChoose(id)}
+                data-testid={`button-choose-${id}`}
+              >
+                {pendingPlan === id && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isCurrent
+                  ? "Current plan"
+                  : !canCheckout
+                    ? `Available ${LAUNCH_LABEL}`
+                    : devTestBilling
+                      ? `Test checkout (dev)`
+                      : `Choose ${p.name}`}
+              </Button>
+            </Card>
+          );
+        })}
+      </div>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Prices in South African Rand (ZAR). You can change or cancel your plan
+        at any time.
+      </p>
+    </div>
+  );
+}

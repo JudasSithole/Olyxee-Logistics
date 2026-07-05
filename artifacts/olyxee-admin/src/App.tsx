@@ -23,6 +23,9 @@ import OrdersPage from "@/pages/orders";
 import OrderDetailPage from "@/pages/order-detail";
 import SettingsPage from "@/pages/settings";
 import ProfilePage from "@/pages/profile";
+import WhatsNewPage from "@/pages/whats-new";
+import ComingSoonPage from "@/pages/coming-soon";
+import UpgradePage from "@/pages/upgrade";
 import NotFound from "@/pages/not-found";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -137,6 +140,9 @@ function AppRoutes() {
           return null;
         }}
       </Route>
+      <Route path="/whats-new" component={() => <Protected component={WhatsNewPage} />} />
+      <Route path="/coming-soon" component={() => <Protected component={ComingSoonPage} />} />
+      <Route path="/upgrade" component={() => <Protected component={UpgradePage} />} />
       <Route path="/settings" component={() => <Protected component={SettingsPage} />} />
       <Route path="/profile" component={() => <Protected component={ProfilePage} />} />
       <Route component={NotFound} />

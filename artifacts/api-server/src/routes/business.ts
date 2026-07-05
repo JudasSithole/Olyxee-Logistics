@@ -35,6 +35,18 @@ const DEMO_BUSINESS = {
   monthlyEmailLimit: 500,
   emailUsageThisMonth: 0,
   onboardingCompleted: true,
+  plan: "beta",
+  subscriptionStatus: "beta",
+  trialStartsAt: null,
+  trialEndsAt: null,
+  currentPeriodEnd: null,
+  emailNotificationsUsed: 0,
+  smsNotificationsUsed: 0,
+  businessLogoUrl: null,
+  emailSenderName: null,
+  primaryBrandColour: null,
+  removeOlyxeeBranding: false,
+  callCentreEnabled: false,
   createdAt: new Date("2024-01-01").toISOString(),
 };
 
@@ -62,6 +74,20 @@ function serialize(
     monthlyEmailLimit: business.monthlyEmailLimit,
     emailUsageThisMonth,
     onboardingCompleted: business.onboardingCompleted,
+    plan: business.plan,
+    subscriptionStatus: business.subscriptionStatus,
+    trialStartsAt: business.trialStartsAt ? business.trialStartsAt.toISOString() : null,
+    trialEndsAt: business.trialEndsAt ? business.trialEndsAt.toISOString() : null,
+    currentPeriodEnd: business.currentPeriodEnd
+      ? business.currentPeriodEnd.toISOString()
+      : null,
+    emailNotificationsUsed: business.emailNotificationsUsed,
+    smsNotificationsUsed: business.smsNotificationsUsed,
+    businessLogoUrl: business.businessLogoUrl,
+    emailSenderName: business.emailSenderName,
+    primaryBrandColour: business.primaryBrandColour,
+    removeOlyxeeBranding: business.removeOlyxeeBranding,
+    callCentreEnabled: business.callCentreEnabled,
     createdAt: business.createdAt.toISOString(),
   };
 }

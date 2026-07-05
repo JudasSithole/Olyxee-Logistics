@@ -13,6 +13,7 @@ import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
+import { recordNotification, type DeliveryStatus } from "../lib/notifications";
 import {
   CreateOrderBody,
   UpdateOrderStatusBody,
@@ -457,6 +458,34 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       entityId: orderId,
       metadata: { previousStatus: order.currentStatus, newStatus: status, emailStatus },
     });
+
+    // 6b. Shared notification history (best-effort, additive). Mirrors the email
+    // outcome above into the new notification_events / notification_deliveries
+    // tables. Never throws into this path; the legacy email_notifications write
+    // above remains the source of truth for existing UI.
+    if (customer && emailStatus !== "skipped") {
+      const deliveryStatus: DeliveryStatus =
+        emailStatus === "sent" ? "sent" : "failed";
+      await recordNotification({
+        orderId,
+        businessId,
+        status,
+        message: message ?? null,
+        outcomes: [
+          {
+            channel: "email",
+            recipient: customer.email,
+            status: deliveryStatus,
+            failureReason:
+              emailStatus === "limit_reached"
+                ? "Monthly email limit reached"
+                : emailStatus === "failed"
+                  ? "Email provider send failed"
+                  : null,
+          },
+        ],
+      });
+    }
 
     res.json({
       order: serializeOrder(updatedOrder[0]),

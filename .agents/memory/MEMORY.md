@@ -5,3 +5,4 @@
 - [Public order tracking](public-tracking.md) — no-login /track page + email link fallback to hosted base; buildTrackingLink must normalize websiteUrl or the email CTA silently drops; tenant sites auto-added to CORS.
 - [Prod schema drift](prod-schema-drift.md) — prod Supabase tables can lack columns the Drizzle SELECT pulls → 500; diff information_schema vs schema, ALTER ADD, never push to prod.
 - [Prod write 500s from Supabase triggers](prod-uuid-text-drift.md) — writes 500 / reads OK: legacy triggers (audit_*, on_order_created, customers_updated_at) reference missing cols/auth.uid(); drop them, columns were already text.
+- [Launch-prep foundations](launch-prep-foundations.md) — disabled features gate via @workspace/plans featureFlags; route gates must be path-scoped; billing is env-gated TEST-only; validate paid amount + swallow only 23505.

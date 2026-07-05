@@ -3,12 +3,16 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package,
   Menu, Moon, Sun, Settings, LogOut,
+  Sparkles, Rocket, ArrowUpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useBusiness } from "@/hooks/use-supabase-queries";
+import { LaunchCountdown } from "@/components/launch-countdown";
+import { plans, type PlanId } from "@/lib/launch";
 
 function UserRow() {
   const { user, signOut } = useAuth();
@@ -70,6 +74,29 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Orders", icon: Package },
 ];
+
+// Launch-prep nav: product news, the roadmap preview, and pricing.
+const GROWTH_ITEMS = [
+  { href: "/whats-new", label: "What's New", icon: Sparkles },
+  { href: "/coming-soon", label: "Coming Soon", icon: Rocket },
+  { href: "/upgrade", label: "Upgrade Plan", icon: ArrowUpCircle },
+];
+
+// Small badge in the sidebar showing the business's current plan.
+function PlanBadge() {
+  const { user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
+  const planId = (business?.plan ?? "beta") as PlanId;
+  const label = plans[planId]?.name ?? "BETA";
+  return (
+    <span
+      className="inline-flex items-center rounded-full bg-sidebar-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-accent-foreground"
+      data-testid="sidebar-plan-badge"
+    >
+      {label}
+    </span>
+  );
+}
 
 // A single nav row used for every sidebar link so the active treatment -
 // a left accent bar plus filled background - stays perfectly consistent.
@@ -149,6 +176,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="pt-3 mt-3 border-t border-sidebar-border">
           <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+            Order Loop
+          </p>
+          <div className="space-y-0.5">
+            {GROWTH_ITEMS.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={location === item.href || location.startsWith(item.href + "/")}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-3 mt-3 border-t border-sidebar-border">
+          <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
             Workspace
           </p>
           <NavLink
@@ -158,6 +202,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             active={location.startsWith("/settings")}
           />
         </div>
+
+        {/* Launch announcement: current plan + live countdown, linking to the
+            What's New page. Purely informational. */}
+        <Link
+          href="/whats-new"
+          className="mt-4 block rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 transition-colors hover:bg-sidebar-accent/60"
+          data-testid="sidebar-launch-card"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              Your plan
+            </span>
+            <PlanBadge />
+          </div>
+          <p className="mt-2 text-xs font-medium text-sidebar-foreground">
+            Launching soon
+          </p>
+          <LaunchCountdown
+            variant="compact"
+            className="mt-0.5 block text-xs tabular-nums text-sidebar-foreground/60"
+          />
+        </Link>
       </nav>
 
       {/* Footer */}

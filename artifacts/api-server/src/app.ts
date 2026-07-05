@@ -97,7 +97,16 @@ app.use("/api/public", publicCors);
 app.use(adminCors);
 
 app.use(cookieParser());
-app.use(express.json({ limit: "100kb" }));
+app.use(
+  express.json({
+    limit: "100kb",
+    // Stash the raw body so the Paystack webhook can verify its HMAC signature
+    // against the exact bytes received. Harmless for every other route.
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody?: Buffer }).rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Per-IP rate limit on all /api routes. Generous default so legitimate admin

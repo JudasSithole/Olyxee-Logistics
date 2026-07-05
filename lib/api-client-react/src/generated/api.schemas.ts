@@ -9,6 +9,30 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * Current plan. Every existing business is on "beta" until launch.
+ */
+export type BusinessPlan = typeof BusinessPlan[keyof typeof BusinessPlan];
+
+
+export const BusinessPlan = {
+  beta: 'beta',
+  free: 'free',
+  pro: 'pro',
+  business: 'business',
+} as const;
+
+export type BusinessSubscriptionStatus = typeof BusinessSubscriptionStatus[keyof typeof BusinessSubscriptionStatus];
+
+
+export const BusinessSubscriptionStatus = {
+  beta: 'beta',
+  trial: 'trial',
+  active: 'active',
+  past_due: 'past_due',
+  cancelled: 'cancelled',
+} as const;
+
 export interface Business {
   id: string;
   name: string;
@@ -29,6 +53,19 @@ export interface Business {
   /** Status emails actually sent this calendar month. */
   emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
+  /** Current plan. Every existing business is on "beta" until launch. */
+  plan: BusinessPlan;
+  subscriptionStatus: BusinessSubscriptionStatus;
+  trialStartsAt?: string | null;
+  trialEndsAt?: string | null;
+  currentPeriodEnd?: string | null;
+  emailNotificationsUsed?: number;
+  smsNotificationsUsed?: number;
+  businessLogoUrl?: string | null;
+  emailSenderName?: string | null;
+  primaryBrandColour?: string | null;
+  removeOlyxeeBranding?: boolean;
+  callCentreEnabled?: boolean;
   createdAt: string;
 }
 

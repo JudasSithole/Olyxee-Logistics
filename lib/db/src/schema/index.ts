@@ -9,3 +9,8 @@ export * from "./audit_logs";
 export * from "./workflow_templates";
 export * from "./workflow_steps";
 export * from "./business_workflows";
+export * from "./notification_events";
+export * from "./notification_deliveries";
+export * from "./billing_events";
+export * from "./api_keys";
+export * from "./call_records";

@@ -574,6 +574,39 @@ components:
           description: Status emails actually sent this calendar month.
         onboardingCompleted:
           type: boolean
+        plan:
+          type: string
+          enum: [beta, free, pro, business]
+          description: Current plan. Every existing business is on "beta" until launch.
+        subscriptionStatus:
+          type: string
+          enum: [beta, trial, active, past_due, cancelled]
+        trialStartsAt:
+          type: string
+          nullable: true
+        trialEndsAt:
+          type: string
+          nullable: true
+        currentPeriodEnd:
+          type: string
+          nullable: true
+        emailNotificationsUsed:
+          type: integer
+        smsNotificationsUsed:
+          type: integer
+        businessLogoUrl:
+          type: string
+          nullable: true
+        emailSenderName:
+          type: string
+          nullable: true
+        primaryBrandColour:
+          type: string
+          nullable: true
+        removeOlyxeeBranding:
+          type: boolean
+        callCentreEnabled:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -583,6 +616,8 @@ components:
         - websiteUrl
         - supportEmail
         - onboardingCompleted
+        - plan
+        - subscriptionStatus
         - createdAt
 
     BusinessUpdate:

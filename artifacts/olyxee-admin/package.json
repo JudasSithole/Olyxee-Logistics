@@ -59,6 +59,7 @@
     "@vitest/coverage-v8": "^3.2.4",
     "@workspace/api-client-react": "workspace:*",
     "@workspace/order-statuses": "workspace:*",
+    "@workspace/plans": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "cmdk": "^1.1.1",

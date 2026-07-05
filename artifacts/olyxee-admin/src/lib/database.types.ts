@@ -44,6 +44,17 @@ export interface Database {
           onboarding_completed: boolean;
           onboarding_step: number;
           plan: string;
+          subscription_status: string;
+          trial_starts_at: string | null;
+          trial_ends_at: string | null;
+          current_period_end: string | null;
+          email_notifications_used: number;
+          sms_notifications_used: number;
+          business_logo_url: string | null;
+          email_sender_name: string | null;
+          primary_brand_colour: string | null;
+          remove_olyxee_branding: boolean;
+          call_centre_enabled: boolean;
           monthly_email_limit: number;
           email_usage_this_month: number;
           created_at: string;

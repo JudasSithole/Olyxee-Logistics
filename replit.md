@@ -22,15 +22,22 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Shared launch/plan config: `lib/plans/src/index.ts` (`@workspace/plans`) — plan catalog, `featureFlags`, launch/trial dates, countdown helper. Single source of truth for pricing UI, badges, and (future) enforcement.
+- DB schema (source of truth): `lib/db/src/schema/*.ts` (barrel: `schema/index.ts`). Launch-prep tables: `notification_events`, `notification_deliveries`, `billing_events`, `api_keys`, `call_records`.
+- API contracts: `lib/api-spec/openapi.yaml` → `pnpm --filter @workspace/api-spec run codegen`.
+- Backend feature foundations: `artifacts/api-server/src/lib/{sms,notifications,branding,paystack,call-centre,plan-enforcement}.ts`; routes `artifacts/api-server/src/routes/{billing,v1}.ts`.
+- Launch-prep UI: `artifacts/olyxee-admin/src/pages/{whats-new,coming-soon,upgrade}.tsx`, `src/components/launch-countdown.tsx`, `src/lib/launch.ts` (re-exports `@workspace/plans`).
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Every unfinished capability is gated by `featureFlags` in `@workspace/plans` (all false this release). Modules no-op / return 503 / fall back to defaults while off. See `.agents/memory/launch-prep-foundations.md`.
+- Route-level gates are path-scoped (`router.use("/v1", gate)`) — an unscoped gate mounted via `router.use(childRouter)` becomes a catch-all for unmatched routes.
+- Paystack billing is TEST-ONLY, gated by env (`ENABLE_TEST_BILLING=1` + `sk_test_` key), not the `subscriptionBilling` flag; a live key is refused. Webhook verifies HMAC over the raw body; activation validates paid amount vs plan and is idempotent via `billing_events.dedupe_key`.
+- Shared notification service records to new tables additively/best-effort; the legacy `email_notifications` flow is untouched.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Order Loop is an order-tracking and customer-notification tool for small businesses: create orders, advance status, and auto-email customers a branded tracking update. Launch-prep adds a "What's New"/"Coming soon" announcement surface, public + in-app pricing (Free/Pro/Business, ZAR), and a countdown to the 1 Aug 2026 launch. Billing, SMS, custom branding, a public API, and an automated call centre are scaffolded but disabled until launch.
 
 ## User preferences
 

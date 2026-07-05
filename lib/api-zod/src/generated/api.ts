@@ -37,6 +37,18 @@ export const GetBusinessResponse = zod.object({
   "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
   "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
+  "plan": zod.enum(['beta', 'free', 'pro', 'business']).describe('Current plan. Every existing business is on \"beta\" until launch.'),
+  "subscriptionStatus": zod.enum(['beta', 'trial', 'active', 'past_due', 'cancelled']),
+  "trialStartsAt": zod.string().nullish(),
+  "trialEndsAt": zod.string().nullish(),
+  "currentPeriodEnd": zod.string().nullish(),
+  "emailNotificationsUsed": zod.number().optional(),
+  "smsNotificationsUsed": zod.number().optional(),
+  "businessLogoUrl": zod.string().nullish(),
+  "emailSenderName": zod.string().nullish(),
+  "primaryBrandColour": zod.string().nullish(),
+  "removeOlyxeeBranding": zod.boolean().optional(),
+  "callCentreEnabled": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 
@@ -78,6 +90,18 @@ export const UpdateBusinessResponse = zod.object({
   "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
   "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
+  "plan": zod.enum(['beta', 'free', 'pro', 'business']).describe('Current plan. Every existing business is on \"beta\" until launch.'),
+  "subscriptionStatus": zod.enum(['beta', 'trial', 'active', 'past_due', 'cancelled']),
+  "trialStartsAt": zod.string().nullish(),
+  "trialEndsAt": zod.string().nullish(),
+  "currentPeriodEnd": zod.string().nullish(),
+  "emailNotificationsUsed": zod.number().optional(),
+  "smsNotificationsUsed": zod.number().optional(),
+  "businessLogoUrl": zod.string().nullish(),
+  "emailSenderName": zod.string().nullish(),
+  "primaryBrandColour": zod.string().nullish(),
+  "removeOlyxeeBranding": zod.boolean().optional(),
+  "callCentreEnabled": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 
