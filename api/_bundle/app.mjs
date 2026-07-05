@@ -505,6 +505,121 @@ var require_browser = __commonJS({
   }
 });
 
+// ../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js
+var require_has_flag = __commonJS({
+  "../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js"(exports, module) {
+    "use strict";
+    module.exports = (flag, argv = process.argv) => {
+      const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
+      const position = argv.indexOf(prefix + flag);
+      const terminatorPosition = argv.indexOf("--");
+      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js
+var require_supports_color = __commonJS({
+  "../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js"(exports, module) {
+    "use strict";
+    var os = __require("os");
+    var tty = __require("tty");
+    var hasFlag = require_has_flag();
+    var { env } = process;
+    var forceColor;
+    if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
+      forceColor = 0;
+    } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
+      forceColor = 1;
+    }
+    if ("FORCE_COLOR" in env) {
+      if (env.FORCE_COLOR === "true") {
+        forceColor = 1;
+      } else if (env.FORCE_COLOR === "false") {
+        forceColor = 0;
+      } else {
+        forceColor = env.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
+      }
+    }
+    function translateLevel(level) {
+      if (level === 0) {
+        return false;
+      }
+      return {
+        level,
+        hasBasic: true,
+        has256: level >= 2,
+        has16m: level >= 3
+      };
+    }
+    function supportsColor(haveStream, streamIsTTY) {
+      if (forceColor === 0) {
+        return 0;
+      }
+      if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
+        return 3;
+      }
+      if (hasFlag("color=256")) {
+        return 2;
+      }
+      if (haveStream && !streamIsTTY && forceColor === void 0) {
+        return 0;
+      }
+      const min = forceColor || 0;
+      if (env.TERM === "dumb") {
+        return min;
+      }
+      if (process.platform === "win32") {
+        const osRelease = os.release().split(".");
+        if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+          return Number(osRelease[2]) >= 14931 ? 3 : 2;
+        }
+        return 1;
+      }
+      if ("CI" in env) {
+        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+          return 1;
+        }
+        return min;
+      }
+      if ("TEAMCITY_VERSION" in env) {
+        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+      }
+      if (env.COLORTERM === "truecolor") {
+        return 3;
+      }
+      if ("TERM_PROGRAM" in env) {
+        const version4 = parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+        switch (env.TERM_PROGRAM) {
+          case "iTerm.app":
+            return version4 >= 3 ? 3 : 2;
+          case "Apple_Terminal":
+            return 2;
+        }
+      }
+      if (/-256(color)?$/i.test(env.TERM)) {
+        return 2;
+      }
+      if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+        return 1;
+      }
+      if ("COLORTERM" in env) {
+        return 1;
+      }
+      return min;
+    }
+    function getSupportLevel(stream) {
+      const level = supportsColor(stream, stream && stream.isTTY);
+      return translateLevel(level);
+    }
+    module.exports = {
+      supportsColor: getSupportLevel,
+      stdout: translateLevel(supportsColor(true, tty.isatty(1))),
+      stderr: translateLevel(supportsColor(true, tty.isatty(2)))
+    };
+  }
+});
+
 // ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
 var require_node = __commonJS({
   "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js"(exports, module) {
@@ -523,7 +638,7 @@ var require_node = __commonJS({
     );
     exports.colors = [6, 2, 3, 4, 5, 1];
     try {
-      const supportsColor = __require("supports-color");
+      const supportsColor = require_supports_color();
       if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
         exports.colors = [
           20,
@@ -760,8 +875,8 @@ var require_depd = __commonJS({
       return deprecate;
     }
     function eehaslisteners(emitter, type) {
-      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count > 0;
+      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count2 > 0;
     }
     function isignored(namespace) {
       if (process.noDeprecation) {
@@ -18330,14 +18445,14 @@ var require_urlencoded = __commonJS({
       };
     }
     function parameterCount(body, limit) {
-      let count = 0;
+      let count2 = 0;
       let index2 = -1;
       do {
-        count++;
-        if (count > limit) return void 0;
+        count2++;
+        if (count2 > limit) return void 0;
         index2 = body.indexOf("&", index2 + 1);
       } while (index2 !== -1);
-      return count;
+      return count2;
     }
   }
 });
@@ -18768,14 +18883,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto4 = __require("crypto");
+    var crypto6 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto6.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -20498,27 +20613,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router10;
+    module.exports = Router13;
     module.exports.Route = Route;
-    function Router10(options) {
-      if (!(this instanceof Router10)) {
-        return new Router10(options);
+    function Router13(options) {
+      if (!(this instanceof Router13)) {
+        return new Router13(options);
       }
       const opts = options || {};
-      function router10(req, res, next) {
-        router10.handle(req, res, next);
+      function router13(req, res, next) {
+        router13.handle(req, res, next);
       }
-      Object.setPrototypeOf(router10, this);
-      router10.caseSensitive = opts.caseSensitive;
-      router10.mergeParams = opts.mergeParams;
-      router10.params = {};
-      router10.strict = opts.strict;
-      router10.stack = [];
-      return router10;
+      Object.setPrototypeOf(router13, this);
+      router13.caseSensitive = opts.caseSensitive;
+      router13.mergeParams = opts.mergeParams;
+      router13.params = {};
+      router13.strict = opts.strict;
+      router13.stack = [];
+      return router13;
     }
-    Router10.prototype = function() {
+    Router13.prototype = function() {
     };
-    Router10.prototype.param = function param(name, fn) {
+    Router13.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20538,7 +20653,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router10.prototype.handle = function handle(req, res, callback) {
+    Router13.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20665,7 +20780,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router10.prototype.use = function use(handler) {
+    Router13.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20698,7 +20813,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router10.prototype.route = function route(path) {
+    Router13.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20713,7 +20828,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router10.prototype[method] = function(path) {
+      Router13.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -20896,13 +21011,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router10 = require_router();
+    var Router13 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router10 = null;
+      var router13 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -20911,13 +21026,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router10 === null) {
-            router10 = new Router10({
+          if (router13 === null) {
+            router13 = new Router13({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router10;
+          return router13;
         }
       });
     };
@@ -20988,15 +21103,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router10 = this.router;
+      var router13 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router10.use(path, fn2);
+          return router13.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router10.use(path, function mounted_app(req, res, next) {
+        router13.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -21550,13 +21665,13 @@ var require_mediaType = __commonJS({
       return spec.q > 0;
     }
     function quoteCount(string4) {
-      var count = 0;
+      var count2 = 0;
       var index2 = 0;
       while ((index2 = string4.indexOf('"', index2)) !== -1) {
-        count++;
+        count2++;
         index2++;
       }
-      return count;
+      return count2;
     }
     function splitKeyValuePair(str) {
       var index2 = str.indexOf("=");
@@ -22250,17 +22365,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto4 = __require("crypto");
+    var crypto6 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto6.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto4.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto6.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -22861,8 +22976,8 @@ var require_send = __commonJS({
       }
     }
     function hasListeners(emitter, type) {
-      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count > 0;
+      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count2 > 0;
     }
     function normalizeList(val, name) {
       var list = [].concat(val || []);
@@ -23569,7 +23684,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router10 = require_router();
+    var Router13 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23591,8 +23706,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router10.Route;
-    exports.Router = Router10;
+    exports.Route = Router13.Route;
+    exports.Router = Router13;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -23890,11 +24005,11 @@ var require_lib3 = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature2 = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports) {
-    var crypto4 = __require("crypto");
+    var crypto6 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto6.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -23903,7 +24018,7 @@ var require_cookie_signature2 = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto4.createHash("sha1").update(str).digest("hex");
+      return crypto6.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -33077,11 +33192,11 @@ var require_binaryParsers = __commonJS({
         var array2 = [];
         var i2;
         if (dimension.length > 1) {
-          var count = dimension.shift();
-          for (i2 = 0; i2 < count; i2++) {
+          var count2 = dimension.shift();
+          for (i2 = 0; i2 < count2; i2++) {
             array2[i2] = parse3(dimension, elementType2);
           }
-          dimension.unshift(count);
+          dimension.unshift(count2);
         } else {
           for (i2 = 0; i2 < dimension[0]; i2++) {
             array2[i2] = parseElement(elementType2);
@@ -33675,7 +33790,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "../../node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports, module) {
     "use strict";
-    var crypto4 = require_utils5();
+    var crypto6 = require_utils5();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -33687,7 +33802,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto4.randomBytes(18).toString("base64");
+      const clientNonce = crypto6.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -33722,20 +33837,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto4.hashByName(hashName, peerCert);
+        const certHash = await crypto6.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto4.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto4.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto4.sha256(clientKey);
-      const clientSignature = await crypto4.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto6.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto6.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto6.sha256(clientKey);
+      const clientSignature = await crypto6.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto4.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto4.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto6.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto6.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -34598,10 +34713,10 @@ var require_messages = __commonJS({
     };
     exports.AuthenticationMD5Password = AuthenticationMD5Password;
     var BackendKeyDataMessage = class {
-      constructor(length, processID, secretKey) {
+      constructor(length, processID, secretKey2) {
         this.length = length;
         this.processID = processID;
-        this.secretKey = secretKey;
+        this.secretKey = secretKey2;
         this.name = "backendKeyData";
       }
     };
@@ -34866,13 +34981,13 @@ var require_serializer = __commonJS({
       buff.writeUInt32BE(rows, buff.length - 4);
       return buff;
     };
-    var cancel = (processID, secretKey) => {
+    var cancel = (processID, secretKey2) => {
       const buffer = Buffer.allocUnsafe(16);
       buffer.writeInt32BE(16, 0);
       buffer.writeInt16BE(1234, 4);
       buffer.writeInt16BE(5678, 6);
       buffer.writeInt32BE(processID, 8);
-      buffer.writeInt32BE(secretKey, 12);
+      buffer.writeInt32BE(secretKey2, 12);
       return buffer;
     };
     var cstringMessage = (code, string4) => {
@@ -35236,8 +35351,8 @@ var require_parser = __commonJS({
     };
     var parseBackendKeyData = (reader) => {
       const processID = reader.int32();
-      const secretKey = reader.int32();
-      return new messages_1.BackendKeyDataMessage(LATEINIT_LENGTH, processID, secretKey);
+      const secretKey2 = reader.int32();
+      return new messages_1.BackendKeyDataMessage(LATEINIT_LENGTH, processID, secretKey2);
     };
     var parseAuthenticationResponse = (reader, length) => {
       const code = reader.int32();
@@ -35520,8 +35635,8 @@ var require_connection = __commonJS({
       startup(config2) {
         this.stream.write(serialize2.startup(config2));
       }
-      cancel(processID, secretKey) {
-        this._send(serialize2.cancel(processID, secretKey));
+      cancel(processID, secretKey2) {
+        this._send(serialize2.cancel(processID, secretKey2));
       }
       password(password) {
         this._send(serialize2.password(password));
@@ -35903,7 +36018,7 @@ var require_client = __commonJS({
     var Query2 = require_query();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
-    var crypto4 = require_utils5();
+    var crypto6 = require_utils5();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -36138,7 +36253,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto4.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto6.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -45578,7 +45693,7 @@ var require_dist4 = __commonJS({
 });
 
 // src/app.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express13 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_cookie_parser = __toESM(require_cookie_parser(), 1);
 
@@ -47081,7 +47196,7 @@ var rate_limit_default = rateLimit;
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -51146,7 +51261,21 @@ var GetBusinessResponse = objectType({
   "emailFooterNote": stringType().nullish(),
   "trackingIdPrefix": stringType().nullish(),
   "allowedOrigins": stringType().nullish(),
+  "monthlyEmailLimit": numberType().optional().describe("Maximum status emails this business may send per calendar month."),
+  "emailUsageThisMonth": numberType().optional().describe("Status emails actually sent this calendar month."),
   "onboardingCompleted": booleanType(),
+  "plan": enumType(["beta", "free", "pro", "business"]).describe('Current plan. Every existing business is on "beta" until launch.'),
+  "subscriptionStatus": enumType(["beta", "trial", "active", "past_due", "cancelled"]),
+  "trialStartsAt": stringType().nullish(),
+  "trialEndsAt": stringType().nullish(),
+  "currentPeriodEnd": stringType().nullish(),
+  "emailNotificationsUsed": numberType().optional(),
+  "smsNotificationsUsed": numberType().optional(),
+  "businessLogoUrl": stringType().nullish(),
+  "emailSenderName": stringType().nullish(),
+  "primaryBrandColour": stringType().nullish(),
+  "removeOlyxeeBranding": booleanType().optional(),
+  "callCentreEnabled": booleanType().optional(),
   "createdAt": stringType()
 });
 var UpdateBusinessBody = objectType({
@@ -51179,7 +51308,21 @@ var UpdateBusinessResponse = objectType({
   "emailFooterNote": stringType().nullish(),
   "trackingIdPrefix": stringType().nullish(),
   "allowedOrigins": stringType().nullish(),
+  "monthlyEmailLimit": numberType().optional().describe("Maximum status emails this business may send per calendar month."),
+  "emailUsageThisMonth": numberType().optional().describe("Status emails actually sent this calendar month."),
   "onboardingCompleted": booleanType(),
+  "plan": enumType(["beta", "free", "pro", "business"]).describe('Current plan. Every existing business is on "beta" until launch.'),
+  "subscriptionStatus": enumType(["beta", "trial", "active", "past_due", "cancelled"]),
+  "trialStartsAt": stringType().nullish(),
+  "trialEndsAt": stringType().nullish(),
+  "currentPeriodEnd": stringType().nullish(),
+  "emailNotificationsUsed": numberType().optional(),
+  "smsNotificationsUsed": numberType().optional(),
+  "businessLogoUrl": stringType().nullish(),
+  "emailSenderName": stringType().nullish(),
+  "primaryBrandColour": stringType().nullish(),
+  "removeOlyxeeBranding": booleanType().optional(),
+  "callCentreEnabled": booleanType().optional(),
   "createdAt": stringType()
 });
 var GetPublicTrackingParams = objectType({
@@ -51395,7 +51538,7 @@ var GetOrderResponse = objectType({
     "customerEmail": stringType(),
     "subject": stringType(),
     "body": stringType().optional(),
-    "status": enumType(["sent", "failed", "pending"]),
+    "status": enumType(["sent", "failed", "pending", "limit_reached"]),
     "providerMessageId": stringType().optional(),
     "createdAt": stringType()
   }))
@@ -51430,8 +51573,10 @@ var UpdateOrderStatusResponse = objectType({
     "createdBy": stringType().optional(),
     "createdAt": stringType()
   }),
-  "emailStatus": enumType(["sent", "failed", "skipped"]),
-  "emailNotificationId": stringType().optional()
+  "emailStatus": enumType(["sent", "failed", "skipped", "limit_reached"]),
+  "emailNotificationId": stringType().optional(),
+  "emailUsage": numberType().optional().describe("Status emails sent this month after this update."),
+  "emailLimit": numberType().optional().describe("This business's monthly email allowance.")
 });
 var ResendOrderEmailParams = objectType({
   "orderId": coerce.string()
@@ -51439,7 +51584,10 @@ var ResendOrderEmailParams = objectType({
 var ResendOrderEmailResponse = objectType({
   "success": booleanType(),
   "emailNotificationId": stringType().optional(),
-  "message": stringType()
+  "message": stringType(),
+  "emailStatus": enumType(["sent", "failed", "limit_reached"]).optional(),
+  "emailUsage": numberType().optional(),
+  "emailLimit": numberType().optional()
 });
 var GetTrackingEventsParams = objectType({
   "orderId": coerce.string()
@@ -51463,7 +51611,7 @@ var GetEmailNotificationsResponseItem = objectType({
   "customerEmail": stringType(),
   "subject": stringType(),
   "body": stringType().optional(),
-  "status": enumType(["sent", "failed", "pending"]),
+  "status": enumType(["sent", "failed", "pending", "limit_reached"]),
   "providerMessageId": stringType().optional(),
   "createdAt": stringType()
 });
@@ -54812,6 +54960,11 @@ function mapRelationalRow(tablesConfig, tableConfig, row, buildQueryResultSelect
     }
   }
   return result;
+}
+
+// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.20.0/node_modules/drizzle-orm/sql/functions/aggregate.js
+function count(expression) {
+  return sql`count(${expression || sql.raw("*")})`.mapWith(Number);
 }
 
 // ../../node_modules/.pnpm/pg@8.20.0/node_modules/pg/esm/index.mjs
@@ -58600,21 +58753,37 @@ function drizzle(...params) {
 var schema_exports = {};
 __export(schema_exports, {
   ORDER_STATUSES: () => ORDER_STATUSES,
+  apiKeysTable: () => apiKeysTable,
   auditLogsTable: () => auditLogsTable,
+  billingEventsTable: () => billingEventsTable,
+  businessWorkflowsTable: () => businessWorkflowsTable,
   businessesTable: () => businessesTable,
+  callRecordsTable: () => callRecordsTable,
   customersTable: () => customersTable,
   emailNotificationsTable: () => emailNotificationsTable,
+  insertApiKeySchema: () => insertApiKeySchema,
   insertAuditLogSchema: () => insertAuditLogSchema,
+  insertBillingEventSchema: () => insertBillingEventSchema,
   insertBusinessSchema: () => insertBusinessSchema,
+  insertBusinessWorkflowSchema: () => insertBusinessWorkflowSchema,
+  insertCallRecordSchema: () => insertCallRecordSchema,
   insertCustomerSchema: () => insertCustomerSchema,
   insertEmailNotificationSchema: () => insertEmailNotificationSchema,
+  insertNotificationDeliverySchema: () => insertNotificationDeliverySchema,
+  insertNotificationEventSchema: () => insertNotificationEventSchema,
   insertOrderSchema: () => insertOrderSchema,
   insertTrackingEventSchema: () => insertTrackingEventSchema,
   insertUserSchema: () => insertUserSchema,
+  insertWorkflowStepSchema: () => insertWorkflowStepSchema,
+  insertWorkflowTemplateSchema: () => insertWorkflowTemplateSchema,
+  notificationDeliveriesTable: () => notificationDeliveriesTable,
+  notificationEventsTable: () => notificationEventsTable,
   ordersTable: () => ordersTable,
   passwordResetTokensTable: () => passwordResetTokensTable,
   trackingEventsTable: () => trackingEventsTable,
-  usersTable: () => usersTable
+  usersTable: () => usersTable,
+  workflowStepsTable: () => workflowStepsTable,
+  workflowTemplatesTable: () => workflowTemplatesTable
 });
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/classic/external.js
@@ -62452,8 +62621,8 @@ function az_default() {
 }
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getBelarusianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -65598,8 +65767,8 @@ function pt_default() {
 }
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getRussianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -70017,22 +70186,59 @@ var businessesTable = pgTable("businesses", {
   // Customer email customization. All nullable; the email template applies
   // sensible defaults when these are blank so existing businesses keep
   // working unchanged.
-  //   emailGreeting    — opening line, supports {name} placeholder.
-  //   emailSignature   — sign-off block; multi-line, supports {businessName}.
-  //   emailFooterNote  — free text shown above the support email in footer.
+  //   emailGreeting    - opening line, supports {name} placeholder.
+  //   emailSignature   - sign-off block; multi-line, supports {businessName}.
+  //   emailFooterNote  - free text shown above the support email in footer.
   emailGreeting: text("email_greeting"),
   emailSignature: text("email_signature"),
   emailFooterNote: text("email_footer_note"),
   // Customer-facing tracking ID prefix (3–5 A–Z), unique across all
   // businesses. Used when generating per-business tracking IDs in the form
   // {PREFIX}-{3 alnums}-{4 alnums}. Nullable so existing businesses don't
-  // break on migration — order creation falls back to "OLY" until set.
+  // break on migration - order creation falls back to "OLY" until set.
   trackingIdPrefix: text("tracking_id_prefix").unique(),
   // Comma-separated list of website origins allowed to call this business's
   // public endpoints (currently /api/public/track/:id) cross-origin. Lets each
   // tenant whitelist their own customer site without redeploying the API.
   allowedOrigins: text("allowed_origins"),
+  // Maximum number of customer status-update emails this business may send per
+  // calendar month. Once reached, the API stops sending and surfaces an
+  // "upgrade" prompt. Raising this value (manually) is how a business is
+  // "upgraded". Default keeps total volume across tenants inside the email
+  // provider's free tier.
+  monthlyEmailLimit: integer("monthly_email_limit").notNull().default(500),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+  // ─── Plan & subscription (launch-prep) ────────────────────────────────────
+  // Every existing business defaults to the BETA plan/status. Limits are NOT
+  // enforced while plan === "beta" or featureFlags.planEnforcement === false.
+  plan: text("plan", { enum: ["beta", "free", "pro", "business"] }).notNull().default("beta"),
+  subscriptionStatus: text("subscription_status", {
+    enum: ["beta", "trial", "active", "past_due", "cancelled"]
+  }).notNull().default("beta"),
+  trialStartsAt: timestamp("trial_starts_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  // Paystack linkage. Populated only after a verified payment; never trusted
+  // from the frontend.
+  billingCustomerCode: text("billing_customer_code"),
+  billingSubscriptionCode: text("billing_subscription_code"),
+  billingEmailToken: text("billing_email_token"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  // ─── Monthly usage counters (enforcement disabled during BETA) ────────────
+  emailNotificationsUsed: integer("email_notifications_used").notNull().default(0),
+  smsNotificationsUsed: integer("sms_notifications_used").notNull().default(0),
+  usagePeriodStart: timestamp("usage_period_start"),
+  usagePeriodEnd: timestamp("usage_period_end"),
+  // ─── Business branding (applied only when featureFlags.businessBranding) ──
+  businessLogoUrl: text("business_logo_url"),
+  emailSenderName: text("email_sender_name"),
+  primaryBrandColour: text("primary_brand_colour"),
+  removeOlyxeeBranding: boolean("remove_olyxee_branding").notNull().default(false),
+  // ─── Automated call centre (Retell) — disabled foundation ─────────────────
+  callCentreEnabled: boolean("call_centre_enabled").notNull().default(false),
+  retellAgentId: text("retell_agent_id"),
+  retellPhoneNumber: text("retell_phone_number"),
+  retellKnowledgeBaseId: text("retell_knowledge_base_id"),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 var insertBusinessSchema = createInsertSchema(businessesTable);
@@ -70090,6 +70296,7 @@ var insertCustomerSchema = createInsertSchema(customersTable);
 
 // ../../lib/db/src/schema/orders.ts
 var ORDER_STATUSES = [
+  "Created",
   "Order received",
   "Processing",
   "In transit",
@@ -70145,7 +70352,7 @@ var emailNotificationsTable = pgTable("email_notifications", {
   customerEmail: text("customer_email").notNull(),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
-  status: text("status", { enum: ["sent", "failed", "pending"] }).notNull().default("pending"),
+  status: text("status", { enum: ["sent", "failed", "pending", "limit_reached"] }).notNull().default("pending"),
   providerMessageId: text("provider_message_id"),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
@@ -70164,20 +70371,178 @@ var auditLogsTable = pgTable("audit_logs", {
 });
 var insertAuditLogSchema = createInsertSchema(auditLogsTable);
 
+// ../../lib/db/src/schema/workflow_templates.ts
+var workflowTemplatesTable = pgTable("workflow_templates", {
+  id: text("id").primaryKey(),
+  businessId: text("business_id").notNull().references(() => businessesTable.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  // Optional tag linking this template to a business type (e.g. "Restaurant").
+  // Purely for display - the engine uses it to suggest the right template.
+  businessType: text("business_type"),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+var insertWorkflowTemplateSchema = createInsertSchema(workflowTemplatesTable);
+
+// ../../lib/db/src/schema/workflow_steps.ts
+var workflowStepsTable = pgTable("workflow_steps", {
+  id: text("id").primaryKey(),
+  templateId: text("template_id").notNull().references(() => workflowTemplatesTable.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  description: text("description"),
+  // 0-based display order - UI always sorts by this before rendering.
+  position: integer("position").notNull(),
+  // Optional hex color for the step dot/badge (e.g. "#10b981").
+  color: text("color"),
+  // When true this is a final state (e.g. "Delivered", "Completed").
+  isTerminal: boolean("is_terminal").notNull().default(false)
+});
+var insertWorkflowStepSchema = createInsertSchema(workflowStepsTable);
+
+// ../../lib/db/src/schema/business_workflows.ts
+var businessWorkflowsTable = pgTable("business_workflows", {
+  id: text("id").primaryKey(),
+  businessId: text("business_id").notNull().unique().references(() => businessesTable.id, { onDelete: "cascade" }),
+  templateId: text("template_id").notNull(),
+  templateName: text("template_name").notNull(),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow()
+});
+var insertBusinessWorkflowSchema = createInsertSchema(businessWorkflowsTable);
+
+// ../../lib/db/src/schema/notification_events.ts
+var notificationEventsTable = pgTable("notification_events", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id").notNull().references(() => ordersTable.id),
+  businessId: text("business_id").notNull().references(() => businessesTable.id),
+  // The order status that triggered this event.
+  status: text("status").notNull(),
+  // Optional admin-authored message shown alongside the status.
+  message: text("message"),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+var insertNotificationEventSchema = createInsertSchema(notificationEventsTable);
+
+// ../../lib/db/src/schema/notification_deliveries.ts
+var notificationDeliveriesTable = pgTable("notification_deliveries", {
+  id: text("id").primaryKey(),
+  eventId: text("event_id").notNull().references(() => notificationEventsTable.id),
+  channel: text("channel", { enum: ["email", "sms"] }).notNull(),
+  status: text("status", {
+    enum: ["pending", "queued", "sent", "delivered", "failed"]
+  }).notNull().default("pending"),
+  // Where the message was sent (email address or phone number).
+  recipient: text("recipient").notNull(),
+  providerMessageId: text("provider_message_id"),
+  failureReason: text("failure_reason"),
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+var insertNotificationDeliverySchema = createInsertSchema(
+  notificationDeliveriesTable
+);
+
+// ../../lib/db/src/schema/billing_events.ts
+var billingEventsTable = pgTable(
+  "billing_events",
+  {
+    id: text("id").primaryKey(),
+    // Stable dedupe key: Paystack event id when present, otherwise the
+    // transaction reference.
+    dedupeKey: text("dedupe_key").notNull(),
+    eventType: text("event_type").notNull(),
+    reference: text("reference"),
+    businessId: text("business_id"),
+    processedAt: timestamp("processed_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow()
+  },
+  (t) => ({
+    dedupeKeyUnique: unique("billing_events_dedupe_key_key").on(t.dedupeKey)
+  })
+);
+var insertBillingEventSchema = createInsertSchema(billingEventsTable);
+
+// ../../lib/db/src/schema/api_keys.ts
+var apiKeysTable = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  businessId: text("business_id").notNull().references(() => businessesTable.id),
+  name: text("name").notNull(),
+  // First few chars of the key, shown in the UI to identify it (not a secret).
+  keyPrefix: text("key_prefix").notNull(),
+  // SHA-256 of the full key. The plaintext is never persisted.
+  keyHash: text("key_hash").notNull().unique(),
+  lastUsedAt: timestamp("last_used_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+var insertApiKeySchema = createInsertSchema(apiKeysTable);
+
+// ../../lib/db/src/schema/call_records.ts
+var callRecordsTable = pgTable("call_records", {
+  id: text("id").primaryKey(),
+  businessId: text("business_id").notNull().references(() => businessesTable.id),
+  // Retell's call identifier, when a call has occurred.
+  retellCallId: text("retell_call_id"),
+  fromNumber: text("from_number"),
+  // Optional order the call was about, once resolved.
+  orderId: text("order_id").references(() => ordersTable.id),
+  status: text("status", {
+    enum: ["received", "in_progress", "completed", "escalated", "failed"]
+  }).notNull().default("received"),
+  transcript: text("transcript"),
+  summary: text("summary"),
+  escalated: boolean("escalated").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+var insertCallRecordSchema = createInsertSchema(callRecordsTable);
+
 // ../../lib/db/src/index.ts
 var { Pool: Pool3 } = esm_default;
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?"
-  );
+var _pool = null;
+var _db = null;
+function initPool() {
+  if (_pool) return _pool;
+  const dbUrl = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error(
+      "DATABASE_URL must be set. Did you forget to provision a database?"
+    );
+  }
+  let sslmode = null;
+  let connectionString = dbUrl;
+  try {
+    const u = new URL(dbUrl);
+    sslmode = u.searchParams.get("sslmode");
+    u.searchParams.delete("sslmode");
+    connectionString = u.toString();
+  } catch {
+  }
+  const isLocal = /@(localhost|127\.0\.0\.1|::1)/i.test(dbUrl);
+  const ssl = sslmode?.toLowerCase() === "disable" || isLocal ? false : { rejectUnauthorized: false };
+  _pool = new Pool3({ connectionString, ssl });
+  return _pool;
 }
-var dbUrl = process.env.DATABASE_URL;
-var isLocal = /@(localhost|127\.0\.0\.1|::1)/i.test(dbUrl);
-var pool = new Pool3({
-  connectionString: dbUrl,
-  ssl: isLocal ? void 0 : { rejectUnauthorized: false }
+function initDb() {
+  if (_db) return _db;
+  _db = drizzle(initPool(), { schema: schema_exports });
+  return _db;
+}
+var pool = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(initPool(), prop, receiver);
+  },
+  has(_target, prop) {
+    return Reflect.has(initPool(), prop);
+  }
 });
-var db = drizzle(pool, { schema: schema_exports });
+var db = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(initDb(), prop, receiver);
+  },
+  has(_target, prop) {
+    return Reflect.has(initDb(), prop);
+  }
+});
 
 // src/lib/id.ts
 import { randomBytes } from "crypto";
@@ -70198,6 +70563,16 @@ function generateTrackingId(prefixInput) {
   const prefix = cleaned.length >= 3 ? cleaned : "OLY";
   return `${prefix}-${randomChars(3)}-${randomChars(4)}`;
 }
+function resolveTrackingPrefix(configuredPrefix, businessName, slug) {
+  const lettersOf = (s) => (s ?? "").toUpperCase().replace(/[^A-Z]/g, "");
+  const configured = lettersOf(configuredPrefix).substring(0, 5);
+  if (configured.length >= 3) return configured;
+  const fromName = lettersOf(businessName).substring(0, 3);
+  if (fromName.length >= 3) return fromName;
+  const fromSlug = lettersOf(slug).substring(0, 3);
+  if (fromSlug.length >= 3) return fromSlug;
+  return "OLY";
+}
 
 // src/lib/session.ts
 import crypto2 from "node:crypto";
@@ -70213,7 +70588,7 @@ function getSecret() {
   if (!ephemeralSecret) {
     ephemeralSecret = crypto2.randomBytes(32).toString("hex");
     console.warn(
-      "[session] SESSION_SECRET not set \u2014 using ephemeral random secret (sessions reset on restart)."
+      "[session] SESSION_SECRET not set - using ephemeral random secret (sessions reset on restart)."
     );
   }
   return ephemeralSecret;
@@ -75232,11 +75607,48 @@ var logger = (0, import_pino.default)({
 });
 
 // ../../lib/order-statuses/src/index.ts
+var ORDER_STATUSES2 = [
+  "Created",
+  "Order received",
+  "Processing",
+  "In transit",
+  "Delayed",
+  "Out for delivery",
+  "Delivered",
+  "Failed delivery",
+  "Cancelled"
+];
+var CHOICES = {
+  "Created": { primary: "Order received", exceptions: ["Cancelled"] },
+  "Order received": { primary: "Processing", exceptions: ["Delayed", "Cancelled"] },
+  "Processing": { primary: "In transit", exceptions: ["Delayed", "Cancelled"] },
+  "In transit": { primary: "Out for delivery", exceptions: ["Delayed", "Cancelled"] },
+  "Delayed": { primary: "In transit", exceptions: ["Failed delivery", "Cancelled"] },
+  "Out for delivery": { primary: "Delivered", exceptions: ["Failed delivery", "Cancelled"] },
+  // Failed delivery is a recovery point, not a dead end - the admin needs the
+  // full retry menu: try again today (primary), send it back into transit,
+  // mark as waiting on the customer, or cancel.
+  "Failed delivery": { primary: "Out for delivery", exceptions: ["In transit", "Delayed", "Cancelled"] },
+  "Delivered": null,
+  "Cancelled": null
+};
+function statusChoices(current) {
+  return CHOICES[current] ?? null;
+}
+function nextStatuses(current) {
+  const c = statusChoices(current);
+  if (!c) return [];
+  return [c.primary, ...c.exceptions];
+}
+function isTerminal(status) {
+  return CHOICES[status] === null;
+}
 var STATUS_COPY = {
-  "Order received": { headline: "We've got your order", intro: "Thanks for choosing us \u2014 we'll start preparing it shortly.", accent: "#0284c7", tone: "neutral" },
+  "Created": { headline: "Your order has been placed", intro: "We've received your request and will confirm it shortly.", accent: "#0ea5e9", tone: "neutral" },
+  "Order received": { headline: "We've got your order", intro: "Thanks for choosing us - we'll start preparing it shortly.", accent: "#0284c7", tone: "neutral" },
   "Processing": { headline: "We're preparing your order", intro: "Your items are being packed and made ready for collection.", accent: "#7c3aed", tone: "neutral" },
   "In transit": { headline: "Your package is on the move", intro: "It's making its way through our network to you.", accent: "#2563eb", tone: "positive" },
-  "Delayed": { headline: "Your delivery is a bit late", intro: "We're sorry \u2014 there's a small delay. We'll keep you posted.", accent: "#d97706", tone: "warning" },
+  "Delayed": { headline: "Your delivery is a bit late", intro: "We're sorry - there's a small delay. We'll keep you posted.", accent: "#d97706", tone: "warning" },
   "Out for delivery": { headline: "Out for delivery today", intro: "Your package is on its way to you now.", accent: "#ea580c", tone: "positive" },
   "Delivered": { headline: "Your package has arrived", intro: "It's been delivered successfully. Thanks for trusting us!", accent: "#16a34a", tone: "positive" },
   "Failed delivery": { headline: "We couldn't deliver today", intro: "We weren't able to complete the delivery today. We'll be in touch.", accent: "#dc2626", tone: "negative" },
@@ -75266,7 +75678,7 @@ function renderGreeting(template, customerName) {
   return t.replace(/\{name\}/gi, customerName);
 }
 function renderSignature(template, businessName) {
-  const t = (template ?? "").trim() || "\u2014 {businessName}";
+  const t = (template ?? "").trim() || "- {businessName}";
   return t.replace(/\{businessName\}/gi, businessName);
 }
 function renderFooterNote(template) {
@@ -75287,7 +75699,7 @@ function escapeHtml2(s) {
 }
 function buildSubject(p) {
   const c = copyFor(p.status);
-  return `${c.headline} \u2014 ${p.trackingId}`;
+  return `${c.headline} - ${p.trackingId}`;
 }
 function buildText(p) {
   const c = copyFor(p.status);
@@ -75452,12 +75864,12 @@ function buildEmailBody(params) {
 async function sendPasswordResetEmail(p) {
   const resend = getResend();
   if (!resend) {
-    logger.warn("Resend API key not configured \u2014 password reset email not sent");
+    logger.warn("Resend API key not configured - password reset email not sent");
     return { success: false, error: "Email provider not configured" };
   }
   const fromAddress = process.env.EMAIL_FROM_ADDRESS;
   if (!fromAddress) {
-    logger.warn("EMAIL_FROM_ADDRESS not configured \u2014 password reset email not sent");
+    logger.warn("EMAIL_FROM_ADDRESS not configured - password reset email not sent");
     return { success: false, error: "Email sender not configured" };
   }
   const from = `Olyxee <${fromAddress}>`;
@@ -75475,7 +75887,7 @@ async function sendPasswordResetEmail(p) {
     "",
     "If you didn't request this, you can safely ignore this email.",
     "",
-    "\u2014 Olyxee"
+    "- Olyxee"
   ].join("\n");
   const safeName = escapeHtml2(p.name || "there");
   const safeUrl = escapeHtml2(safeLink);
@@ -75488,7 +75900,7 @@ async function sendPasswordResetEmail(p) {
 <p style="margin:0 0 16px;font-size:15px;color:#52525b;">We received a request to reset your Olyxee password. Click the button below to choose a new one. This link expires in ${p.expiresInMinutes} minutes.</p>
 <p style="margin:0 0 16px;"><a href="${safeUrl}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Reset password</a></p>
 <p style="margin:0 0 16px;font-size:12px;color:#a1a1aa;word-break:break-all;">Or open: <a href="${safeUrl}" style="color:#52525b;text-decoration:underline;">${safeUrl}</a></p>
-<p style="margin:24px 0 0;font-size:13px;color:#71717a;">If you didn't request this, you can safely ignore this email \u2014 your password won't change.</p>
+<p style="margin:24px 0 0;font-size:13px;color:#71717a;">If you didn't request this, you can safely ignore this email - your password won't change.</p>
 </td></tr></table></td></tr></table></body></html>`;
   try {
     const result = await resend.emails.send({
@@ -75512,12 +75924,12 @@ async function sendPasswordResetEmail(p) {
 async function sendStatusEmail(params) {
   const resend = getResend();
   if (!resend) {
-    logger.warn("Resend API key not configured \u2014 email not sent");
+    logger.warn("Resend API key not configured - email not sent");
     return { success: false, error: "Email provider not configured" };
   }
   const fromAddress = process.env.EMAIL_FROM_ADDRESS;
   if (!fromAddress) {
-    logger.warn("EMAIL_FROM_ADDRESS not configured \u2014 email not sent");
+    logger.warn("EMAIL_FROM_ADDRESS not configured - email not sent");
     return { success: false, error: "Email sender not configured" };
   }
   const escapedName = params.businessName.replace(/["\\]/g, " ").trim() || "Olyxee";
@@ -75548,8 +75960,83 @@ async function sendStatusEmail(params) {
 
 // src/routes/auth.ts
 var RESET_TOKEN_TTL_MINUTES = 30;
+var DEMO_USER_ID = "demo-usr-000000000001";
+var DEMO_BUSINESS_ID = "demo-biz-000000000001";
+var DEMO_USER = {
+  id: DEMO_USER_ID,
+  email: "demo@demo.com",
+  name: "Demo User",
+  role: "owner",
+  businessId: DEMO_BUSINESS_ID
+};
 function hashResetToken(token) {
   return crypto3.createHash("sha256").update(token).digest("hex");
+}
+var _demoSeedReady = null;
+async function ensureDemoSeed() {
+  if (_demoSeedReady) return _demoSeedReady;
+  _demoSeedReady = (async () => {
+    await db.insert(businessesTable).values({
+      id: DEMO_BUSINESS_ID,
+      name: "Demo Business",
+      slug: "demo-business",
+      websiteUrl: "",
+      supportEmail: "demo@demo.com",
+      trackingIdPrefix: "TRK",
+      monthlyEmailLimit: 500,
+      onboardingCompleted: true,
+      createdAt: /* @__PURE__ */ new Date("2024-01-01")
+    }).onConflictDoNothing();
+    await db.insert(usersTable).values({
+      id: DEMO_USER_ID,
+      businessId: DEMO_BUSINESS_ID,
+      name: DEMO_USER.name,
+      email: DEMO_USER.email,
+      role: DEMO_USER.role
+    }).onConflictDoNothing();
+  })().catch((err) => {
+    _demoSeedReady = null;
+    throw err;
+  });
+  return _demoSeedReady;
+}
+var _authSchemaReady = null;
+async function ensureAuthColumns() {
+  if (_authSchemaReady) return _authSchemaReady;
+  _authSchemaReady = (async () => {
+    await db.execute(
+      sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "auth_user_id" text`
+    );
+    await db.execute(
+      sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "password_hash" text`
+    );
+  })().catch((err) => {
+    _authSchemaReady = null;
+    throw err;
+  });
+  return _authSchemaReady;
+}
+function describeDbError(err) {
+  const parts = [];
+  let pgErr;
+  let cur = err;
+  let depth = 0;
+  while (cur && depth < 8) {
+    const label = cur.name ?? cur.constructor?.name ?? "Error";
+    parts.push(
+      `${label}: ${cur.message ?? ""}${cur.code ? ` [${cur.code}]` : ""}`
+    );
+    if (cur.code && !pgErr) pgErr = cur;
+    cur = cur.cause;
+    depth += 1;
+  }
+  const top = err;
+  return {
+    code: pgErr?.code ?? top?.code,
+    message: pgErr?.message ?? top?.message,
+    detail: pgErr?.detail ?? top?.detail,
+    chain: parts.join("  <-  ")
+  };
 }
 function buildResetLink(req, token) {
   const origins = (process.env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -75578,6 +76065,7 @@ router2.post("/auth/signup", async (req, res) => {
   }
   const { email: email3, password, fullName, businessName } = parsed.data;
   try {
+    await ensureAuthColumns();
     const existing = await db.query.usersTable.findFirst({
       where: eq(usersTable.email, email3)
     });
@@ -75612,13 +76100,35 @@ router2.post("/auth/signup", async (req, res) => {
       user: { id: userId, email: email3, name: fullName, role: "owner", businessId }
     });
   } catch (err) {
-    const e = err;
-    console.error("[signup] failed:", e?.code, e?.message, e?.detail);
+    const e = describeDbError(err);
+    console.error(
+      "[signup] failed:",
+      e.code ?? "(no code)",
+      "|",
+      e.message,
+      "|",
+      e.detail ?? "",
+      "| chain:",
+      e.chain
+    );
     req.log?.error({ err }, "signup failed");
     res.status(500).json({ error: "Could not create account" });
   }
 });
 router2.post("/auth/login", async (req, res) => {
+  const rawEmail = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const rawPassword = typeof req.body?.password === "string" ? req.body.password : "";
+  if (process.env.NODE_ENV !== "production" && (rawEmail === "demo" || rawEmail === "demo@demo.com") && rawPassword === "demo") {
+    try {
+      await ensureDemoSeed();
+    } catch (err) {
+      req.log.warn({ err }, "Demo seed failed; demo writes may not work");
+    }
+    const token = signSession(DEMO_USER_ID);
+    res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
+    res.json({ user: DEMO_USER });
+    return;
+  }
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid email or password" });
@@ -75626,6 +76136,7 @@ router2.post("/auth/login", async (req, res) => {
   }
   const { email: email3, password } = parsed.data;
   try {
+    await ensureAuthColumns();
     const user = await db.query.usersTable.findFirst({
       where: eq(usersTable.email, email3)
     });
@@ -75650,8 +76161,17 @@ router2.post("/auth/login", async (req, res) => {
       }
     });
   } catch (err) {
-    const e = err;
-    console.error("[login] failed:", e?.code, e?.message, e?.detail);
+    const e = describeDbError(err);
+    console.error(
+      "[login] failed:",
+      e.code ?? "(no code)",
+      "|",
+      e.message,
+      "|",
+      e.detail ?? "",
+      "| chain:",
+      e.chain
+    );
     req.log?.error({ err }, "login failed");
     res.status(500).json({ error: "Login failed" });
   }
@@ -75762,6 +76282,10 @@ router2.put("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (payload.userId === DEMO_USER_ID) {
+    res.json({ user: DEMO_USER });
+    return;
+  }
   const parsed = UpdateMeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -75829,6 +76353,10 @@ router2.get("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (payload.userId === DEMO_USER_ID) {
+    res.json({ user: DEMO_USER });
+    return;
+  }
   const user = await db.query.usersTable.findFirst({
     where: eq(usersTable.id, payload.userId)
   });
@@ -75859,6 +76387,12 @@ async function requireAuth(req, res, next) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (payload.userId === DEMO_USER_ID) {
+    req.businessId = DEMO_BUSINESS_ID;
+    req.userId = DEMO_USER_ID;
+    next();
+    return;
+  }
   const user = await db.query.usersTable.findFirst({
     where: eq(usersTable.id, payload.userId)
   });
@@ -75871,9 +76405,56 @@ async function requireAuth(req, res, next) {
   next();
 }
 
+// src/lib/email-usage.ts
+function startOfMonthUTC(now = /* @__PURE__ */ new Date()) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+async function getMonthlyEmailUsage(businessId) {
+  const rows = await db.select({ value: count() }).from(emailNotificationsTable).innerJoin(ordersTable, eq(emailNotificationsTable.orderId, ordersTable.id)).where(
+    and(
+      eq(ordersTable.businessId, businessId),
+      eq(emailNotificationsTable.status, "sent"),
+      gte(emailNotificationsTable.createdAt, startOfMonthUTC())
+    )
+  );
+  return rows[0]?.value ?? 0;
+}
+
 // src/routes/business.ts
+var DEMO_BUSINESS = {
+  id: DEMO_BUSINESS_ID,
+  name: "Demo Business",
+  slug: "demo-business",
+  websiteUrl: "",
+  supportEmail: "demo@demo.com",
+  industry: null,
+  employeeCount: null,
+  location: null,
+  phone: null,
+  emailGreeting: null,
+  emailSignature: null,
+  emailFooterNote: null,
+  trackingIdPrefix: "TRK",
+  allowedOrigins: null,
+  monthlyEmailLimit: 500,
+  emailUsageThisMonth: 0,
+  onboardingCompleted: true,
+  plan: "beta",
+  subscriptionStatus: "beta",
+  trialStartsAt: null,
+  trialEndsAt: null,
+  currentPeriodEnd: null,
+  emailNotificationsUsed: 0,
+  smsNotificationsUsed: 0,
+  businessLogoUrl: null,
+  emailSenderName: null,
+  primaryBrandColour: null,
+  removeOlyxeeBranding: false,
+  callCentreEnabled: false,
+  createdAt: (/* @__PURE__ */ new Date("2024-01-01")).toISOString()
+};
 var router3 = (0, import_express3.Router)();
-function serialize(business) {
+function serialize(business, emailUsageThisMonth) {
   return {
     id: business.id,
     name: business.name,
@@ -75889,13 +76470,31 @@ function serialize(business) {
     emailFooterNote: business.emailFooterNote,
     trackingIdPrefix: business.trackingIdPrefix,
     allowedOrigins: business.allowedOrigins,
+    monthlyEmailLimit: business.monthlyEmailLimit,
+    emailUsageThisMonth,
     onboardingCompleted: business.onboardingCompleted,
+    plan: business.plan,
+    subscriptionStatus: business.subscriptionStatus,
+    trialStartsAt: business.trialStartsAt ? business.trialStartsAt.toISOString() : null,
+    trialEndsAt: business.trialEndsAt ? business.trialEndsAt.toISOString() : null,
+    currentPeriodEnd: business.currentPeriodEnd ? business.currentPeriodEnd.toISOString() : null,
+    emailNotificationsUsed: business.emailNotificationsUsed,
+    smsNotificationsUsed: business.smsNotificationsUsed,
+    businessLogoUrl: business.businessLogoUrl,
+    emailSenderName: business.emailSenderName,
+    primaryBrandColour: business.primaryBrandColour,
+    removeOlyxeeBranding: business.removeOlyxeeBranding,
+    callCentreEnabled: business.callCentreEnabled,
     createdAt: business.createdAt.toISOString()
   };
 }
 router3.get("/business", requireAuth, async (req, res) => {
+  const businessId = req.businessId;
+  if (businessId === DEMO_BUSINESS_ID) {
+    res.json(DEMO_BUSINESS);
+    return;
+  }
   try {
-    const businessId = req.businessId;
     const business = await db.query.businessesTable.findFirst({
       where: eq(businessesTable.id, businessId)
     });
@@ -75903,7 +76502,8 @@ router3.get("/business", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Business not found" });
       return;
     }
-    res.json(serialize(business));
+    const emailUsageThisMonth = await getMonthlyEmailUsage(businessId);
+    res.json(serialize(business, emailUsageThisMonth));
   } catch (err) {
     req.log.error({ err }, "Failed to get business");
     res.status(500).json({ error: "Internal server error" });
@@ -75954,6 +76554,23 @@ router3.put("/business", requireAuth, async (req, res) => {
         })() : existing.allowedOrigins,
         onboardingCompleted: parse3.data.onboardingCompleted ?? existing.onboardingCompleted
       };
+      const websiteOrigin = (() => {
+        const v = (next.websiteUrl || "").trim();
+        if (!v) return null;
+        try {
+          const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+          if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+          return u.origin;
+        } catch {
+          return null;
+        }
+      })();
+      if (websiteOrigin) {
+        const current = (next.allowedOrigins || "").split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
+        next.allowedOrigins = Array.from(
+          /* @__PURE__ */ new Set([...current, websiteOrigin])
+        ).join(",");
+      }
       const rows = await tx.update(businessesTable).set(next).where(eq(businessesTable.id, businessId)).returning();
       await tx.insert(auditLogsTable).values({
         id: generateId(),
@@ -75970,9 +76587,44 @@ router3.put("/business", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Business not found" });
       return;
     }
-    res.json(serialize(updated));
+    const emailUsageThisMonth = await getMonthlyEmailUsage(businessId);
+    res.json(serialize(updated, emailUsageThisMonth));
   } catch (err) {
     req.log.error({ err }, "Failed to update business");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router3.delete("/business", requireAuth, async (req, res) => {
+  const businessId = req.businessId;
+  if (businessId === DEMO_BUSINESS_ID) {
+    res.status(403).json({ error: "Demo accounts cannot be deleted" });
+    return;
+  }
+  try {
+    await db.transaction(async (tx) => {
+      const orderIds = (await tx.select({ id: ordersTable.id }).from(ordersTable).where(eq(ordersTable.businessId, businessId))).map((r) => r.id);
+      if (orderIds.length > 0) {
+        await tx.delete(trackingEventsTable).where(inArray(trackingEventsTable.orderId, orderIds));
+        await tx.delete(emailNotificationsTable).where(inArray(emailNotificationsTable.orderId, orderIds));
+      }
+      const eventIds = (await tx.select({ id: notificationEventsTable.id }).from(notificationEventsTable).where(eq(notificationEventsTable.businessId, businessId))).map((r) => r.id);
+      if (eventIds.length > 0) {
+        await tx.delete(notificationDeliveriesTable).where(inArray(notificationDeliveriesTable.eventId, eventIds));
+      }
+      await tx.delete(notificationEventsTable).where(eq(notificationEventsTable.businessId, businessId));
+      await tx.delete(callRecordsTable).where(eq(callRecordsTable.businessId, businessId));
+      await tx.delete(apiKeysTable).where(eq(apiKeysTable.businessId, businessId));
+      await tx.delete(billingEventsTable).where(eq(billingEventsTable.businessId, businessId));
+      await tx.delete(ordersTable).where(eq(ordersTable.businessId, businessId));
+      await tx.delete(customersTable).where(eq(customersTable.businessId, businessId));
+      await tx.delete(auditLogsTable).where(eq(auditLogsTable.businessId, businessId));
+      await tx.delete(usersTable).where(eq(usersTable.businessId, businessId));
+      await tx.delete(businessesTable).where(eq(businessesTable.id, businessId));
+    });
+    res.clearCookie(SESSION_COOKIE, { ...sessionCookieOptions(), maxAge: 0 });
+    res.status(204).end();
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete business");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -76275,28 +76927,108 @@ var customers_default = router5;
 // src/routes/orders.ts
 var import_express6 = __toESM(require_express2(), 1);
 
+// ../../lib/plans/src/index.ts
+var plans = {
+  beta: {
+    name: "BETA",
+    price: 0,
+    active: true,
+    enforceLimits: false
+  },
+  free: {
+    name: "Free",
+    price: 0,
+    customerLimit: 30,
+    emailLimit: 100,
+    smsLimit: 0,
+    advancedCustomization: false,
+    removeOlyxeeBranding: false,
+    availableFrom: "2026-08-01"
+  },
+  pro: {
+    name: "Pro",
+    price: 59,
+    customerLimit: null,
+    emailLimit: 500,
+    smsLimit: 100,
+    advancedCustomization: true,
+    removeOlyxeeBranding: true,
+    availableFrom: "2026-08-01"
+  },
+  business: {
+    name: "Business",
+    price: 299,
+    customerLimit: null,
+    emailLimit: null,
+    smsLimit: 100,
+    advancedCustomization: true,
+    removeOlyxeeBranding: true,
+    apiAccess: true,
+    automatedCallCentre: true,
+    availableFrom: "2026-08-01"
+  }
+};
+function getPlan(id) {
+  return plans[id];
+}
+function isValidPlanId(id) {
+  return id === "beta" || id === "free" || id === "pro" || id === "business";
+}
+var featureFlags = {
+  smsNotifications: false,
+  subscriptionBilling: false,
+  planEnforcement: false,
+  businessBranding: false,
+  customTemplates: false,
+  publicApi: false,
+  automatedCallCentre: false,
+  existingUserTrial: false
+};
+function isFeatureEnabled(flag) {
+  return featureFlags[flag] === true;
+}
+
+// src/lib/notifications.ts
+async function recordNotification(params) {
+  const { orderId, businessId, status, message, outcomes } = params;
+  try {
+    const eventId = generateId();
+    await db.transaction(async (tx) => {
+      await tx.insert(notificationEventsTable).values({
+        id: eventId,
+        orderId,
+        businessId,
+        status,
+        message: message ?? null
+      });
+      for (const o of outcomes) {
+        await tx.insert(notificationDeliveriesTable).values({
+          id: generateId(),
+          eventId,
+          channel: o.channel,
+          status: o.status,
+          recipient: o.recipient,
+          providerMessageId: o.providerMessageId ?? null,
+          failureReason: o.failureReason ?? null,
+          sentAt: o.status === "sent" || o.status === "delivered" ? /* @__PURE__ */ new Date() : null
+        });
+      }
+    });
+    return eventId;
+  } catch (err) {
+    logger.warn({ err, orderId }, "Failed to record notification history (non-fatal)");
+    return null;
+  }
+}
+
 // src/lib/order-fsm.ts
-var FSM_ORDER_STATUSES = [
-  "Created",
-  "Confirmed",
-  "Processing",
-  "Packed",
-  "Dispatched",
-  "Delivered",
-  "Cancelled"
-];
+var FSM_ORDER_STATUSES = ORDER_STATUSES2;
 function isFsmStatus(s) {
   return FSM_ORDER_STATUSES.includes(s);
 }
-var VALID_TRANSITIONS = {
-  Created: ["Confirmed", "Cancelled"],
-  Confirmed: ["Processing", "Cancelled"],
-  Processing: ["Packed", "Cancelled"],
-  Packed: ["Dispatched", "Cancelled"],
-  Dispatched: ["Delivered"],
-  Delivered: [],
-  Cancelled: []
-};
+var VALID_TRANSITIONS = Object.fromEntries(
+  ORDER_STATUSES2.map((s) => [s, nextStatuses(s)])
+);
 function canTransition(from, to) {
   return VALID_TRANSITIONS[from].includes(to);
 }
@@ -76305,7 +77037,7 @@ function validateTransition(from, to) {
     return {
       ok: false,
       code: "unknown_status",
-      message: `Order status "${from}" is not part of the lifecycle FSM. Expected one of: ${FSM_ORDER_STATUSES.join(", ")}.`
+      message: `Order status "${from}" is not a valid lifecycle status. Expected one of: ${FSM_ORDER_STATUSES.join(", ")}.`
     };
   }
   if (!isFsmStatus(to)) {
@@ -76315,11 +77047,11 @@ function validateTransition(from, to) {
       message: `Target status "${to}" is not a valid lifecycle status.`
     };
   }
-  if (VALID_TRANSITIONS[from].length === 0) {
+  if (isTerminal(from)) {
     return {
       ok: false,
       code: "terminal_state",
-      message: `Order is already ${from} \u2014 no further transitions are allowed.`
+      message: `Order is already "${from}" - no further transitions are allowed.`
     };
   }
   if (!canTransition(from, to)) {
@@ -76327,16 +77059,16 @@ function validateTransition(from, to) {
     return {
       ok: false,
       code: "invalid_transition",
-      message: `Cannot move from ${from} to ${to}. Allowed next steps: ${allowed}.`
+      message: `Cannot move from "${from}" to "${to}". Allowed next steps: ${allowed}.`
     };
   }
   return { ok: true };
 }
 var STUCK_THRESHOLDS_MS = {
-  Created: 24 * 60 * 60 * 1e3,
-  Processing: 48 * 60 * 60 * 1e3,
-  Packed: 24 * 60 * 60 * 1e3,
-  Dispatched: 72 * 60 * 60 * 1e3
+  "Order received": 24 * 60 * 60 * 1e3,
+  "Processing": 48 * 60 * 60 * 1e3,
+  "In transit": 72 * 60 * 60 * 1e3,
+  "Delayed": 48 * 60 * 60 * 1e3
 };
 async function transitionOrder(input, database = db) {
   const { orderId, businessId, toStatus, updatedBy, reason } = input;
@@ -76374,7 +77106,7 @@ async function transitionOrder(input, database = db) {
       id: newEventId,
       orderId,
       status: toStatus,
-      message: noteParts.join(" \u2014 "),
+      message: noteParts.join(" - "),
       createdBy: updatedBy
     });
     const updated = await tx.update(ordersTable).set({ currentStatus: toStatus, updatedAt: /* @__PURE__ */ new Date() }).where(
@@ -76406,7 +77138,7 @@ async function transitionOrder(input, database = db) {
   return {
     success: true,
     currentStatus: toStatus,
-    message: `Order moved from ${previousStatus} to ${toStatus}.`,
+    message: `Order moved from "${previousStatus}" to "${toStatus}".`,
     eventId
   };
 }
@@ -76448,7 +77180,7 @@ async function findStuckOrders(businessId, now = /* @__PURE__ */ new Date(), dat
       updatedAt: row.updatedAt.toISOString(),
       stuckForMs,
       thresholdMs: threshold,
-      reason: `Stuck in ${row.currentStatus} for ${formatHours(stuckForMs)} (threshold ${formatHours(threshold)}).`
+      reason: `Stuck in "${row.currentStatus}" for ${formatHours(stuckForMs)} (threshold ${formatHours(threshold)}).`
     });
   }
   stuck.sort((a, b) => b.stuckForMs - a.stuckForMs);
@@ -76457,8 +77189,20 @@ async function findStuckOrders(businessId, now = /* @__PURE__ */ new Date(), dat
 
 // src/routes/orders.ts
 var router6 = (0, import_express6.Router)();
+var HOSTED_TRACKING_BASE = (process.env.PUBLIC_TRACKING_URL || "https://logistics.olyxee.com").replace(/\/$/, "");
 function buildTrackingLink(websiteUrl, trackingId) {
-  const base = websiteUrl.replace(/\/$/, "");
+  let base = HOSTED_TRACKING_BASE;
+  const raw = (websiteUrl || "").trim();
+  if (raw) {
+    try {
+      const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      if (u.protocol === "http:" || u.protocol === "https:") {
+        base = (u.origin + u.pathname).replace(/\/$/, "");
+      }
+    } catch {
+      base = HOSTED_TRACKING_BASE;
+    }
+  }
   return `${base}/track?code=${trackingId}`;
 }
 function serializeOrder(o) {
@@ -76539,7 +77283,11 @@ router6.post("/orders", requireAuth, async (req, res) => {
     const business = await db.query.businessesTable.findFirst({
       where: eq(businessesTable.id, businessId)
     });
-    const prefix = business?.trackingIdPrefix ?? "OLY";
+    const prefix = resolveTrackingPrefix(
+      business?.trackingIdPrefix,
+      business?.name,
+      business?.slug
+    );
     const MAX_TRACKING_ATTEMPTS = 8;
     let inserted;
     let lastErr;
@@ -76553,7 +77301,7 @@ router6.post("/orders", requireAuth, async (req, res) => {
           trackingId: candidate,
           orderReference: parse3.data.orderReference ?? null,
           description: parse3.data.description ?? null,
-          currentStatus: "Created",
+          currentStatus: "Order received",
           estimatedDeliveryDate: parse3.data.estimatedDeliveryDate ?? null
         }).returning();
         inserted = rows[0];
@@ -76578,8 +77326,8 @@ router6.post("/orders", requireAuth, async (req, res) => {
     await db.insert(trackingEventsTable).values({
       id: generateId(),
       orderId: o.id,
-      status: "Created",
-      message: "Order has been created",
+      status: "Order received",
+      message: "Order has been received",
       createdBy: userId
     });
     await db.insert(auditLogsTable).values({
@@ -76696,6 +77444,8 @@ router6.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     const trackingLink = business ? buildTrackingLink(business.websiteUrl, order.trackingId) : "";
     let emailStatus = "skipped";
     let emailNotificationId;
+    let emailUsage;
+    let emailLimit;
     if (customer && business) {
       const emailParams = {
         customerEmail: customer.email,
@@ -76711,18 +77461,35 @@ router6.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         emailFooterNote: business.emailFooterNote
       };
       const { subject, body } = buildEmailBody(emailParams);
-      const emailResult = await sendStatusEmail(emailParams);
-      emailStatus = emailResult.success ? "sent" : "failed";
-      const notif = await db.insert(emailNotificationsTable).values({
-        id: generateId(),
-        orderId,
-        customerEmail: customer.email,
-        subject,
-        body,
-        status: emailStatus,
-        providerMessageId: emailResult.messageId ?? null
-      }).returning();
-      emailNotificationId = notif[0]?.id;
+      emailLimit = business.monthlyEmailLimit;
+      emailUsage = await getMonthlyEmailUsage(businessId);
+      if (emailUsage >= emailLimit) {
+        emailStatus = "limit_reached";
+        const notif = await db.insert(emailNotificationsTable).values({
+          id: generateId(),
+          orderId,
+          customerEmail: customer.email,
+          subject,
+          body,
+          status: "limit_reached",
+          providerMessageId: null
+        }).returning();
+        emailNotificationId = notif[0]?.id;
+      } else {
+        const emailResult = await sendStatusEmail(emailParams);
+        emailStatus = emailResult.success ? "sent" : "failed";
+        if (emailStatus === "sent") emailUsage += 1;
+        const notif = await db.insert(emailNotificationsTable).values({
+          id: generateId(),
+          orderId,
+          customerEmail: customer.email,
+          subject,
+          body,
+          status: emailStatus,
+          providerMessageId: emailResult.messageId ?? null
+        }).returning();
+        emailNotificationId = notif[0]?.id;
+      }
     }
     await db.insert(auditLogsTable).values({
       id: generateId(),
@@ -76733,6 +77500,23 @@ router6.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       entityId: orderId,
       metadata: { previousStatus: order.currentStatus, newStatus: status, emailStatus }
     });
+    if (customer && emailStatus !== "skipped") {
+      const deliveryStatus = emailStatus === "sent" ? "sent" : "failed";
+      await recordNotification({
+        orderId,
+        businessId,
+        status,
+        message: message ?? null,
+        outcomes: [
+          {
+            channel: "email",
+            recipient: customer.email,
+            status: deliveryStatus,
+            failureReason: emailStatus === "limit_reached" ? "Monthly email limit reached" : emailStatus === "failed" ? "Email provider send failed" : null
+          }
+        ]
+      });
+    }
     res.json({
       order: serializeOrder(updatedOrder[0]),
       trackingEvent: {
@@ -76740,7 +77524,9 @@ router6.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         createdAt: trackingEvent[0].createdAt.toISOString()
       },
       emailStatus,
-      emailNotificationId
+      emailNotificationId,
+      emailUsage,
+      emailLimit
     });
   } catch (err) {
     req.log.error({ err }, "Failed to update order status");
@@ -76833,7 +77619,7 @@ router6.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       db.query.businessesTable.findFirst({ where: eq(businessesTable.id, businessId) })
     ]);
     if (!customer || !business) {
-      res.status(400).json({ error: "Cannot resend email \u2014 missing customer or business data" });
+      res.status(400).json({ error: "Cannot resend email - missing customer or business data" });
       return;
     }
     const trackingLink = buildTrackingLink(business.websiteUrl, order.trackingId);
@@ -76851,6 +77637,37 @@ router6.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       emailFooterNote: business.emailFooterNote
     };
     const { subject, body } = buildEmailBody(emailParams);
+    const emailLimit = business.monthlyEmailLimit;
+    const emailUsage = await getMonthlyEmailUsage(businessId);
+    if (emailUsage >= emailLimit) {
+      const notif2 = await db.insert(emailNotificationsTable).values({
+        id: generateId(),
+        orderId,
+        customerEmail: customer.email,
+        subject,
+        body,
+        status: "limit_reached",
+        providerMessageId: null
+      }).returning();
+      await db.insert(auditLogsTable).values({
+        id: generateId(),
+        businessId,
+        userId,
+        action: "RESEND_EMAIL",
+        entityType: "order",
+        entityId: orderId,
+        metadata: { emailStatus: "limit_reached" }
+      });
+      res.json({
+        success: false,
+        emailNotificationId: notif2[0]?.id,
+        message: `Monthly email limit reached (${emailUsage}/${emailLimit}). Upgrade to send more emails.`,
+        emailStatus: "limit_reached",
+        emailUsage,
+        emailLimit
+      });
+      return;
+    }
     const emailResult = await sendStatusEmail(emailParams);
     const emailStatus = emailResult.success ? "sent" : "failed";
     const notif = await db.insert(emailNotificationsTable).values({
@@ -76874,7 +77691,10 @@ router6.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
     res.json({
       success: emailResult.success,
       emailNotificationId: notif[0]?.id,
-      message: emailResult.success ? "Email resent successfully" : emailResult.error
+      message: emailResult.success ? "Email resent successfully" : emailResult.error,
+      emailStatus,
+      emailUsage: emailStatus === "sent" ? emailUsage + 1 : emailUsage,
+      emailLimit
     });
   } catch (err) {
     req.log.error({ err }, "Failed to resend email");
@@ -76952,20 +77772,757 @@ router7.get("/audit-logs", requireAuth, async (req, res) => {
 });
 var audit_default = router7;
 
-// src/routes/index.ts
+// src/routes/workflow-templates.ts
+var import_express8 = __toESM(require_express2(), 1);
 var router8 = (0, import_express8.Router)();
-router8.use(health_default);
-router8.use(auth_default);
-router8.use(business_default);
-router8.use(dashboard_default);
-router8.use(customers_default);
-router8.use(orders_default);
-router8.use(audit_default);
-var routes_default = router8;
+function serializeTemplate(t) {
+  return { ...t, createdAt: t.createdAt.toISOString() };
+}
+async function getTemplateWithSteps(businessId, templateId) {
+  const template = await db.query.workflowTemplatesTable.findFirst({
+    where: and(
+      eq(workflowTemplatesTable.id, templateId),
+      eq(workflowTemplatesTable.businessId, businessId)
+    )
+  });
+  if (!template) return null;
+  const steps = await db.select().from(workflowStepsTable).where(eq(workflowStepsTable.templateId, templateId)).orderBy(workflowStepsTable.position);
+  return { ...serializeTemplate(template), steps };
+}
+var StepInputSchema = external_exports.object({
+  label: external_exports.string().min(1).max(100),
+  description: external_exports.string().max(500).optional(),
+  position: external_exports.number().int().min(0),
+  color: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  isTerminal: external_exports.boolean().default(false)
+});
+var CreateTemplateBody = external_exports.object({
+  name: external_exports.string().min(1).max(100),
+  description: external_exports.string().max(500).optional(),
+  businessType: external_exports.string().optional(),
+  steps: external_exports.array(StepInputSchema).min(1).max(50)
+});
+var UpdateTemplateBody = external_exports.object({
+  name: external_exports.string().min(1).max(100).optional(),
+  description: external_exports.string().max(500).nullish(),
+  businessType: external_exports.string().nullish()
+});
+var CloneTemplateBody = external_exports.object({
+  name: external_exports.string().min(1).max(100),
+  description: external_exports.string().max(500).optional(),
+  businessType: external_exports.string().optional(),
+  steps: external_exports.array(StepInputSchema).min(1).max(50)
+});
+var UpdateStepsBody = external_exports.object({
+  steps: external_exports.array(StepInputSchema).min(1).max(50)
+});
+var ActivateWorkflowBody = external_exports.object({
+  templateId: external_exports.string().min(1),
+  templateName: external_exports.string().min(1)
+});
+router8.get("/workflow-templates", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const templates = await db.select().from(workflowTemplatesTable).where(eq(workflowTemplatesTable.businessId, businessId)).orderBy(workflowTemplatesTable.createdAt);
+    const withSteps = await Promise.all(
+      templates.map(async (t) => {
+        const steps = await db.select().from(workflowStepsTable).where(eq(workflowStepsTable.templateId, t.id)).orderBy(workflowStepsTable.position);
+        return { ...serializeTemplate(t), steps };
+      })
+    );
+    res.json(withSteps);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to list workflow templates" });
+  }
+});
+router8.post("/workflow-templates", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const parsed = CreateTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+      return;
+    }
+    const { name, description, businessType, steps } = parsed.data;
+    const templateId = generateId();
+    await db.insert(workflowTemplatesTable).values({
+      id: templateId,
+      businessId,
+      name,
+      description: description ?? null,
+      businessType: businessType ?? null
+    });
+    await db.insert(workflowStepsTable).values(
+      steps.map((s) => ({
+        id: generateId(),
+        templateId,
+        label: s.label,
+        description: s.description ?? null,
+        position: s.position,
+        color: s.color ?? null,
+        isTerminal: s.isTerminal
+      }))
+    );
+    const result = await getTemplateWithSteps(businessId, templateId);
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create workflow template" });
+  }
+});
+router8.get("/workflow-templates/:id", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const result = await getTemplateWithSteps(businessId, req.params.id);
+    if (!result) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get workflow template" });
+  }
+});
+router8.put("/workflow-templates/:id", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const parsed = UpdateTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body" });
+      return;
+    }
+    const existing = await db.query.workflowTemplatesTable.findFirst({
+      where: and(
+        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.businessId, businessId)
+      )
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+    const updates = {};
+    if (parsed.data.name !== void 0) updates.name = parsed.data.name;
+    if (parsed.data.description !== void 0) updates.description = parsed.data.description;
+    if (parsed.data.businessType !== void 0) updates.businessType = parsed.data.businessType;
+    if (Object.keys(updates).length > 0) {
+      await db.update(workflowTemplatesTable).set(updates).where(eq(workflowTemplatesTable.id, req.params.id));
+    }
+    const result = await getTemplateWithSteps(businessId, req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update workflow template" });
+  }
+});
+router8.delete("/workflow-templates/:id", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const existing = await db.query.workflowTemplatesTable.findFirst({
+      where: and(
+        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.businessId, businessId)
+      )
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+    await db.delete(workflowTemplatesTable).where(eq(workflowTemplatesTable.id, req.params.id));
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete workflow template" });
+  }
+});
+router8.post("/workflow-templates/clone", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const parsed = CloneTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+      return;
+    }
+    const { name, description, businessType, steps } = parsed.data;
+    const templateId = generateId();
+    await db.insert(workflowTemplatesTable).values({
+      id: templateId,
+      businessId,
+      name,
+      description: description ?? null,
+      businessType: businessType ?? null
+    });
+    await db.insert(workflowStepsTable).values(
+      steps.map((s) => ({
+        id: generateId(),
+        templateId,
+        label: s.label,
+        description: s.description ?? null,
+        position: s.position,
+        color: s.color ?? null,
+        isTerminal: s.isTerminal
+      }))
+    );
+    const result = await getTemplateWithSteps(businessId, templateId);
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to clone workflow template" });
+  }
+});
+router8.put("/workflow-templates/:id/steps", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const existing = await db.query.workflowTemplatesTable.findFirst({
+      where: and(
+        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.businessId, businessId)
+      )
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+    const parsed = UpdateStepsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body" });
+      return;
+    }
+    await db.delete(workflowStepsTable).where(eq(workflowStepsTable.templateId, req.params.id));
+    await db.insert(workflowStepsTable).values(
+      parsed.data.steps.map((s) => ({
+        id: generateId(),
+        templateId: req.params.id,
+        label: s.label,
+        description: s.description ?? null,
+        position: s.position,
+        color: s.color ?? null,
+        isTerminal: s.isTerminal
+      }))
+    );
+    const result = await getTemplateWithSteps(businessId, req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update workflow steps" });
+  }
+});
+router8.get("/business-workflows/active", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const active = await db.query.businessWorkflowsTable.findFirst({
+      where: eq(businessWorkflowsTable.businessId, businessId)
+    });
+    if (!active) {
+      res.status(404).json({ error: "No active workflow assigned" });
+      return;
+    }
+    res.json({ ...active, assignedAt: active.assignedAt.toISOString() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get active workflow" });
+  }
+});
+router8.post("/business-workflows/activate", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const parsed = ActivateWorkflowBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body" });
+      return;
+    }
+    const { templateId, templateName } = parsed.data;
+    await db.delete(businessWorkflowsTable).where(eq(businessWorkflowsTable.businessId, businessId));
+    const id = generateId();
+    await db.insert(businessWorkflowsTable).values({
+      id,
+      businessId,
+      templateId,
+      templateName
+    });
+    const result = await db.query.businessWorkflowsTable.findFirst({
+      where: eq(businessWorkflowsTable.businessId, businessId)
+    });
+    res.json({ ...result, assignedAt: result.assignedAt.toISOString() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to activate workflow" });
+  }
+});
+var workflow_templates_default = router8;
+
+// src/routes/billing.ts
+var import_express9 = __toESM(require_express2(), 1);
+
+// src/lib/paystack.ts
+import crypto4 from "node:crypto";
+var PAYSTACK_BASE = "https://api.paystack.co";
+function isTestBillingEnabled() {
+  const key = process.env.PAYSTACK_SECRET_KEY ?? "";
+  const flag = (process.env.ENABLE_TEST_BILLING ?? "").trim().toLowerCase();
+  const enabled = flag === "1" || flag === "true";
+  return enabled && key.startsWith("sk_test_");
+}
+function secretKey() {
+  const key = process.env.PAYSTACK_SECRET_KEY ?? "";
+  if (!key.startsWith("sk_test_")) {
+    throw new Error("Paystack test billing requires a sk_test_ secret key");
+  }
+  return key;
+}
+function planAmountMinor(planId) {
+  return Math.round(getPlan(planId).price * 100);
+}
+async function paystackFetch(path, init) {
+  const res = await fetch(`${PAYSTACK_BASE}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      "Content-Type": "application/json",
+      ...init.headers ?? {}
+    }
+  });
+  const json3 = await res.json();
+  if (!res.ok || json3.status === false) {
+    logger.warn({ path, message: json3.message }, "Paystack API error");
+    throw new Error(json3.message ?? `Paystack request failed (${res.status})`);
+  }
+  return json3;
+}
+async function initializeTransaction(params) {
+  const data = await paystackFetch("/transaction/initialize", {
+    method: "POST",
+    body: JSON.stringify({
+      email: params.email,
+      amount: params.amountMinor,
+      currency: "ZAR",
+      reference: params.reference,
+      callback_url: params.callbackUrl,
+      metadata: params.metadata
+    })
+  });
+  return {
+    authorizationUrl: data.data.authorization_url,
+    accessCode: data.data.access_code,
+    reference: data.data.reference
+  };
+}
+async function verifyTransaction(reference) {
+  const data = await paystackFetch(`/transaction/verify/${encodeURIComponent(reference)}`, { method: "GET" });
+  return {
+    status: data.data.status,
+    reference: data.data.reference,
+    amountMinor: data.data.amount,
+    customerCode: data.data.customer?.customer_code ?? null,
+    metadata: data.data.metadata ?? null
+  };
+}
+function verifyWebhookSignature(rawBody, signature) {
+  if (!signature) return false;
+  const key = process.env.PAYSTACK_SECRET_KEY ?? "";
+  if (!key) return false;
+  const hash = crypto4.createHmac("sha512", key).update(rawBody).digest("hex");
+  try {
+    return crypto4.timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
+
+// src/routes/billing.ts
+var router9 = (0, import_express9.Router)();
+router9.use("/billing", (_req, res, next) => {
+  if (!isTestBillingEnabled()) {
+    res.status(503).json({ error: "Billing is not enabled" });
+    return;
+  }
+  next();
+});
+var InitBody = external_exports.object({
+  plan: external_exports.string().refine(isValidPlanId, "Unknown plan")
+});
+router9.post("/billing/initialize", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const parse3 = InitBody.safeParse(req.body);
+    if (!parse3.success) {
+      res.status(400).json({ error: "Invalid input", details: parse3.error.issues });
+      return;
+    }
+    const planId = parse3.data.plan;
+    if (!isValidPlanId(planId) || planId === "beta" || planId === "free") {
+      res.status(400).json({ error: "Plan is not purchasable" });
+      return;
+    }
+    const business = await db.query.businessesTable.findFirst({
+      where: eq(businessesTable.id, businessId)
+    });
+    if (!business) {
+      res.status(404).json({ error: "Business not found" });
+      return;
+    }
+    const reference = `olyxee_${businessId}_${Date.now()}`;
+    const origin = req.get("origin") || `${req.protocol}://${req.get("host")}`;
+    const callbackUrl = `${origin}/billing/callback`;
+    const init = await initializeTransaction({
+      email: business.supportEmail || `billing+${businessId}@olyxee.com`,
+      amountMinor: planAmountMinor(planId),
+      reference,
+      callbackUrl,
+      metadata: { businessId, plan: planId }
+    });
+    res.json({ authorizationUrl: init.authorizationUrl, reference: init.reference });
+  } catch (err) {
+    logger.error({ err }, "Billing initialize failed");
+    res.status(502).json({ error: "Could not start checkout" });
+  }
+});
+router9.get("/billing/verify/:reference", requireAuth, async (req, res) => {
+  try {
+    const businessId = req.businessId;
+    const reference = req.params.reference;
+    const result = await verifyTransaction(reference);
+    if (result.status !== "success") {
+      res.json({ status: result.status, activated: false });
+      return;
+    }
+    const metaBusiness = result.metadata?.businessId ?? businessId;
+    const metaPlan = result.metadata?.plan;
+    if (metaBusiness !== businessId || !metaPlan || !isValidPlanId(metaPlan)) {
+      res.status(400).json({ error: "Transaction does not match this business" });
+      return;
+    }
+    if (result.amountMinor !== planAmountMinor(metaPlan)) {
+      res.status(400).json({ error: "Transaction amount does not match plan" });
+      return;
+    }
+    const activated = await activatePlan({
+      dedupeKey: `verify:${reference}`,
+      eventType: "transaction.verify",
+      reference,
+      businessId,
+      plan: metaPlan,
+      customerCode: result.customerCode
+    });
+    res.json({ status: result.status, activated });
+  } catch (err) {
+    logger.error({ err }, "Billing verify failed");
+    res.status(502).json({ error: "Could not verify transaction" });
+  }
+});
+router9.post("/billing/webhook", async (req, res) => {
+  const signature = req.header("x-paystack-signature");
+  const raw = req.rawBody;
+  if (!raw || !verifyWebhookSignature(raw, signature)) {
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+  let event;
+  try {
+    event = JSON.parse(raw.toString("utf8"));
+  } catch {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+  res.json({ received: true });
+  try {
+    if (event?.event === "charge.success") {
+      const data = event.data ?? {};
+      const businessId = data.metadata?.businessId;
+      const plan = data.metadata?.plan;
+      const amount = typeof data.amount === "number" ? data.amount : void 0;
+      if (businessId && plan && isValidPlanId(plan) && amount === planAmountMinor(plan)) {
+        await activatePlan({
+          dedupeKey: `webhook:${event.id ?? data.reference}`,
+          eventType: event.event,
+          reference: data.reference ?? null,
+          businessId,
+          plan,
+          customerCode: data.customer?.customer_code ?? null
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "Webhook processing failed (already acked)");
+  }
+});
+async function activatePlan(p) {
+  try {
+    await db.insert(billingEventsTable).values({
+      id: generateId(),
+      dedupeKey: p.dedupeKey,
+      eventType: p.eventType,
+      reference: p.reference,
+      businessId: p.businessId
+    });
+  } catch (err) {
+    const code = err.code;
+    if (code === "23505") return false;
+    throw err;
+  }
+  await db.update(businessesTable).set({
+    plan: p.plan,
+    subscriptionStatus: "active",
+    billingCustomerCode: p.customerCode
+  }).where(eq(businessesTable.id, p.businessId));
+  return true;
+}
+var billing_default = router9;
+
+// src/routes/v1.ts
+var import_express10 = __toESM(require_express2(), 1);
+import crypto5 from "node:crypto";
+var router10 = (0, import_express10.Router)();
+router10.use("/v1", (_req, res, next) => {
+  if (!isFeatureEnabled("publicApi")) {
+    res.status(503).json({ error: "Public API is not yet available" });
+    return;
+  }
+  next();
+});
+function hashKey(raw) {
+  return crypto5.createHash("sha256").update(raw).digest("hex");
+}
+var RATE_LIMIT = 120;
+var RATE_WINDOW_MS = 6e4;
+var rateBuckets = /* @__PURE__ */ new Map();
+function rateLimit2(keyId, res) {
+  const now = Date.now();
+  const bucket = rateBuckets.get(keyId);
+  if (!bucket || now >= bucket.resetAt) {
+    rateBuckets.set(keyId, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    res.setHeader("X-RateLimit-Limit", RATE_LIMIT);
+    res.setHeader("X-RateLimit-Remaining", RATE_LIMIT - 1);
+    return true;
+  }
+  if (bucket.count >= RATE_LIMIT) {
+    res.setHeader("Retry-After", Math.ceil((bucket.resetAt - now) / 1e3));
+    res.setHeader("X-RateLimit-Remaining", 0);
+    return false;
+  }
+  bucket.count += 1;
+  res.setHeader("X-RateLimit-Limit", RATE_LIMIT);
+  res.setHeader("X-RateLimit-Remaining", RATE_LIMIT - bucket.count);
+  return true;
+}
+async function requireApiKey(req, res, next) {
+  try {
+    const header = req.header("authorization") ?? "";
+    const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+    if (!token) {
+      res.status(401).json({ error: "Missing API key" });
+      return;
+    }
+    const keyHash = hashKey(token);
+    const row = await db.query.apiKeysTable.findFirst({
+      where: and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt))
+    });
+    if (!row) {
+      res.status(401).json({ error: "Invalid API key" });
+      return;
+    }
+    if (!rateLimit2(row.id, res)) {
+      res.status(429).json({ error: "Rate limit exceeded" });
+      return;
+    }
+    req.apiBusinessId = row.businessId;
+    req.apiKeyId = row.id;
+    logger.info(
+      { apiKeyId: row.id, businessId: row.businessId, method: req.method, path: req.path },
+      "public API request"
+    );
+    void db.update(apiKeysTable).set({ lastUsedAt: /* @__PURE__ */ new Date() }).where(eq(apiKeysTable.id, row.id)).catch((err) => logger.warn({ err }, "Failed to bump api key lastUsedAt"));
+    next();
+  } catch (err) {
+    logger.error({ err }, "API key auth failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+router10.use("/v1", requireApiKey);
+router10.get("/v1/business", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const business = await db.query.businessesTable.findFirst({
+    where: eq(businessesTable.id, businessId)
+  });
+  if (!business) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+  res.json({ id: business.id, name: business.name, plan: business.plan });
+});
+function serializeCustomer2(c) {
+  return {
+    id: c.id,
+    fullName: c.fullName,
+    email: c.email,
+    phone: c.phone,
+    companyName: c.companyName,
+    address: c.address,
+    createdAt: c.createdAt
+  };
+}
+router10.get("/v1/customers", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const rows = await db.query.customersTable.findMany({
+    where: eq(customersTable.businessId, businessId),
+    orderBy: [desc(customersTable.createdAt)],
+    limit: 100
+  });
+  res.json({ data: rows.map(serializeCustomer2) });
+});
+router10.get("/v1/customers/:id", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const id = String(req.params.id);
+  const row = await db.query.customersTable.findFirst({
+    where: and(eq(customersTable.id, id), eq(customersTable.businessId, businessId))
+  });
+  if (!row) {
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
+  res.json(serializeCustomer2(row));
+});
+var createCustomerSchema = external_exports2.object({
+  fullName: external_exports2.string().min(1),
+  email: external_exports2.email(),
+  phone: external_exports2.string().optional(),
+  companyName: external_exports2.string().optional(),
+  address: external_exports2.string().optional()
+});
+router10.post("/v1/customers", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const parse3 = createCustomerSchema.safeParse(req.body);
+  if (!parse3.success) {
+    res.status(400).json({ error: "Invalid customer", details: parse3.error.issues });
+    return;
+  }
+  const rows = await db.insert(customersTable).values({
+    id: generateId(),
+    businessId,
+    fullName: parse3.data.fullName,
+    email: parse3.data.email,
+    phone: parse3.data.phone ?? null,
+    companyName: parse3.data.companyName ?? null,
+    address: parse3.data.address ?? null
+  }).returning();
+  res.status(201).json(serializeCustomer2(rows[0]));
+});
+function serializeOrder2(o) {
+  return {
+    id: o.id,
+    customerId: o.customerId,
+    trackingId: o.trackingId,
+    orderReference: o.orderReference,
+    description: o.description,
+    currentStatus: o.currentStatus,
+    estimatedDeliveryDate: o.estimatedDeliveryDate,
+    createdAt: o.createdAt,
+    updatedAt: o.updatedAt
+  };
+}
+router10.get("/v1/orders", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const rows = await db.query.ordersTable.findMany({
+    where: eq(ordersTable.businessId, businessId),
+    orderBy: [desc(ordersTable.createdAt)],
+    limit: 100
+  });
+  res.json({ data: rows.map(serializeOrder2) });
+});
+router10.get("/v1/orders/:id", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const id = String(req.params.id);
+  const row = await db.query.ordersTable.findFirst({
+    where: and(eq(ordersTable.id, id), eq(ordersTable.businessId, businessId))
+  });
+  if (!row) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  res.json(serializeOrder2(row));
+});
+var createOrderSchema = external_exports2.object({
+  customerId: external_exports2.string().min(1),
+  orderReference: external_exports2.string().optional(),
+  description: external_exports2.string().optional(),
+  estimatedDeliveryDate: external_exports2.string().optional()
+});
+router10.post("/v1/orders", async (req, res) => {
+  const businessId = req.apiBusinessId;
+  const parse3 = createOrderSchema.safeParse(req.body);
+  if (!parse3.success) {
+    res.status(400).json({ error: "Invalid order", details: parse3.error.issues });
+    return;
+  }
+  const customer = await db.query.customersTable.findFirst({
+    where: and(
+      eq(customersTable.id, parse3.data.customerId),
+      eq(customersTable.businessId, businessId)
+    )
+  });
+  if (!customer) {
+    res.status(400).json({ error: "Customer not found" });
+    return;
+  }
+  const business = await db.query.businessesTable.findFirst({
+    where: eq(businessesTable.id, businessId)
+  });
+  const prefix = resolveTrackingPrefix(
+    business?.trackingIdPrefix,
+    business?.name,
+    business?.slug
+  );
+  const MAX_TRACKING_ATTEMPTS = 8;
+  let inserted;
+  let lastErr;
+  for (let attempt = 0; attempt < MAX_TRACKING_ATTEMPTS; attempt++) {
+    try {
+      const rows = await db.insert(ordersTable).values({
+        id: generateId(),
+        businessId,
+        customerId: parse3.data.customerId,
+        trackingId: generateTrackingId(prefix),
+        orderReference: parse3.data.orderReference ?? null,
+        description: parse3.data.description ?? null,
+        currentStatus: "Order received",
+        estimatedDeliveryDate: parse3.data.estimatedDeliveryDate ?? null
+      }).returning();
+      inserted = rows[0];
+      break;
+    } catch (err) {
+      lastErr = err;
+      const code = err?.code;
+      if (code !== "23505") throw err;
+    }
+  }
+  if (!inserted) {
+    logger.error({ err: lastErr }, "Exhausted tracking ID attempts (public API)");
+    res.status(500).json({ error: "Could not allocate tracking ID" });
+    return;
+  }
+  res.status(201).json(serializeOrder2(inserted));
+});
+var v1_default = router10;
+
+// src/routes/index.ts
+var router11 = (0, import_express11.Router)();
+router11.use(health_default);
+router11.use(auth_default);
+router11.use(business_default);
+router11.use(dashboard_default);
+router11.use(customers_default);
+router11.use(orders_default);
+router11.use(audit_default);
+router11.use(workflow_templates_default);
+router11.use(billing_default);
+router11.use(v1_default);
+var routes_default = router11;
 
 // src/routes/public-tracking.ts
-var import_express9 = __toESM(require_express2(), 1);
-var router9 = (0, import_express9.Router)();
+var import_express12 = __toESM(require_express2(), 1);
+var router12 = (0, import_express12.Router)();
 var STATUS_LABEL_MAP = {
   "Created": "pending",
   "Order received": "pending",
@@ -76999,7 +78556,7 @@ function publicStatusFor(internal) {
   if (!internal) return "pending";
   return STATUS_LABEL_MAP[internal] ?? "pending";
 }
-router9.get("/public/track/:trackingId", async (req, res) => {
+router12.get("/public/track/:trackingId", async (req, res) => {
   try {
     const trackingId = String(req.params.trackingId ?? "").trim();
     if (!trackingId || trackingId.length > 40 || !/^[A-Z0-9-]+$/i.test(trackingId)) {
@@ -77047,7 +78604,7 @@ router9.get("/public/track/:trackingId", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-var public_tracking_default = router9;
+var public_tracking_default = router12;
 
 // src/lib/env.ts
 var REQUIRED_ALWAYS = [
@@ -77073,7 +78630,7 @@ var RECOMMENDED = [
   {
     name: "RESEND_API_KEY",
     required: false,
-    description: "Resend API key \u2014 order status emails will be skipped without it."
+    description: "Resend API key - order status emails will be skipped without it."
   },
   {
     name: "EMAIL_FROM_ADDRESS",
@@ -77104,7 +78661,7 @@ ${lines}`;
     if (!process.env[c.name]) {
       logger.warn(
         { env: c.name },
-        `Recommended env not set: ${c.name} \u2014 ${c.description}`
+        `Recommended env not set: ${c.name} - ${c.description}`
       );
     }
   }
@@ -77185,7 +78742,7 @@ function warmBusinessAllowedOrigins() {
 // src/app.ts
 validateEnv();
 warmBusinessAllowedOrigins();
-var app = (0, import_express10.default)();
+var app = (0, import_express13.default)();
 app.set("trust proxy", 1);
 app.use(
   (0, import_pino_http.default)({
@@ -77237,8 +78794,17 @@ var publicCors = (0, import_cors.default)({
 app.use("/api/public", publicCors);
 app.use(adminCors);
 app.use((0, import_cookie_parser.default)());
-app.use(import_express10.default.json({ limit: "100kb" }));
-app.use(import_express10.default.urlencoded({ extended: true, limit: "100kb" }));
+app.use(
+  import_express13.default.json({
+    limit: "100kb",
+    // Stash the raw body so the Paystack webhook can verify its HMAC signature
+    // against the exact bytes received. Harmless for every other route.
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    }
+  })
+);
+app.use(import_express13.default.urlencoded({ extended: true, limit: "100kb" }));
 var apiLimiter = rate_limit_default({
   windowMs: 6e4,
   limit: 300,
