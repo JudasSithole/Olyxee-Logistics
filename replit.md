@@ -41,7 +41,8 @@ Order Loop is an order-tracking and customer-notification tool for small busines
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Deploys to Vercel; user manages env vars there themselves — give them exact env var names when adding config.
+- No SMSPortal sender ID: SMS goes out from a shared SMSPortal number for all tenants. When the SMS channel is enabled, each message body must lead with the business's name (multi-tenant branding lives in the message text, not the sender).
 
 ## Gotchas
 
