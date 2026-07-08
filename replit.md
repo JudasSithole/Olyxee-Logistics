@@ -32,7 +32,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 - Every unfinished capability is gated by `featureFlags` in `@workspace/plans` (all false this release). Modules no-op / return 503 / fall back to defaults while off. See `.agents/memory/launch-prep-foundations.md`.
 - Route-level gates are path-scoped (`router.use("/v1", gate)`) — an unscoped gate mounted via `router.use(childRouter)` becomes a catch-all for unmatched routes.
-- Paystack billing is TEST-ONLY, gated by env (`ENABLE_TEST_BILLING=1` + `sk_test_` key), not the `subscriptionBilling` flag; a live key is refused. Webhook verifies HMAC over the raw body; activation validates paid amount vs plan and is idempotent via `billing_events.dedupe_key`.
+- Paystack billing is env-gated, not gated by the `subscriptionBilling` flag: `sk_test_` key + `ENABLE_TEST_BILLING=1` (test) or `sk_live_` key + `ENABLE_LIVE_BILLING=1` (live). A key alone never activates billing. Webhook verifies HMAC over the raw body; activation validates paid amount vs plan and is idempotent via `billing_events.dedupe_key`. The Upgrade page checkout buttons additionally stay hidden for normal users until `featureFlags.subscriptionBilling` flips at launch.
 - Shared notification service records to new tables additively/best-effort; the legacy `email_notifications` flow is untouched.
 
 ## Product

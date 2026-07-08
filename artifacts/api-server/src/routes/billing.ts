@@ -6,24 +6,26 @@ import { isValidPlanId } from "@workspace/plans";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { logger } from "../lib/logger";
+import { getAllowedOrigins } from "../lib/env";
 import {
-  isTestBillingEnabled,
+  isBillingEnabled,
   initializeTransaction,
   verifyTransaction,
   verifyWebhookSignature,
   planAmountMinor,
 } from "../lib/paystack";
 
-// ─── Paystack billing backend (TEST ONLY) ────────────────────────────────────
-// Mounted only when isTestBillingEnabled() (ENABLE_TEST_BILLING=1 + sk_test_
-// key). Every route no-ops with 503 otherwise, so production — where the flag
-// is unset — never exposes billing endpoints.
+// ─── Paystack billing backend ────────────────────────────────────────────────
+// Mounted only when isBillingEnabled(): sk_test_ key + ENABLE_TEST_BILLING=1
+// (test mode) or sk_live_ key + ENABLE_LIVE_BILLING=1 (live mode). Every route
+// no-ops with 503 otherwise, so environments without the explicit opt-in never
+// expose billing endpoints.
 
 const router: IRouter = Router();
 
-// Gate the whole router. Keeps billing entirely absent unless test mode is on.
+// Gate the whole router. Keeps billing entirely absent unless a mode is on.
 router.use("/billing", (_req: Request, res: Response, next: NextFunction) => {
-  if (!isTestBillingEnabled()) {
+  if (!isBillingEnabled()) {
     res.status(503).json({ error: "Billing is not enabled" });
     return;
   }
@@ -33,6 +35,21 @@ router.use("/billing", (_req: Request, res: Response, next: NextFunction) => {
 const InitBody = z.object({
   plan: z.string().refine(isValidPlanId, "Unknown plan"),
 });
+
+// Trusted base URL for the post-payment redirect. Honours the request Origin
+// only when it appears in the env-configured allowlist; otherwise falls back
+// to PUBLIC_APP_URL (or the hosted admin app) so a manipulated header can
+// never send a paying customer to an untrusted domain.
+function trustedCallbackBase(req: Request): string {
+  const fallback = (
+    process.env.PUBLIC_APP_URL || "https://logistics.olyxee.com"
+  ).replace(/\/$/, "");
+  const origin = req.get("origin");
+  if (!origin) return fallback;
+  const allowed = getAllowedOrigins();
+  if (allowed === true) return origin;
+  return allowed.includes(origin) ? origin : fallback;
+}
 
 // Start a checkout for the selected paid plan. Returns the Paystack
 // authorization URL the frontend redirects the user to.
@@ -58,9 +75,11 @@ router.post("/billing/initialize", requireAuth, async (req: Request, res: Respon
     }
     const reference = `olyxee_${businessId}_${Date.now()}`;
     // Send the buyer back to the admin app's callback page after payment, which
-    // re-verifies the transaction server-side before activating.
-    const origin = req.get("origin") || `${req.protocol}://${req.get("host")}`;
-    const callbackUrl = `${origin}/billing/callback`;
+    // re-verifies the transaction server-side before activating. The callback
+    // base must be a TRUSTED origin: we only honour the request's Origin header
+    // when it is in the configured CORS allowlist; otherwise we fall back to
+    // the configured app URL. Never derive it from spoofable Host headers.
+    const callbackUrl = `${trustedCallbackBase(req)}/billing/callback`;
     const init = await initializeTransaction({
       email: business.supportEmail || `billing+${businessId}@olyxee.com`,
       amountMinor: planAmountMinor(planId),

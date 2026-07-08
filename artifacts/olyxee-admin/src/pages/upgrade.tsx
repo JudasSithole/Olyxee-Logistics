@@ -90,7 +90,7 @@ export default function UpgradePage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 503) {
         setErrorMsg(
-          "Billing is not enabled yet. Set ENABLE_TEST_BILLING=1 (test mode) on the API server to try checkout.",
+          "Billing is not enabled yet on this server. It requires a Paystack key plus the matching billing switch (ENABLE_TEST_BILLING=1 for test keys, ENABLE_LIVE_BILLING=1 for live keys).",
         );
       } else {
         setErrorMsg(err instanceof Error ? err.message : "Checkout failed.");

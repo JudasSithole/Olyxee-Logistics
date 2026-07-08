@@ -2,27 +2,41 @@ import crypto from "node:crypto";
 import { getPlan, type PlanId } from "@workspace/plans";
 import { logger } from "./logger";
 
-// ─── Paystack test-billing client ────────────────────────────────────────────
-// Thin wrapper over the Paystack REST API for the launch-prep billing
-// foundation. It only ever runs in TEST mode: enabling it requires BOTH
-// ENABLE_TEST_BILLING=1 AND a PAYSTACK_SECRET_KEY that begins with `sk_test_`.
-// A live key is refused so this scaffold can never move real money.
+// ─── Paystack billing client ─────────────────────────────────────────────────
+// Thin wrapper over the Paystack REST API. Supports two explicitly-enabled
+// modes — nothing runs on a key alone:
+//   TEST: PAYSTACK_SECRET_KEY=sk_test_... AND ENABLE_TEST_BILLING=1
+//   LIVE: PAYSTACK_SECRET_KEY=sk_live_... AND ENABLE_LIVE_BILLING=1
+// The separate live switch is a deliberate safety catch: adding a live key by
+// itself can never start moving real money without the explicit opt-in.
 
 const PAYSTACK_BASE = "https://api.paystack.co";
 
-export function isTestBillingEnabled(): boolean {
+export type BillingMode = "test" | "live" | "disabled";
+
+function flagOn(name: string): boolean {
+  const v = (process.env[name] ?? "").trim().toLowerCase();
+  return v === "1" || v === "true";
+}
+
+export function billingMode(): BillingMode {
   const key = process.env.PAYSTACK_SECRET_KEY ?? "";
-  const flag = (process.env.ENABLE_TEST_BILLING ?? "").trim().toLowerCase();
-  const enabled = flag === "1" || flag === "true";
-  return enabled && key.startsWith("sk_test_");
+  if (key.startsWith("sk_live_") && flagOn("ENABLE_LIVE_BILLING")) return "live";
+  if (key.startsWith("sk_test_") && flagOn("ENABLE_TEST_BILLING")) return "test";
+  return "disabled";
+}
+
+export function isBillingEnabled(): boolean {
+  return billingMode() !== "disabled";
 }
 
 function secretKey(): string {
-  const key = process.env.PAYSTACK_SECRET_KEY ?? "";
-  if (!key.startsWith("sk_test_")) {
-    throw new Error("Paystack test billing requires a sk_test_ secret key");
+  if (billingMode() === "disabled") {
+    throw new Error(
+      "Paystack billing is not enabled (need PAYSTACK_SECRET_KEY plus ENABLE_TEST_BILLING=1 for sk_test_ or ENABLE_LIVE_BILLING=1 for sk_live_)",
+    );
   }
-  return key;
+  return process.env.PAYSTACK_SECRET_KEY ?? "";
 }
 
 // ZAR is charged in kobo-equivalent minor units (cents). Paystack expects the
