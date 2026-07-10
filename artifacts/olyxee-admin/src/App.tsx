@@ -27,6 +27,7 @@ import ProfilePage from "@/pages/profile";
 import WhatsNewPage from "@/pages/whats-new";
 import ComingSoonPage from "@/pages/coming-soon";
 import UpgradePage from "@/pages/upgrade";
+import PricingPage from "@/pages/pricing";
 import BillingCallbackPage from "@/pages/billing-callback";
 import NotFound from "@/pages/not-found";
 
@@ -167,6 +168,7 @@ function AppRoutes() {
       <Route path="/whats-new" component={() => <PublicOrApp component={WhatsNewPage} />} />
       <Route path="/coming-soon" component={() => <PublicOrApp component={ComingSoonPage} />} />
       <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
+      <Route path="/pricing" component={() => <PublicOrApp component={PricingPage} />} />
       <Route
         path="/billing/callback"
         component={() => (

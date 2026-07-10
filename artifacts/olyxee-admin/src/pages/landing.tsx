@@ -539,7 +539,10 @@ const Landing: FC = () => {
             <Link href="/coming-soon" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
               Coming Soon
             </Link>
-            <Link href="/upgrade" className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+            <Link href="/pricing" className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+              Pricing
+            </Link>
+            <Link href="/upgrade" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
               Upgrade Plan
             </Link>
             <Link href="/login" className="ml-1 text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
@@ -1062,6 +1065,11 @@ export const SiteFooter: FC = () => (
               >
                 About Olyxee <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
+            </li>
+            <li>
+              <Link href="/pricing" className="text-neutral-700 hover:text-neutral-950">
+                Pricing
+              </Link>
             </li>
             <li>
               <Link href="/contact" className="text-neutral-700 hover:text-neutral-950">
