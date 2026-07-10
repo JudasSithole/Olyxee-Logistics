@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import { plans, type PlanId } from "@/lib/launch";
+import { plans, type PlanId, LAUNCH_LABEL, TRIAL_LABEL } from "@/lib/launch";
+import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
 
@@ -506,120 +507,116 @@ const NAV_ITEMS = [
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
 ] as const;
 
-// ─── Billing & usage ──────────────────────────────────────────────────────────
-// Shows the current plan, this month's email usage against the included limit,
-// and the overage policy ($20 once you exceed the monthly limit). Billing is
-// handled manually today, so this surface is informational - not a checkout flow.
+// ─── Billing & plan ───────────────────────────────────────────────────────────
+// Shows the business's current plan straight from the shared plan catalog
+// (@workspace/plans): its name, monthly ZAR price, and exactly what it includes.
+// Billing is handled through the Upgrade flow, so this surface is informational
+// and links out to change plans - it is not itself a checkout.
 function BillingSection() {
   const { user } = useAuth();
-  const { data: business, isLoading } = useBusiness(user?.businessId);
+  const { data: business } = useBusiness(user?.businessId);
 
-  const used = business?.email_usage_this_month ?? 0;
-  const limit = business?.monthly_email_limit ?? 500;
   const planId = (business?.plan as PlanId | undefined) ?? "beta";
-  const planName = plans[planId]?.name ?? "Beta";
-  // The $20 charge only kicks in once usage strictly exceeds the limit. Hitting
-  // the limit exactly is a neutral "you're at your cap" state, not an overage.
-  const exceeded = used > limit;
-  const atLimit = used === limit;
-  const near = used >= limit * 0.8 && used < limit;
-  const danger = exceeded || atLimit;
-  const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
-  const remaining = Math.max(0, limit - used);
-  const over = Math.max(0, used - limit);
+  const plan = plans[planId] ?? plans.beta;
+  const isBeta = planId === "beta";
+
+  // Price straight from the catalog so it never drifts from the pricing/upgrade
+  // pages. All paid plans are billed monthly in ZAR.
+  const priceLabel = plan.price === 0 ? "Free" : `R${plan.price}`;
+
+  // What the plan includes. Paid tiers carry an explicit marketing bullet list
+  // in the catalog; beta has none, so fall back to its "no limits" promise.
+  const includes =
+    plan.features && plan.features.length > 0
+      ? plan.features
+      : [
+          "Unlimited orders",
+          "Unlimited customer emails",
+          "Unlimited customers",
+        ];
+
+  const emailsSent = business?.email_usage_this_month ?? 0;
 
   return (
     <SectionShell
       icon={CreditCard}
       tint={TINTS.green}
-      title="Billing & usage"
-      description="Your plan, this month's email usage, and what happens if you go over."
+      title="Billing & plan"
+      description="Your current plan and everything it includes."
+      action={
+        <Button asChild variant="outline" size="sm">
+          <Link href="/upgrade" data-testid="link-view-plans">
+            {isBeta ? "View plans" : "Change plan"}
+          </Link>
+        </Button>
+      }
     >
-      {/* Current plan */}
-      <div className="px-4 py-4 flex items-center justify-between gap-4">
+      {/* Current plan header - name, price and a "Current" badge. */}
+      <div className="px-4 py-4 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{planName} plan</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Includes {limit.toLocaleString()} customer emails every month.
+          <div className="flex items-center gap-2">
+            <p className="text-base font-semibold text-foreground">{plan.name}</p>
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
+              Current
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isBeta
+              ? "Unlimited access with no limits while we're in beta."
+              : "Billed monthly, in South African Rand (ZAR)."}
           </p>
         </div>
-        <span className="flex-shrink-0 inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
-          Current
+        <div className="flex-shrink-0 text-right">
+          <span className="text-2xl font-bold tracking-tight text-foreground">{priceLabel}</span>
+          {plan.price > 0 && (
+            <span className="block text-xs text-muted-foreground">per month</span>
+          )}
+        </div>
+      </div>
+
+      {/* What the plan includes - mirrors the pricing/upgrade feature list. */}
+      <div className="px-4 py-4">
+        <p className="text-sm font-medium text-foreground">What&apos;s included</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {includes.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Usage snapshot - emails are unlimited on every current plan, so this is
+          purely informational rather than a cap. */}
+      <div className="px-4 py-4 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">Customer emails this month</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Included with your plan · resets on the 1st.
+          </p>
+        </div>
+        <span className="flex-shrink-0 font-mono text-sm text-foreground">
+          {emailsSent.toLocaleString()}
         </span>
       </div>
 
-      {/* Email usage meter */}
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-foreground">Emails sent this month</span>
-          <span
-            className={cn(
-              "font-mono",
-              danger ? "text-destructive" : near ? "text-amber-600" : "text-muted-foreground",
-            )}
-          >
-            {used.toLocaleString()} / {limit.toLocaleString()}
-          </span>
-        </div>
-        <div
-          className="mt-2 h-2 w-full bg-muted overflow-hidden rounded-full"
-          role="progressbar"
-          aria-valuenow={used}
-          aria-valuemin={0}
-          aria-valuemax={limit}
-          aria-label="Monthly email usage"
-        >
-          <div
-            className={cn(
-              "h-full transition-all",
-              danger ? "bg-destructive" : near ? "bg-amber-500" : "bg-foreground",
-            )}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {isLoading
-            ? "Loading your usage…"
-            : exceeded
-              ? `You're ${over.toLocaleString()} over your monthly allowance.`
-              : atLimit
-                ? "You've reached your included limit."
-                : `${remaining.toLocaleString()} emails left · resets on the 1st of each month.`}
-        </p>
-      </div>
-
-      {/* Overage policy - the $20 charge once usage exceeds the limit */}
-      <div className="px-4 py-4">
-        <div
-          className={cn(
-            "rounded-[12px] border p-4 flex items-start gap-3",
-            exceeded
-              ? "border-destructive/40 bg-destructive/[0.04]"
-              : "border-amber-300/60 bg-amber-50",
-          )}
-        >
-          <CreditCard
-            className={cn(
-              "h-5 w-5 flex-shrink-0 mt-0.5",
-              exceeded ? "text-destructive" : "text-amber-600",
-            )}
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
+      {/* Launch note - paid plans and the existing-business trial go live at
+          launch. Only relevant while the business is still on beta. */}
+      {isBeta && (
+        <div className="px-4 py-4">
+          <div className="rounded-[12px] border border-primary/25 bg-primary/[0.04] p-4">
             <p className="text-sm font-semibold text-foreground">
-              {exceeded
-                ? "You've gone over - a $20 charge applies"
-                : "If you go over your monthly limit"}
+              Paid plans go live on {LAUNCH_LABEL}
             </p>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Your plan includes {limit.toLocaleString()} emails each month. If you go over that, a
-              one-time <span className="font-semibold text-foreground">$20</span> charge applies to
-              keep sending customer order updates for the rest of the month. Usage resets to zero on
-              the 1st, with no charge as long as you stay within your limit.
+              Nothing changes for you before then. As an existing business, you&apos;ll get{" "}
+              <span className="font-semibold text-foreground">{plans.pro.name}</span> free during{" "}
+              {TRIAL_LABEL}.
             </p>
           </div>
         </div>
-      </div>
+      )}
     </SectionShell>
   );
 }
@@ -1127,48 +1124,21 @@ function EmailCustomizationSection({
         <span className="text-muted-foreground/70">your business</span>
       </div>
 
-      {/* Monthly email usage */}
+      {/* Emails this month - unlimited on every plan, so this is an
+          informational count only (no cap, no upgrade prompt). */}
       {(() => {
         const used = business?.email_usage_this_month ?? 0;
-        const limit = business?.monthly_email_limit ?? 500;
-        const reached = used >= limit;
-        const near = !reached && used >= limit * 0.8;
-        const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
         return (
-          <div className="px-4 py-3 border-t border-border">
-            <div className="flex items-center justify-between text-sm">
+          <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
+            <div className="min-w-0">
               <span className="font-medium text-foreground">Emails this month</span>
-              <span
-                className={cn(
-                  "font-mono",
-                  reached ? "text-destructive" : near ? "text-amber-600" : "text-muted-foreground",
-                )}
-              >
-                {used} / {limit}
-              </span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Unlimited on your plan · resets on the 1st.
+              </p>
             </div>
-            <div className="mt-2 h-1.5 w-full bg-muted overflow-hidden rounded-full">
-              <div
-                className={cn(
-                  "h-full transition-all",
-                  reached ? "bg-destructive" : near ? "bg-amber-500" : "bg-foreground",
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {reached ? (
-              <p className="mt-2 text-xs text-destructive">
-                You've reached your monthly email limit. Customer status emails won't be sent until next month - upgrade to send more.
-              </p>
-            ) : near ? (
-              <p className="mt-2 text-xs text-amber-600">
-                You're close to your monthly email limit. Consider upgrading to avoid interruptions.
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Resets on the 1st of each month.
-              </p>
-            )}
+            <span className="flex-shrink-0 font-mono text-muted-foreground">
+              {used.toLocaleString()}
+            </span>
           </div>
         );
       })()}
