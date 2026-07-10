@@ -33,7 +33,7 @@ const statusWords = [
   "COLLECTED",
 ];
 
-const serif = { fontFamily: '"Lora", ui-serif, Georgia, serif', fontWeight: 500 };
+const serif = { fontFamily: '"Newsreader", ui-serif, Georgia, serif', fontWeight: 500 };
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
 const sans = '"Inter", system-ui, -apple-system, sans-serif';
 
