@@ -7,6 +7,7 @@ import navLogo from "@assets/1_1780016152275.png";
 import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 import heroPhoto from "@assets/image_1780017592401.png";
 import heroCollect from "@assets/image_1783705927988.png";
+import notifyTracking from "@assets/image_1783706089743.png";
 import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
 import scanPhoto from "@assets/image_1779935779272.png";
 import trackPhoto from "@assets/image_1779935881868.png";
@@ -806,12 +807,12 @@ const Landing: FC = () => {
             transition={{ duration: 0.9, ease }}
             className="col-span-12 lg:col-span-7 relative aspect-[4/5] lg:aspect-auto lg:min-h-[640px] rounded-[2rem] overflow-hidden"
           >
-            <img src={dryCleanerPhoto} alt="Dry cleaner handing a finished order to a customer" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={notifyTracking} alt="Customer receiving a tracking-link notification and following her order on her phone" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
-              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">READY · 14:02</p>
+              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">DELIVERED · 14:02</p>
               <p style={serif} className="text-3xl sm:text-4xl tracking-tight leading-tight max-w-md">
-                Every order handed over, right on time.
+                One tap and they know exactly where it is.
               </p>
             </div>
           </motion.div>
