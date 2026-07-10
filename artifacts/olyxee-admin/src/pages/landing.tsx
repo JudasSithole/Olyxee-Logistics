@@ -871,9 +871,6 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === PRICING === */}
-      <PricingSection />
-
       {/* === FOOTER === */}
       <SiteFooter />
     </div>
