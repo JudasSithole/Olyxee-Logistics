@@ -15,7 +15,6 @@ import handoffPhoto from "@assets/image_1779935903875.png";
 import unboxingPhoto from "@assets/image_1779935870578.png";
 import closingPhoto from "@assets/image_1780016743161.png";
 import dryCleanerPhoto from "@assets/image_1781655294134.png";
-import tailorPhoto from "@assets/image_1781655334535.png";
 import bakeryPhoto from "@assets/image_1781655422517.png";
 import warehousePhoto from "@assets/image_1781655528508.png";
 import repairPhoto from "@assets/image_1781655658557.png";
@@ -695,44 +694,6 @@ const Landing: FC = () => {
             className="col-span-12 lg:col-span-8 relative flex items-center justify-center"
           >
             <CreateOrderMock />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* === FOR EVERY BUSINESS === */}
-      <section id="industries" className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease }}
-            className="col-span-12 lg:col-span-7 relative aspect-[16/10] rounded-[2rem] overflow-hidden ring-1 ring-neutral-200 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.3)]"
-          >
-            <img src={tailorPhoto} alt="Tailor working on a custom order at the workbench" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-            <p style={mono} className="absolute top-6 left-6 text-[10px] tracking-[0.3em] text-white/80">ATELIER · ORDER #OLY-1057</p>
-            <p style={serif} className="absolute bottom-6 left-6 right-6 italic text-2xl sm:text-3xl text-white leading-tight">
-              From first measurement to final fitting - tracked.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease }}
-            className="col-span-12 lg:col-span-5 lg:pl-8"
-          >
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">FOR EVERY BUSINESS</p>
-            <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
-              One platform,
-              <br />
-              <em className="italic text-orange-500">every order.</em>
-            </h2>
-            <p className="text-base text-neutral-500 font-light leading-relaxed max-w-sm">
-              Dry cleaners, bakeries, tailors, repair shops, local stores, delivery teams, warehouses - if you take customer orders, Order Loop keeps every one of them on track.
-            </p>
           </motion.div>
         </div>
       </section>
