@@ -24,8 +24,7 @@ import OrdersPage from "@/pages/orders";
 import OrderDetailPage from "@/pages/order-detail";
 import SettingsPage from "@/pages/settings";
 import ProfilePage from "@/pages/profile";
-import WhatsNewPage from "@/pages/whats-new";
-import ComingSoonPage from "@/pages/coming-soon";
+import UpdatesPage from "@/pages/updates";
 import UpgradePage from "@/pages/upgrade";
 import PricingPage from "@/pages/pricing";
 import BillingCallbackPage from "@/pages/billing-callback";
@@ -165,8 +164,9 @@ function AppRoutes() {
           return null;
         }}
       </Route>
-      <Route path="/whats-new" component={() => <PublicOrApp component={WhatsNewPage} />} />
-      <Route path="/coming-soon" component={() => <PublicOrApp component={ComingSoonPage} />} />
+      <Route path="/updates" component={() => <PublicOrApp component={UpdatesPage} />} />
+      <Route path="/whats-new"><Redirect to="/updates" /></Route>
+      <Route path="/coming-soon"><Redirect to="/updates" /></Route>
       <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
       <Route path="/pricing" component={() => <PublicOrApp component={PricingPage} />} />
       <Route
