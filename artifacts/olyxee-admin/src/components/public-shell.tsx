@@ -3,8 +3,6 @@ import { Link, useLocation } from "wouter";
 import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 
 const TABS = [
-  { href: "/whats-new", label: "What's New" },
-  { href: "/coming-soon", label: "Coming Soon" },
   { href: "/pricing", label: "Pricing" },
   { href: "/upgrade", label: "Upgrade Plan" },
 ];
