@@ -883,25 +883,12 @@ const Landing: FC = () => {
 const PLAN_BLURB: Record<PlanId, string> = {
   beta: "Everything unlimited while we're in beta.",
   free: "Get started and keep your first customers in the loop.",
-  pro: "For growing businesses that need more reach and their own branding.",
-  business: "Full power: unlimited volume, API access and an automated call centre.",
+  pro: "For growing businesses that need SMS, branding and evidence.",
+  business: "Full power: high volume, a communication API and an AI call agent.",
 };
 
 function planFeatures(id: PlanId): string[] {
-  const p = plans[id];
-  const out: string[] = [];
-  out.push(p.customerLimit == null ? "Unlimited customers" : `Up to ${p.customerLimit} customers`);
-  out.push(
-    p.emailLimit == null
-      ? "Unlimited email updates"
-      : `${p.emailLimit} email updates / month`,
-  );
-  if (p.smsLimit && p.smsLimit > 0) out.push(`${p.smsLimit} SMS updates / month`);
-  if (p.advancedCustomization) out.push("Advanced customization");
-  if (p.removeOlyxeeBranding) out.push("Remove Olyxee branding");
-  if (p.apiAccess) out.push("Public API access");
-  if (p.automatedCallCentre) out.push("Automated call centre");
-  return out;
+  return plans[id].features ?? [];
 }
 
 const PRICING_TIERS: PlanId[] = ["free", "pro", "business"];

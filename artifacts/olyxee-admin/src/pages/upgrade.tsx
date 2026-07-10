@@ -21,26 +21,7 @@ function formatPrice(price: number): string {
 }
 
 function featureList(id: PlanId): string[] {
-  const p = plans[id];
-  const out: string[] = [];
-  out.push(
-    p.customerLimit == null
-      ? "Unlimited customers"
-      : `Up to ${p.customerLimit} customers`,
-  );
-  out.push(
-    p.emailLimit == null
-      ? "Unlimited email notifications"
-      : `${p.emailLimit} email notifications / month`,
-  );
-  if (p.smsLimit && p.smsLimit > 0) {
-    out.push(`${p.smsLimit} SMS notifications / month`);
-  }
-  if (p.advancedCustomization) out.push("Advanced customization");
-  if (p.removeOlyxeeBranding) out.push("Remove Olyxee branding");
-  if (p.apiAccess) out.push("Public API access");
-  if (p.automatedCallCentre) out.push("Automated call centre");
-  return out;
+  return plans[id].features ?? [];
 }
 
 const TIERS: PlanId[] = ["free", "pro", "business"];
@@ -128,8 +109,8 @@ export default function UpgradePage() {
             <p className="text-sm text-muted-foreground">
               You&apos;re on the <span className="font-medium text-foreground">BETA plan</span>{" "}
               with unlimited access and no limits. Paid plans go live on{" "}
-              {LAUNCH_LABEL}. As an existing business, you&apos;ll get Pro free
-              during {TRIAL_LABEL}.
+              {LAUNCH_LABEL}. As an existing business, you&apos;ll get{" "}
+              {plans.pro.name} free during {TRIAL_LABEL}.
             </p>
           </div>
         </Card>

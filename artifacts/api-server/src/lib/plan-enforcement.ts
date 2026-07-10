@@ -12,7 +12,7 @@ export interface EnforceableBusiness {
   subscriptionStatus?: string | null;
 }
 
-export type LimitKind = "customer" | "email" | "sms";
+export type LimitKind = "order" | "customer" | "email" | "sms";
 
 export interface LimitDecision {
   allowed: boolean;
@@ -36,6 +36,8 @@ export function enforcementActive(business: EnforceableBusiness): boolean {
 function limitFor(planId: PlanId, kind: LimitKind): number | null | undefined {
   const plan = getPlan(planId);
   switch (kind) {
+    case "order":
+      return plan.orderLimit;
     case "customer":
       return plan.customerLimit;
     case "email":

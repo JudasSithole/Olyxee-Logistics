@@ -18,6 +18,7 @@ export interface PlanConfig {
   price: number;
   active?: boolean;
   enforceLimits?: boolean;
+  orderLimit?: number | null;
   customerLimit?: number | null;
   emailLimit?: number | null;
   smsLimit?: number | null;
@@ -26,6 +27,9 @@ export interface PlanConfig {
   apiAccess?: boolean;
   automatedCallCentre?: boolean;
   availableFrom?: string;
+  // Marketing bullet list shown on the pricing/upgrade surfaces. Source of truth
+  // for what each tier advertises so the copy never drifts between pages.
+  features?: string[];
 }
 
 export const plans: Record<PlanId, PlanConfig> = {
@@ -39,29 +43,44 @@ export const plans: Record<PlanId, PlanConfig> = {
   free: {
     name: "Free",
     price: 0,
-    customerLimit: 30,
-    emailLimit: 100,
+    orderLimit: 50,
+    emailLimit: null,
     smsLimit: 0,
     advancedCustomization: false,
     removeOlyxeeBranding: false,
     availableFrom: "2026-08-01",
+    features: [
+      "Up to 50 orders per month",
+      "No-app customer tracking",
+      "Email updates",
+      "Basic branding",
+      "Basic customer self-service",
+    ],
   },
 
   pro: {
-    name: "Pro",
-    price: 59,
-    customerLimit: null,
-    emailLimit: 500,
+    name: "Growth",
+    price: 99,
+    orderLimit: 300,
+    emailLimit: null,
     smsLimit: 100,
     advancedCustomization: true,
     removeOlyxeeBranding: true,
     availableFrom: "2026-08-01",
+    features: [
+      "Up to 300 orders per month",
+      "SMS and email communication",
+      "Fully branded tracking experience",
+      "Customer self-service",
+      "Order and delivery evidence",
+      "SMS usage billed separately or capped",
+    ],
   },
 
   business: {
-    name: "Business",
-    price: 299,
-    customerLimit: null,
+    name: "Scale",
+    price: 499,
+    orderLimit: 1000,
     emailLimit: null,
     smsLimit: 100,
     advancedCustomization: true,
@@ -69,6 +88,14 @@ export const plans: Record<PlanId, PlanConfig> = {
     apiAccess: true,
     automatedCallCentre: true,
     availableFrom: "2026-08-01",
+    features: [
+      "Up to 1,000 orders per month",
+      "Order Communication API",
+      "Custom integrations",
+      "Orgni-powered AI Call Agent",
+      "Limited AI call minutes included",
+      "Additional calls and usage billed separately",
+    ],
   },
 } satisfies Record<PlanId, PlanConfig>;
 
