@@ -550,7 +550,7 @@ const Landing: FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-12 gap-y-16 gap-x-8 items-start">
             {/* Headline block */}
-            <div className="col-span-12 lg:col-span-7">
+            <div className="col-span-12 lg:col-span-6">
               <motion.h1
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -612,7 +612,7 @@ const Landing: FC = () => {
             </div>
 
             {/* Hero image */}
-            <div className="col-span-12 lg:col-span-5">
+            <div className="col-span-12 lg:col-span-6">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
