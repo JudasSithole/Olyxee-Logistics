@@ -807,15 +807,59 @@ const Landing: FC = () => {
             transition={{ duration: 0.9, ease }}
             className="col-span-12 lg:col-span-7 relative aspect-[4/5] lg:aspect-auto lg:min-h-[640px] rounded-[2rem] overflow-hidden"
           >
-            <img src={notifyTracking} alt="Customer receiving a tracking-link notification and following her order on her phone" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={dryCleanerPhoto} alt="Dry cleaner handing a finished order to a customer" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
-              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">DELIVERED · 14:02</p>
+              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-3">READY · 14:02</p>
               <p style={serif} className="text-3xl sm:text-4xl tracking-tight leading-tight max-w-md">
-                One tap and they know exactly where it is.
+                Every order handed over, right on time.
               </p>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* === TRACKING SHOWCASE === */}
+      <section className="px-4 sm:px-8 py-24 sm:py-32 bg-neutral-50 border-y border-neutral-200 overflow-hidden">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7, ease }}
+            style={mono}
+            className="text-[11px] tracking-[0.3em] text-orange-500 mb-5"
+          >
+            TRACK ANYTIME
+          </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease }}
+            style={serif}
+            className="text-4xl sm:text-6xl tracking-tight leading-[0.95] text-neutral-900 mb-6"
+          >
+            A tracking link in every pocket.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, delay: 0.1, ease }}
+            className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-lg mx-auto mb-14"
+          >
+            Customers get a branded SMS with a live tracking link — one tap and they see exactly where their order is. No app, no account.
+          </motion.p>
+          <motion.img
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, delay: 0.15, ease }}
+            src={notifyTracking}
+            alt="Customer receiving a tracking-link SMS and following her order on her phone"
+            className="w-full h-auto max-w-4xl mx-auto"
+          />
         </div>
       </section>
 
