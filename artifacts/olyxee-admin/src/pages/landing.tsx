@@ -6,6 +6,7 @@ import defaultIcon from "@assets/Courier_Loop_Orange_Icon_1779935120486.png";
 import navLogo from "@assets/1_1780016152275.png";
 import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 import heroPhoto from "@assets/image_1780017592401.png";
+import heroCollect from "@assets/image_1783705927988.png";
 import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
 import scanPhoto from "@assets/image_1779935779272.png";
 import trackPhoto from "@assets/image_1779935881868.png";
@@ -613,7 +614,7 @@ const Landing: FC = () => {
               </motion.div>
             </div>
 
-            {/* Order ticket rail */}
+            {/* Hero image */}
             <div className="col-span-12 lg:col-span-5">
               <motion.div
                 initial={{ opacity: 0 }}
@@ -625,113 +626,18 @@ const Landing: FC = () => {
                 <span className="h-px flex-1 bg-neutral-200" />
               </motion.div>
 
-              <div className="relative space-y-7 sm:px-2">
-                {/* the spike the tickets hang from */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 bottom-14 w-[3px] rounded-full bg-gradient-to-b from-neutral-500 via-neutral-300 to-transparent"
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.35, ease }}
+                className="relative"
+              >
+                <img
+                  src={heroCollect}
+                  alt="Customer collecting an order in store with an order-ready email notification"
+                  className="w-full h-auto rounded-2xl"
                 />
-                {[
-                  { ref: "OLY-1042", time: "14:42", name: "Sarah Klein", detail: "2x Wool coat · express", stamp: "READY", tone: "ready", rot: "-1.4deg", barcode: true },
-                  { ref: "OLY-1041", time: "14:30", name: "Marcus Tan", detail: "1x Birthday cake · large", stamp: "PREPARING", tone: "prep", rot: "1.1deg", barcode: false },
-                  { ref: "OLY-1040", time: "13:58", name: "Priya Raman", detail: "3x Shirt alteration · slim", stamp: "COLLECTED", tone: "done", rot: "-0.6deg", barcode: false },
-                ].map((t, i) => {
-                  const stampColor =
-                    t.tone === "ready"
-                      ? "border-orange-500 text-orange-500"
-                      : t.tone === "done"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-neutral-400 text-neutral-500";
-                  // Resting tilt + a pendulum swing that overshoots and settles,
-                  // as if the ticket was just dropped onto the spike and is
-                  // swinging from its punch-hole (transform origin = top center).
-                  const rest = parseFloat(t.rot);
-                  const swingDelay = 0.4 + i * 0.12;
-                  return (
-                    <motion.div
-                      key={t.ref}
-                      initial={{ opacity: 0, y: -30, rotate: rest - 11 }}
-                      animate={{
-                        opacity: t.tone === "done" ? 0.82 : 1,
-                        y: 0,
-                        rotate: [rest - 11, rest + 6, rest - 4, rest + 2.5, rest - 1.5, rest],
-                      }}
-                      whileHover={{ rotate: 0, y: -5 }}
-                      transition={{
-                        opacity: { duration: 0.5, delay: swingDelay, ease },
-                        y: { type: "spring", stiffness: 130, damping: 9, delay: swingDelay },
-                        rotate: {
-                          duration: 1.7,
-                          delay: swingDelay,
-                          ease: "easeOut",
-                          times: [0, 0.24, 0.45, 0.64, 0.82, 1],
-                        },
-                      }}
-                      style={{ transformOrigin: "top center" }}
-                      className="group relative bg-[#fdfcf7] border border-neutral-900/90 px-4 pt-6 pb-4 shadow-[0_12px_26px_-14px_rgba(23,23,23,0.5),4px_4px_0_0_rgba(23,23,23,0.06)]"
-                    >
-                      {/* lined-paper grain */}
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 opacity-[0.05]"
-                        style={{
-                          background:
-                            "repeating-linear-gradient(0deg, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 1px, transparent 1px, transparent 6px)",
-                        }}
-                      />
-                      {/* spindle punch hole */}
-                      <span
-                        aria-hidden
-                        className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-neutral-100 ring-1 ring-inset ring-neutral-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]"
-                      />
-
-                      {/* inked rubber stamp */}
-                      <span
-                        style={mono}
-                        className={`absolute right-2.5 top-2 rotate-[7deg] bg-[#fdfcf7] border-2 ${stampColor} rounded-[3px] px-2 py-0.5 text-[9px] font-bold tracking-[0.22em] opacity-90 mix-blend-multiply transition-transform duration-300 group-hover:rotate-[2deg]`}
-                      >
-                        {t.stamp}
-                      </span>
-
-                      {/* receipt caption + tear-off perforation */}
-                      <div style={mono} className="relative text-center text-[7px] tracking-[0.45em] text-neutral-400">
-                        OLYXEE · ORDER TICKET
-                      </div>
-                      <div aria-hidden className="relative -mx-4 mt-2 border-t border-dashed border-neutral-300" />
-
-                      {/* header */}
-                      <div className="relative flex items-center justify-between pt-2.5">
-                        <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-900">#{t.ref}</span>
-                        <span style={mono} className="text-[10px] tracking-[0.18em] text-neutral-400">{t.time}</span>
-                      </div>
-
-                      {/* body */}
-                      <div style={serif} className="relative mt-3 text-xl text-neutral-900 leading-none">{t.name}</div>
-                      <div style={mono} className="relative mt-1.5 text-[11px] text-neutral-500">{t.detail}</div>
-
-                      {/* barcode (featured ticket only) */}
-                      {t.barcode && (
-                        <div className="relative mt-3">
-                          <div aria-hidden className="flex items-end gap-[2px] h-7">
-                            {[3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 2, 1, 3, 1].map((w, bi) => (
-                              <span key={bi} className="bg-neutral-900 h-full" style={{ width: `${w}px` }} />
-                            ))}
-                          </div>
-                          <div style={mono} className="mt-1 text-center text-[8px] tracking-[0.4em] text-neutral-400">
-                            {t.ref.replace("-", "")} · 0042
-                          </div>
-                        </div>
-                      )}
-
-                      {/* bottom perforation + track stub */}
-                      <div aria-hidden className="relative -mx-4 mt-4 border-t border-dashed border-neutral-300" />
-                      <div style={mono} className="relative mt-2 text-[8px] tracking-[0.22em] text-neutral-400">
-                        TRACK · olyxee.com/t/{t.ref.toLowerCase()}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
