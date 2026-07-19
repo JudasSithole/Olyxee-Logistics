@@ -2,15 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Phone, PhoneOff, Loader2, AlertCircle, CheckCircle2,
-  ExternalLink, MessageSquare,
+  ExternalLink, MessageSquare, ArrowRightCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import { plans, isFeatureEnabled } from "@/lib/launch";
 import { apiFetch } from "@/lib/api";
+import { useState } from "react";
 
 const TINTS = {
   blue: "#0a84ff",
@@ -65,6 +68,7 @@ export default function CallCentreSettingsPage() {
         retellAgentId: string | null;
         retellPhoneNumber: string | null;
         retellKnowledgeBaseId: string | null;
+        callCentreForwardingNumber: string | null;
         plan: string;
         canEnable: boolean;
       }>("/api/call-centre/status");
@@ -73,15 +77,18 @@ export default function CallCentreSettingsPage() {
     enabled: !!user?.businessId,
   });
 
+  const [forwardingNumber, setForwardingNumber] = useState("");
+
   const enableMutation = useMutation({
-    mutationFn: async (input?: { countryCode?: string; areaCode?: string }) => {
-      const res = await apiFetch<{ status: string; retellAgentId: string; retellPhoneNumber: string | null; retellKnowledgeBaseId: string | null }>(
+    mutationFn: async (input?: { countryCode?: string; areaCode?: string; forwardingNumber?: string }) => {
+      const res = await apiFetch<{ status: string; retellAgentId: string; retellPhoneNumber: string | null; retellKnowledgeBaseId: string | null; callCentreForwardingNumber: string | null }>(
         "/api/call-centre/enable",
         { method: "POST", body: input ?? {} },
       );
       return res;
     },
     onSuccess: () => {
+      setForwardingNumber("");
       void refetch();
       toast.success("Call centre enabled");
     },
@@ -160,7 +167,7 @@ export default function CallCentreSettingsPage() {
           ) : (
             <Button
               size="sm"
-              onClick={() => enableMutation.mutate({})}
+              onClick={() => enableMutation.mutate({ forwardingNumber: forwardingNumber || undefined })}
               disabled={!canEnable || enableMutation.isPending}
               className="gap-1.5"
             >
@@ -177,6 +184,23 @@ export default function CallCentreSettingsPage() {
           </div>
         )}
 
+        {!enabled && canEnable && (
+          <div className="space-y-3 px-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="forwarding-number">Your existing phone number (optional)</Label>
+              <Input
+                id="forwarding-number"
+                placeholder="e.g. +27 11 123 4567"
+                value={forwardingNumber}
+                onChange={(e) => setForwardingNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the number customers already call. After enabling, we'll give you a Retell number to forward calls to.
+              </p>
+            </div>
+          </div>
+        )}
+
         {enabled && (
           <div className="space-y-3 px-1">
             <div className="flex items-center justify-between py-2 border-b">
@@ -186,9 +210,21 @@ export default function CallCentreSettingsPage() {
               </span>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm text-muted-foreground">Phone number</span>
+              <span className="text-sm text-muted-foreground">Your phone number</span>
+              <span className="text-sm font-mono">{status?.callCentreForwardingNumber ?? "Not set"}</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm text-muted-foreground">AI agent number</span>
               <span className="text-sm font-mono">{status?.retellPhoneNumber ?? "—"}</span>
             </div>
+            {status?.retellPhoneNumber && status?.callCentreForwardingNumber && (
+              <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+                <ArrowRightCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  Forward calls from <span className="font-mono font-semibold">{status.callCentreForwardingNumber}</span> to <span className="font-mono font-semibold">{status.retellPhoneNumber}</span> in your phone/carrier settings.
+                </p>
+              </div>
+            )}
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-sm text-muted-foreground">Agent ID</span>
               <span className="text-sm font-mono">{status?.retellAgentId ?? "—"}</span>

@@ -92,6 +92,7 @@ router.get("/call-centre/status", requireAuth, async (req: Request, res: Respons
     retellAgentId: business.retellAgentId ?? null,
     retellPhoneNumber: business.retellPhoneNumber ?? null,
     retellKnowledgeBaseId: business.retellKnowledgeBaseId ?? null,
+    callCentreForwardingNumber: business.callCentreForwardingNumber ?? null,
     plan: business.plan,
     canEnable: isValidPlanId(business.plan) && canEnableCallCentre(business.plan),
   });
@@ -100,6 +101,7 @@ router.get("/call-centre/status", requireAuth, async (req: Request, res: Respons
 const EnableBody = z.object({
   countryCode: z.string().default("US"),
   areaCode: z.string().optional(),
+  forwardingNumber: z.string().optional(),
 });
 
 router.post("/call-centre/enable", requireAuth, async (req: Request, res: Response) => {
@@ -131,6 +133,7 @@ router.post("/call-centre/enable", requireAuth, async (req: Request, res: Respon
       retellAgentId: business.retellAgentId,
       retellPhoneNumber: business.retellPhoneNumber ?? null,
       retellKnowledgeBaseId: business.retellKnowledgeBaseId ?? null,
+      callCentreForwardingNumber: business.callCentreForwardingNumber ?? null,
     });
     return;
   }
@@ -138,6 +141,12 @@ router.post("/call-centre/enable", requireAuth, async (req: Request, res: Respon
   let agentId = business.retellAgentId;
   let phoneNumberId = business.retellPhoneNumber ? "existing" : null;
   let kbId = business.retellKnowledgeBaseId;
+
+  // Save forwarding number if provided.
+  const updatePayload: Record<string, unknown> = {};
+  if (parse.data.forwardingNumber) {
+    updatePayload.callCentreForwardingNumber = parse.data.forwardingNumber;
+  }
 
   try {
     // 1. Create Retell agent if missing.
@@ -233,6 +242,7 @@ router.post("/call-centre/enable", requireAuth, async (req: Request, res: Respon
       retellAgentId: agentId,
       retellPhoneNumber: business.retellPhoneNumber ?? (await db.query.businessesTable.findFirst({ where: eq(businessesTable.id, businessId) }))?.retellPhoneNumber ?? null,
       retellKnowledgeBaseId: kbId,
+      callCentreForwardingNumber: parse.data.forwardingNumber ?? business.callCentreForwardingNumber ?? null,
     });
   } catch (err) {
     logger.error({ err, businessId }, "Failed to enable call centre");

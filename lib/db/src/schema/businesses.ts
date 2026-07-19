@@ -77,6 +77,7 @@ export const businessesTable = pgTable("businesses", {
   retellAgentId: text("retell_agent_id"),
   retellPhoneNumber: text("retell_phone_number"),
   retellKnowledgeBaseId: text("retell_knowledge_base_id"),
+  callCentreForwardingNumber: text("call_centre_forwarding_number"),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

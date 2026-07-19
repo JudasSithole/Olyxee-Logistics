@@ -1316,6 +1316,9 @@ components:
         retellKnowledgeBaseId:
           type: string
           nullable: true
+        callCentreForwardingNumber:
+          type: string
+          nullable: true
         plan:
           type: string
         canEnable:
@@ -1329,6 +1332,8 @@ components:
           default: US
         areaCode:
           type: string
+        forwardingNumber:
+          type: string
 
     EnableCallCentreResult:
       type: object
@@ -1341,6 +1346,9 @@ components:
           type: string
           nullable: true
         retellKnowledgeBaseId:
+          type: string
+          nullable: true
+        callCentreForwardingNumber:
           type: string
           nullable: true
 
