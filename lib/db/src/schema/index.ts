@@ -14,3 +14,4 @@ export * from "./notification_deliveries";
 export * from "./billing_events";
 export * from "./api_keys";
 export * from "./call_records";
+export * from "./call_usage";

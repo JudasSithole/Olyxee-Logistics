@@ -28,6 +28,9 @@ import UpdatesPage from "@/pages/updates";
 import UpgradePage from "@/pages/upgrade";
 import PricingPage from "@/pages/pricing";
 import BillingCallbackPage from "@/pages/billing-callback";
+import CallCentreSettingsPage from "@/pages/call-centre-settings";
+import CallsPage from "@/pages/calls";
+import CallDetailPage from "@/pages/call-detail";
 import NotFound from "@/pages/not-found";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -176,6 +179,9 @@ function AppRoutes() {
         )}
       />
       <Route path="/settings" component={() => <Protected component={SettingsPage} />} />
+      <Route path="/call-centre" component={() => <Protected component={CallCentreSettingsPage} />} />
+      <Route path="/calls" component={() => <Protected component={CallsPage} />} />
+      <Route path="/calls/:id" component={() => <Protected component={CallDetailPage} />} />
       <Route path="/profile" component={() => <Protected component={ProfilePage} />} />
       <Route component={NotFound} />
     </Switch>

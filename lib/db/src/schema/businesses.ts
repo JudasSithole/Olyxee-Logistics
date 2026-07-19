@@ -62,6 +62,7 @@ export const businessesTable = pgTable("businesses", {
   // ─── Monthly usage counters (enforcement disabled during BETA) ────────────
   emailNotificationsUsed: integer("email_notifications_used").notNull().default(0),
   smsNotificationsUsed: integer("sms_notifications_used").notNull().default(0),
+  aiCallMinutesUsed: integer("ai_call_minutes_used").notNull().default(0),
   usagePeriodStart: timestamp("usage_period_start"),
   usagePeriodEnd: timestamp("usage_period_end"),
 

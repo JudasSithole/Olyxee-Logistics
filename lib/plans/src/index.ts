@@ -22,6 +22,7 @@ export interface PlanConfig {
   customerLimit?: number | null;
   emailLimit?: number | null;
   smsLimit?: number | null;
+  callMinutesLimit?: number | null;
   advancedCustomization?: boolean;
   removeOlyxeeBranding?: boolean;
   apiAccess?: boolean;
@@ -83,6 +84,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     orderLimit: 1000,
     emailLimit: null,
     smsLimit: 100,
+    callMinutesLimit: 100,
     advancedCustomization: true,
     removeOlyxeeBranding: true,
     apiAccess: true,
@@ -136,7 +138,7 @@ export const featureFlags = {
 export type FeatureFlag = keyof typeof featureFlags;
 
 export function isFeatureEnabled(flag: FeatureFlag): boolean {
-  return featureFlags[flag] === true;
+  return Boolean(featureFlags[flag]);
 }
 
 // ─── Launch + trial dates ────────────────────────────────────────────────────

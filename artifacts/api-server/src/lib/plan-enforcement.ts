@@ -12,7 +12,7 @@ export interface EnforceableBusiness {
   subscriptionStatus?: string | null;
 }
 
-export type LimitKind = "order" | "customer" | "email" | "sms";
+export type LimitKind = "order" | "customer" | "email" | "sms" | "call_minutes";
 
 export interface LimitDecision {
   allowed: boolean;
@@ -44,6 +44,8 @@ function limitFor(planId: PlanId, kind: LimitKind): number | null | undefined {
       return plan.emailLimit;
     case "sms":
       return plan.smsLimit;
+    case "call_minutes":
+      return plan.callMinutesLimit ?? null;
   }
 }
 

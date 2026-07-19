@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import {
   Package, Truck, CheckCircle, Mail, AlertTriangle,
   ChevronLeft, ChevronRight, CalendarDays, ArrowRight,
+  Phone, PhoneIncoming,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -368,6 +369,21 @@ export default function DashboardPage() {
             label="Emails today"
             value={summary.emailsSentToday}
             icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+          />
+          {summary.escalatedCallsToday > 0 && (
+            <KpiCard
+              label="Escalations"
+              value={summary.escalatedCallsToday}
+              valueClassName="text-red-600"
+              icon={<PhoneIncoming className="h-4 w-4 text-red-500" />}
+              href="/calls"
+            />
+          )}
+          <KpiCard
+            label="Calls today"
+            value={summary.callsToday}
+            icon={<Phone className="h-4 w-4 text-muted-foreground" />}
+            href="/calls"
           />
         </div>
       ) : null}

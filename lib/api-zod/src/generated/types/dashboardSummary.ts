@@ -13,4 +13,6 @@ export interface DashboardSummary {
   deliveredOrders: number;
   cancelledOrders: number;
   emailsSentToday: number;
+  escalatedCallsToday: number;
+  callsToday: number;
 }

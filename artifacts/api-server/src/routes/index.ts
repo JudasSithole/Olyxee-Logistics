@@ -9,6 +9,7 @@ import auditRouter from "./audit";
 import workflowTemplatesRouter from "./workflow-templates";
 import billingRouter from "./billing";
 import v1Router from "./v1";
+import callCentreRouter from "./call-centre";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(workflowTemplatesRouter);
 // billing is enabled; the public API responds 503 unless featureFlags.publicApi.
 router.use(billingRouter);
 router.use(v1Router);
+router.use(callCentreRouter);
 
 export default router;

@@ -50,11 +50,15 @@ export interface Database {
           current_period_end: string | null;
           email_notifications_used: number;
           sms_notifications_used: number;
+          ai_call_minutes_used: number;
           business_logo_url: string | null;
           email_sender_name: string | null;
           primary_brand_colour: string | null;
           remove_olyxee_branding: boolean;
           call_centre_enabled: boolean;
+          retell_agent_id: string | null;
+          retell_phone_number: string | null;
+          retell_knowledge_base_id: string | null;
           monthly_email_limit: number;
           email_usage_this_month: number;
           created_at: string;
@@ -425,6 +429,48 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["audit_logs"]["Insert"]>;
       };
+      call_records: {
+        Row: {
+          id: string;
+          business_id: string;
+          retell_call_id: string | null;
+          from_number: string | null;
+          order_id: string | null;
+          status: "received" | "in_progress" | "completed" | "escalated" | "failed";
+          transcript: string | null;
+          summary: string | null;
+          escalated: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          retell_call_id?: string | null;
+          from_number?: string | null;
+          order_id?: string | null;
+          status?: "received" | "in_progress" | "completed" | "escalated" | "failed";
+          transcript?: string | null;
+          summary?: string | null;
+          escalated?: boolean;
+          created_at?: string;
+        };
+      };
+      call_usage: {
+        Row: {
+          id: string;
+          business_id: string;
+          call_id: string;
+          minutes: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          call_id: string;
+          minutes?: number;
+          created_at?: string;
+        };
+      };
     };
 
     Views: Record<string, never>;
@@ -467,6 +513,8 @@ export type NotificationLog = Database["public"]["Tables"]["notification_logs"][
 export type Reminder = Database["public"]["Tables"]["reminders"]["Row"];
 export type TeamInvite = Database["public"]["Tables"]["team_invites"]["Row"];
 export type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"];
+export type CallRecord = Database["public"]["Tables"]["call_records"]["Row"];
+export type CallUsage = Database["public"]["Tables"]["call_usage"]["Row"];
 
 // Convenience insert types
 export type InsertBusiness = Database["public"]["Tables"]["businesses"]["Insert"];
@@ -477,3 +525,5 @@ export type InsertWorkflowTemplate = Database["public"]["Tables"]["workflow_temp
 export type InsertWorkflowStep = Database["public"]["Tables"]["workflow_steps"]["Insert"];
 export type InsertNotificationTemplate = Database["public"]["Tables"]["notification_templates"]["Insert"];
 export type InsertReminder = Database["public"]["Tables"]["reminders"]["Insert"];
+export type InsertCallRecord = Database["public"]["Tables"]["call_records"]["Insert"];
+export type InsertCallUsage = Database["public"]["Tables"]["call_usage"]["Insert"];

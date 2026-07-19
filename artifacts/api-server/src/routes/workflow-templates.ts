@@ -148,7 +148,7 @@ router.post("/workflow-templates", requireAuth, async (req, res) => {
 router.get("/workflow-templates/:id", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
-    const result = await getTemplateWithSteps(businessId, req.params.id);
+    const result = await getTemplateWithSteps(businessId, String(req.params.id));
     if (!result) {
       res.status(404).json({ error: "Template not found" });
       return;
@@ -165,6 +165,7 @@ router.get("/workflow-templates/:id", requireAuth, async (req, res) => {
 router.put("/workflow-templates/:id", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
+    const id = String(req.params.id);
     const parsed = UpdateTemplateBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid request body" });
@@ -173,7 +174,7 @@ router.put("/workflow-templates/:id", requireAuth, async (req, res) => {
 
     const existing = await db.query.workflowTemplatesTable.findFirst({
       where: and(
-        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.id, id),
         eq(workflowTemplatesTable.businessId, businessId),
       ),
     });
@@ -190,11 +191,11 @@ router.put("/workflow-templates/:id", requireAuth, async (req, res) => {
     if (Object.keys(updates).length > 0) {
       await db
         .update(workflowTemplatesTable)
-        .set(updates)
-        .where(eq(workflowTemplatesTable.id, req.params.id));
+        .set(updates as any)
+        .where(eq(workflowTemplatesTable.id, id));
     }
 
-    const result = await getTemplateWithSteps(businessId, req.params.id);
+    const result = await getTemplateWithSteps(businessId, id);
     res.json(result);
   } catch (err) {
     console.error(err);
@@ -207,9 +208,10 @@ router.put("/workflow-templates/:id", requireAuth, async (req, res) => {
 router.delete("/workflow-templates/:id", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
+    const id = String(req.params.id);
     const existing = await db.query.workflowTemplatesTable.findFirst({
       where: and(
-        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.id, id),
         eq(workflowTemplatesTable.businessId, businessId),
       ),
     });
@@ -218,7 +220,7 @@ router.delete("/workflow-templates/:id", requireAuth, async (req, res) => {
       return;
     }
     // Steps cascade-deleted via FK
-    await db.delete(workflowTemplatesTable).where(eq(workflowTemplatesTable.id, req.params.id));
+    await db.delete(workflowTemplatesTable).where(eq(workflowTemplatesTable.id, id));
     res.status(204).send();
   } catch (err) {
     console.error(err);
@@ -274,9 +276,10 @@ router.post("/workflow-templates/clone", requireAuth, async (req, res) => {
 router.put("/workflow-templates/:id/steps", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
+    const id = String(req.params.id);
     const existing = await db.query.workflowTemplatesTable.findFirst({
       where: and(
-        eq(workflowTemplatesTable.id, req.params.id),
+        eq(workflowTemplatesTable.id, id),
         eq(workflowTemplatesTable.businessId, businessId),
       ),
     });
@@ -292,11 +295,11 @@ router.put("/workflow-templates/:id/steps", requireAuth, async (req, res) => {
     }
 
     // Atomic replace - delete all then insert new set
-    await db.delete(workflowStepsTable).where(eq(workflowStepsTable.templateId, req.params.id));
+    await db.delete(workflowStepsTable).where(eq(workflowStepsTable.templateId, id));
     await db.insert(workflowStepsTable).values(
       parsed.data.steps.map((s) => ({
         id: generateId(),
-        templateId: req.params.id,
+        templateId: id,
         label: s.label,
         description: s.description ?? null,
         position: s.position,
@@ -305,7 +308,7 @@ router.put("/workflow-templates/:id/steps", requireAuth, async (req, res) => {
       })),
     );
 
-    const result = await getTemplateWithSteps(businessId, req.params.id);
+    const result = await getTemplateWithSteps(businessId, id);
     res.json(result);
   } catch (err) {
     console.error(err);

@@ -34,7 +34,7 @@ export const VALID_TRANSITIONS: Readonly<
   Record<OrderFsmStatus, readonly OrderFsmStatus[]>
 > = Object.fromEntries(
   ORDER_STATUSES.map((s) => [s, nextStatuses(s)]),
-) as Record<OrderFsmStatus, readonly OrderFsmStatus[]>;
+) as unknown as Record<OrderFsmStatus, readonly OrderFsmStatus[]>;
 
 export function canTransition(from: OrderFsmStatus, to: OrderFsmStatus): boolean {
   return VALID_TRANSITIONS[from].includes(to);

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw,
-  Code2, Copy, Download, Globe, Tag, CreditCard,
+  Code2, Copy, Download, Globe, Tag, CreditCard, Phone,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -17,10 +17,11 @@ import {
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import { plans, type PlanId, LAUNCH_LABEL, TRIAL_LABEL } from "@/lib/launch";
+import { plans, isFeatureEnabled, type PlanId, LAUNCH_LABEL, TRIAL_LABEL } from "@/lib/launch";
 import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
@@ -505,6 +506,7 @@ const NAV_ITEMS = [
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
+  { id: "call-centre", label: "Call Centre", icon: Phone, tint: TINTS.teal },
 ] as const;
 
 // ─── Billing & plan ───────────────────────────────────────────────────────────
@@ -976,6 +978,13 @@ export default function SettingsPage() {
         <TabsContent value="billing" className="mt-6 focus-visible:outline-none">
           <BillingSection />
         </TabsContent>
+
+        {/* ─── Call Centre ─────────────────────────────────────────── */}
+        <TabsContent value="call-centre" className="mt-6 focus-visible:outline-none">
+          <div className="max-w-3xl">
+            <CallCentreSettingsEmbed />
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ─── Sticky save bar ───────────────────────────────────────────────
@@ -1359,6 +1368,7 @@ function TrackingCustomizationSection() {
 
   const [form, setForm] = useState({
     trackingIdPrefix: "",
+    allowedOrigins: "",
   });
   const [loaded, setLoaded] = useState(false);
   const prefixValid =
@@ -1368,6 +1378,7 @@ function TrackingCustomizationSection() {
     if (business && !loaded) {
       setForm({
         trackingIdPrefix: business.tracking_id_prefix ?? "",
+        allowedOrigins: "",
       });
       setLoaded(true);
     }
@@ -1410,6 +1421,7 @@ function TrackingCustomizationSection() {
   const handleReset = () => {
     setForm({
       trackingIdPrefix: business?.tracking_id_prefix ?? "",
+      allowedOrigins: "",
     });
   };
 
@@ -1873,7 +1885,7 @@ function IntegrationsSection() {
       return `https://${domain.replace(/\/+$/, "")}`;
     }
     return "";
-  }, [business?.websiteUrl, business?.supportEmail]);
+  }, [business?.website_url, business?.support_email]);
 
   useEffect(() => {
     if (baseTouched) return;
@@ -2071,5 +2083,64 @@ function ThemeOption({
         )}
       </div>
     </button>
+  );
+}
+
+function CallCentreSettingsEmbed() {
+  const { user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
+  const featureOn = isFeatureEnabled("automatedCallCentre");
+  const planId = (business?.plan as "beta" | "free" | "pro" | "business" | undefined) ?? "beta";
+  const plan = plans[planId] ?? plans.beta;
+  const canEnable = plan.automatedCallCentre === true;
+
+  if (!featureOn) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          The automated call centre is not yet available. It will launch on 1 August 2026.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base font-semibold">Connect Call Centre</CardTitle>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          AI-powered inbound call handling by Retell.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between py-2 border-b">
+          <span className="text-sm text-muted-foreground">Status</span>
+          <span className={`text-sm font-medium ${business?.call_centre_enabled ? "text-green-700" : "text-muted-foreground"}`}>
+            {business?.call_centre_enabled ? "Active" : "Inactive"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between py-2 border-b">
+          <span className="text-sm text-muted-foreground">Phone number</span>
+          <span className="text-sm font-mono">{business?.retell_phone_number ?? "—"}</span>
+        </div>
+        {!business?.call_centre_enabled && (
+          <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <p>
+              {canEnable
+                ? "Enable call centre to start receiving AI-handled inbound calls."
+                : `Call centre requires a ${plans.business.name} plan (R${plan.price}/mo).`}
+            </p>
+          </div>
+        )}
+        <div className="pt-2">
+          <Button asChild size="sm" className="gap-1.5">
+            <Link href="/call-centre">
+              {business?.call_centre_enabled ? "Manage Call Centre" : "Set up Call Centre"}
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -185,6 +185,7 @@ interface ApiBusiness {
   currentPeriodEnd?: string | null;
   emailNotificationsUsed?: number;
   smsNotificationsUsed?: number;
+  aiCallMinutesUsed?: number;
   businessLogoUrl?: string | null;
   emailSenderName?: string | null;
   primaryBrandColour?: string | null;
@@ -224,11 +225,15 @@ function mapBusiness(b: ApiBusiness): Business {
     current_period_end: b.currentPeriodEnd ?? null,
     email_notifications_used: b.emailNotificationsUsed ?? 0,
     sms_notifications_used: b.smsNotificationsUsed ?? 0,
+    ai_call_minutes_used: b.aiCallMinutesUsed ?? 0,
     business_logo_url: b.businessLogoUrl ?? null,
     email_sender_name: b.emailSenderName ?? null,
     primary_brand_colour: b.primaryBrandColour ?? null,
     remove_olyxee_branding: b.removeOlyxeeBranding ?? false,
     call_centre_enabled: b.callCentreEnabled ?? false,
+    retell_agent_id: null,
+    retell_phone_number: null,
+    retell_knowledge_base_id: null,
     monthly_email_limit: b.monthlyEmailLimit ?? 500,
     email_usage_this_month: b.emailUsageThisMonth ?? 0,
     created_at: b.createdAt,
@@ -618,6 +623,8 @@ export function useDashboardStats(businessId: string | null | undefined) {
           deliveredOrders: number;
           cancelledOrders: number;
           emailsSentToday: number;
+          escalatedCallsToday: number;
+          callsToday: number;
         }>("/api/dashboard/summary"),
         apiFetch<{ status: string; count: number }[]>("/api/dashboard/status-breakdown"),
         apiFetch<{ total: number }>("/api/customers", { query: { limit: 1 } }),
@@ -637,6 +644,8 @@ export function useDashboardStats(businessId: string | null | undefined) {
         delayedOrders: summary.delayedOrders,
         deliveredOrders: summary.deliveredOrders,
         emailsSentToday: summary.emailsSentToday,
+        escalatedCallsToday: summary.escalatedCallsToday,
+        callsToday: summary.callsToday,
       };
     },
   });
@@ -871,3 +880,84 @@ export function useExportReport() {
     },
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALL CENTRE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useCallCentreStatus(businessId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["call-centre-status"],
+    enabled: !!businessId,
+    queryFn: async () => {
+      const data = await apiFetch<{
+        callCentreEnabled: boolean;
+        retellAgentId: string | null;
+        retellPhoneNumber: string | null;
+        retellKnowledgeBaseId: string | null;
+        plan: string;
+        canEnable: boolean;
+      }>("/api/call-centre/status");
+      return data;
+    },
+  });
+}
+
+export function useEnableCallCentre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input?: { countryCode?: string; areaCode?: string }) => {
+      const data = await apiFetch<{
+        status: string;
+        retellAgentId: string;
+        retellPhoneNumber: string | null;
+        retellKnowledgeBaseId: string | null;
+      }>("/api/call-centre/enable", {
+        method: "POST",
+        body: input ?? {},
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["call-centre-status"] });
+    },
+  });
+}
+
+export function useDisableCallCentre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const data = await apiFetch<{ status: string }>("/api/call-centre/disable", {
+        method: "POST",
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["call-centre-status"] });
+    },
+  });
+}
+
+export function useCalls(businessId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["calls"],
+    enabled: !!businessId,
+    queryFn: async () => {
+      const data = await apiFetch<any[]>("/api/call-centre/calls");
+      return data ?? [];
+    },
+  });
+}
+
+export function useCall(callId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["call", callId ?? ""],
+    enabled: !!callId,
+    queryFn: async () => {
+      const data = await apiFetch<any>(`/api/call-centre/calls/${callId}`);
+      return data;
+    },
+  });
+}
+

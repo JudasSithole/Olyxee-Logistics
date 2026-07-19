@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, ordersTable, emailNotificationsTable, customersTable } from "@workspace/db";
+import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable } from "@workspace/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -9,7 +9,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
 
-    const [orders, emailsToday] = await Promise.all([
+    const [orders, emailsToday, escalatedToday, callsToday] = await Promise.all([
       db.select().from(ordersTable).where(eq(ordersTable.businessId, businessId)),
       db
         .select()
@@ -23,6 +23,25 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
               emailNotificationsTable.createdAt,
               new Date(new Date().setHours(0, 0, 0, 0)),
             ),
+          ),
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(callRecordsTable)
+        .where(
+          and(
+            eq(callRecordsTable.businessId, businessId),
+            eq(callRecordsTable.escalated, true),
+            gte(callRecordsTable.createdAt, new Date(new Date().setHours(0, 0, 0, 0))),
+          ),
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(callRecordsTable)
+        .where(
+          and(
+            eq(callRecordsTable.businessId, businessId),
+            gte(callRecordsTable.createdAt, new Date(new Date().setHours(0, 0, 0, 0))),
           ),
         ),
     ]);
@@ -43,6 +62,8 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
         ["Cancelled", "Failed delivery"].includes(o.currentStatus),
       ).length,
       emailsSentToday: emailsToday.length,
+      escalatedCallsToday: escalatedToday[0]?.count ?? 0,
+      callsToday: callsToday[0]?.count ?? 0,
     };
 
     res.json(summary);

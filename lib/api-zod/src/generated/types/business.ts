@@ -36,6 +36,7 @@ export interface Business {
   currentPeriodEnd?: string | null;
   emailNotificationsUsed?: number;
   smsNotificationsUsed?: number;
+  aiCallMinutesUsed?: number;
   businessLogoUrl?: string | null;
   emailSenderName?: string | null;
   primaryBrandColour?: string | null;

@@ -512,6 +512,173 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaginatedAuditLogs"
 
+  /call-centre/status:
+    get:
+      operationId: getCallCentreStatus
+      tags: [call-centre]
+      summary: Get call centre status for the current business
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Call centre status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallCentreStatus"
+
+  /call-centre/enable:
+    post:
+      operationId: enableCallCentre
+      tags: [call-centre]
+      summary: Enable automated call centre for the current business
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableCallCentreInput"
+      responses:
+        "200":
+          description: Call centre enabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnableCallCentreResult"
+        "403":
+          description: Business plan does not allow call centre
+
+  /call-centre/disable:
+    post:
+      operationId: disableCallCentre
+      tags: [call-centre]
+      summary: Disable automated call centre for the current business
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Call centre disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisableCallCentreResult"
+
+  /call-centre/calls:
+    get:
+      operationId: listCalls
+      tags: [call-centre]
+      summary: List call records for the current business
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Call records list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CallRecord"
+
+  /call-centre/calls/{callId}:
+    get:
+      operationId: getCall
+      tags: [call-centre]
+      summary: Get a single call record
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: callId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Call record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallRecord"
+        "404":
+          description: Call not found
+
+  /internal/voice/order-lookup:
+    post:
+      operationId: internalVoiceOrderLookup
+      tags: [internal-voice]
+      summary: Look up an order for the Retell voice agent
+      description: |
+        Server-to-server endpoint called by Retell during a live call.
+        Authenticated by RETELL_INTERNAL_TOKEN bearer header.
+      security:
+        - internalToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderLookupInput"
+      responses:
+        "200":
+          description: Order lookup result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderLookupResult"
+        "401":
+          description: Invalid internal token
+        "404":
+          description: Business not found for this number
+
+  /internal/voice/request-human:
+    post:
+      operationId: internalVoiceRequestHuman
+      tags: [internal-voice]
+      summary: Record a request-human escalation from the Retell voice agent
+      description: |
+        Server-to-server endpoint called by Retell when the agent triggers
+        a request_human tool call.
+      security:
+        - internalToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestHumanInput"
+      responses:
+        "200":
+          description: Escalation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestHumanResult"
+        "401":
+          description: Invalid internal token
+
+  /webhooks/retell:
+    post:
+      operationId: retellWebhook
+      tags: [webhooks]
+      summary: Retell webhook endpoint for call events
+      description: |
+        Receives call lifecycle events from Retell. Signature verified
+        against RETELL_WEBHOOK_SECRET.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RetellWebhookEvent"
+      responses:
+        "200":
+          description: Webhook received
+        "401":
+          description: Invalid signature
+
 components:
   securitySchemes:
     bearerAuth:
@@ -594,6 +761,8 @@ components:
           type: integer
         smsNotificationsUsed:
           type: integer
+        aiCallMinutesUsed:
+          type: integer
         businessLogoUrl:
           type: string
           nullable: true
@@ -670,6 +839,10 @@ components:
           type: integer
         emailsSentToday:
           type: integer
+        escalatedCallsToday:
+          type: integer
+        callsToday:
+          type: integer
       required:
         - totalOrders
         - activeDeliveries
@@ -677,6 +850,8 @@ components:
         - deliveredOrders
         - cancelledOrders
         - emailsSentToday
+        - escalatedCallsToday
+        - callsToday
 
     PublicTrackingEvent:
       type: object
@@ -1126,3 +1301,193 @@ components:
         - total
         - page
         - limit
+
+    CallCentreStatus:
+      type: object
+      properties:
+        callCentreEnabled:
+          type: boolean
+        retellAgentId:
+          type: string
+          nullable: true
+        retellPhoneNumber:
+          type: string
+          nullable: true
+        retellKnowledgeBaseId:
+          type: string
+          nullable: true
+        plan:
+          type: string
+        canEnable:
+          type: boolean
+
+    EnableCallCentreInput:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          default: US
+        areaCode:
+          type: string
+
+    EnableCallCentreResult:
+      type: object
+      properties:
+        status:
+          type: string
+        retellAgentId:
+          type: string
+        retellPhoneNumber:
+          type: string
+          nullable: true
+        retellKnowledgeBaseId:
+          type: string
+          nullable: true
+
+    DisableCallCentreResult:
+      type: object
+      properties:
+        status:
+          type: string
+
+    RequestHumanResult:
+      type: object
+      properties:
+        received:
+          type: boolean
+
+    CallRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        businessId:
+          type: string
+        retellCallId:
+          type: string
+          nullable: true
+        fromNumber:
+          type: string
+          nullable: true
+        orderId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [received, in_progress, completed, escalated, failed]
+        transcript:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        escalated:
+          type: boolean
+        createdAt:
+          type: string
+
+    OrderLookupInput:
+      type: object
+      properties:
+        call_id:
+          type: string
+        from_number:
+          type: string
+        to_number:
+          type: string
+        tracking_id:
+          type: string
+        attempt:
+          type: number
+
+    OrderLookupResult:
+      type: object
+      properties:
+        found:
+          type: boolean
+        call_id:
+          type: string
+        attempt:
+          type: number
+        order:
+          $ref: "#/components/schemas/OrderLookupOrder"
+
+    OrderLookupOrder:
+      type: object
+      properties:
+        tracking_id:
+          type: string
+        reference:
+          type: string
+          nullable: true
+        order_reference:
+          type: string
+          nullable: true
+        current_status:
+          type: string
+        status:
+          type: string
+        status_label:
+          type: string
+        statusLabel:
+          type: string
+        estimated_delivery_date:
+          type: string
+          nullable: true
+        last_updated:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLookupEvent"
+
+    OrderLookupEvent:
+      type: object
+      properties:
+        at:
+          type: string
+        timestamp:
+          type: string
+        status:
+          type: string
+        label:
+          type: string
+        status_label:
+          type: string
+        statusLabel:
+          type: string
+        message:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+
+    RequestHumanInput:
+      type: object
+      properties:
+        call_id:
+          type: string
+        reason:
+          type: string
+
+    RetellWebhookEvent:
+      type: object
+      properties:
+        event:
+          type: string
+        call:
+          type: object
+        agent_id:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    internalToken:
+      type: http
+      scheme: bearer
