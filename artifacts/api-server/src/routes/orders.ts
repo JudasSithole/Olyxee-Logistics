@@ -5,6 +5,7 @@ import {
   customersTable,
   trackingEventsTable,
   emailNotificationsTable,
+  smsNotificationsTable,
   auditLogsTable,
   businessesTable,
 } from "@workspace/db";
@@ -13,7 +14,11 @@ import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
+import { sendSms, isSmsConfigured } from "../lib/sms";
+import { buildSmsBody } from "../lib/sms-templates";
+import { getMonthlySmsUsage } from "../lib/sms-usage";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
+import { getPlan } from "@workspace/plans";
 import {
   CreateOrderBody,
   UpdateOrderStatusBody,
@@ -448,6 +453,64 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       }
     }
 
+    // 5b. Send SMS if the customer has a phone number and SMS is configured.
+    let smsStatus: "sent" | "failed" | "skipped" | "limit_reached" = "skipped";
+    let smsNotificationId: string | undefined;
+    let smsUsage: number | undefined;
+    let smsLimit: number | null | undefined;
+
+    if (customer?.phone && isSmsConfigured()) {
+      const phone = customer.phone;
+      const smsBody = buildSmsBody({
+        businessName: business!.name,
+        trackingId: order.trackingId,
+        status,
+        statusMessage: message ?? null,
+        trackingLink,
+        customerPhone: phone,
+      });
+
+      smsLimit = getPlan(business!.plan).smsLimit ?? null;
+      smsUsage = await getMonthlySmsUsage(businessId);
+
+      if (smsLimit !== null && smsUsage >= smsLimit) {
+        smsStatus = "limit_reached";
+        const notif = await db
+          .insert(smsNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerPhone: phone,
+            body: smsBody,
+            status: "limit_reached",
+            providerMessageId: null,
+          })
+          .returning();
+        smsNotificationId = notif[0]?.id;
+      } else {
+        const smsResult = await sendSms({
+          to: phone,
+          body: smsBody,
+        });
+        const smsProviderMessageId = smsResult.success ? smsResult.providerMessageId : null;
+        smsStatus = smsResult.success ? "sent" : "failed";
+        if (smsStatus === "sent") smsUsage = (smsUsage ?? 0) + 1;
+
+        const notif = await db
+          .insert(smsNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerPhone: phone,
+            body: smsBody,
+            status: smsStatus,
+            providerMessageId: smsProviderMessageId,
+          })
+          .returning();
+        smsNotificationId = notif[0]?.id;
+      }
+    }
+
     // 6. Audit log
     await db.insert(auditLogsTable).values({
       id: generateId(),
@@ -456,34 +519,55 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       action: "UPDATE_ORDER_STATUS",
       entityType: "order",
       entityId: orderId,
-      metadata: { previousStatus: order.currentStatus, newStatus: status, emailStatus },
+      metadata: { previousStatus: order.currentStatus, newStatus: status, emailStatus, smsStatus },
     });
 
     // 6b. Shared notification history (best-effort, additive). Mirrors the email
     // outcome above into the new notification_events / notification_deliveries
     // tables. Never throws into this path; the legacy email_notifications write
     // above remains the source of truth for existing UI.
-    if (customer && emailStatus !== "skipped") {
-      const deliveryStatus: DeliveryStatus =
-        emailStatus === "sent" ? "sent" : "failed";
+    if (customer && (emailStatus !== "skipped" || smsStatus !== "skipped")) {
+      const outcomes: Array<{
+        channel: "email" | "sms";
+        recipient: string;
+        status: DeliveryStatus;
+        failureReason: string | null;
+      }> = [];
+
+      if (emailStatus !== "skipped") {
+        outcomes.push({
+          channel: "email",
+          recipient: customer.email,
+          status: emailStatus === "sent" ? "sent" : "failed",
+          failureReason:
+            emailStatus === "limit_reached"
+              ? "Monthly email limit reached"
+              : emailStatus === "failed"
+                ? "Email provider send failed"
+                : null,
+        });
+      }
+
+      if (smsStatus !== "skipped") {
+        outcomes.push({
+          channel: "sms",
+          recipient: customer.phone!,
+          status: smsStatus === "sent" ? "sent" : "failed",
+          failureReason:
+            smsStatus === "limit_reached"
+              ? "Monthly SMS limit reached"
+              : smsStatus === "failed"
+                ? "SMS provider send failed"
+                : null,
+        });
+      }
+
       await recordNotification({
         orderId,
         businessId,
         status,
         message: message ?? null,
-        outcomes: [
-          {
-            channel: "email",
-            recipient: customer.email,
-            status: deliveryStatus,
-            failureReason:
-              emailStatus === "limit_reached"
-                ? "Monthly email limit reached"
-                : emailStatus === "failed"
-                  ? "Email provider send failed"
-                  : null,
-          },
-        ],
+        outcomes,
       });
     }
 
@@ -497,6 +581,10 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       emailNotificationId,
       emailUsage,
       emailLimit,
+      smsStatus,
+      smsNotificationId,
+      smsUsage,
+      smsLimit,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to update order status");
@@ -697,6 +785,61 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       })
       .returning();
 
+    // Also resend SMS if the customer has a phone and SMS is configured.
+    let smsStatus: "sent" | "failed" | "skipped" | "limit_reached" = "skipped";
+    let smsNotificationId: string | undefined;
+    let smsUsage: number | undefined;
+    let smsLimit: number | null | undefined;
+
+    if (customer.phone && isSmsConfigured()) {
+      const phone = customer.phone;
+      const smsBody = buildSmsBody({
+        businessName: business.name,
+        trackingId: order.trackingId,
+        status: order.currentStatus,
+        statusMessage: null,
+        trackingLink,
+        customerPhone: phone,
+      });
+
+      smsLimit = getPlan(business.plan).smsLimit ?? null;
+      smsUsage = await getMonthlySmsUsage(businessId);
+
+      if (smsLimit !== null && smsUsage >= smsLimit) {
+        smsStatus = "limit_reached";
+        const sn = await db
+          .insert(smsNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerPhone: phone,
+            body: smsBody,
+            status: "limit_reached",
+            providerMessageId: null,
+          })
+          .returning();
+        smsNotificationId = sn[0]?.id;
+      } else {
+        const smsResult = await sendSms({ to: phone, body: smsBody });
+        const smsProviderMessageId = smsResult.success ? smsResult.providerMessageId : null;
+        smsStatus = smsResult.success ? "sent" : "failed";
+        if (smsStatus === "sent") smsUsage = (smsUsage ?? 0) + 1;
+
+        const sn = await db
+          .insert(smsNotificationsTable)
+          .values({
+            id: generateId(),
+            orderId,
+            customerPhone: phone,
+            body: smsBody,
+            status: smsStatus,
+            providerMessageId: smsProviderMessageId,
+          })
+          .returning();
+        smsNotificationId = sn[0]?.id;
+      }
+    }
+
     await db.insert(auditLogsTable).values({
       id: generateId(),
       businessId,
@@ -704,7 +847,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       action: "RESEND_EMAIL",
       entityType: "order",
       entityId: orderId,
-      metadata: { emailStatus },
+      metadata: { emailStatus, smsStatus },
     });
 
     res.json({
@@ -714,6 +857,10 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       emailStatus,
       emailUsage: emailStatus === "sent" ? emailUsage + 1 : emailUsage,
       emailLimit,
+      smsStatus,
+      smsNotificationId,
+      smsUsage,
+      smsLimit,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to resend email");

@@ -125,7 +125,7 @@ export type SubscriptionStatus =
 // production for this preparation release.
 
 export const featureFlags = {
-  smsNotifications: false,
+  smsNotifications: true,
   subscriptionBilling: false,
   planEnforcement: false,
   businessBranding: false,

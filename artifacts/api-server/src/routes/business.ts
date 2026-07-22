@@ -7,6 +7,7 @@ import {
   ordersTable,
   trackingEventsTable,
   emailNotificationsTable,
+  smsNotificationsTable,
   usersTable,
   notificationEventsTable,
   notificationDeliveriesTable,
@@ -275,6 +276,9 @@ router.delete("/business", requireAuth, async (req, res) => {
         await tx
           .delete(emailNotificationsTable)
           .where(inArray(emailNotificationsTable.orderId, orderIds));
+        await tx
+          .delete(smsNotificationsTable)
+          .where(inArray(smsNotificationsTable.orderId, orderIds));
       }
 
       // Launch-prep foundation tables also reference this business/its orders.

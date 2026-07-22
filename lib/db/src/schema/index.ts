@@ -11,6 +11,7 @@ export * from "./workflow_steps";
 export * from "./business_workflows";
 export * from "./notification_events";
 export * from "./notification_deliveries";
+export * from "./sms_notifications";
 export * from "./billing_events";
 export * from "./api_keys";
 export * from "./call_records";
