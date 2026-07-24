@@ -24,4 +24,5 @@ ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS call_centre_enabled boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS retell_agent_id text,
   ADD COLUMN IF NOT EXISTS retell_phone_number text,
-  ADD COLUMN IF NOT EXISTS retell_knowledge_base_id text;
+  ADD COLUMN IF NOT EXISTS retell_knowledge_base_id text,
+  ADD COLUMN IF NOT EXISTS call_centre_forwarding_number text;

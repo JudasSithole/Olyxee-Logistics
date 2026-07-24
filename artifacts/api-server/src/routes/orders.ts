@@ -14,9 +14,7 @@ import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
-import { sendSms, isSmsConfigured } from "../lib/sms";
-import { buildSmsBody } from "../lib/sms-templates";
-import { getMonthlySmsUsage } from "../lib/sms-usage";
+import { sendOrderSms } from "../lib/order-notifications";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
 import { getPlan } from "@workspace/plans";
 import {
@@ -454,62 +452,21 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     }
 
     // 5b. Send SMS if the customer has a phone number and SMS is configured.
-    let smsStatus: "sent" | "failed" | "skipped" | "limit_reached" = "skipped";
-    let smsNotificationId: string | undefined;
-    let smsUsage: number | undefined;
-    let smsLimit: number | null | undefined;
-
-    if (customer?.phone && isSmsConfigured()) {
-      const phone = customer.phone;
-      const smsBody = buildSmsBody({
-        businessName: business!.name,
-        trackingId: order.trackingId,
-        status,
-        statusMessage: message ?? null,
-        trackingLink,
-        customerPhone: phone,
-      });
-
-      smsLimit = getPlan(business!.plan).smsLimit ?? null;
-      smsUsage = await getMonthlySmsUsage(businessId);
-
-      if (smsLimit !== null && smsUsage >= smsLimit) {
-        smsStatus = "limit_reached";
-        const notif = await db
-          .insert(smsNotificationsTable)
-          .values({
-            id: generateId(),
-            orderId,
-            customerPhone: phone,
-            body: smsBody,
-            status: "limit_reached",
-            providerMessageId: null,
-          })
-          .returning();
-        smsNotificationId = notif[0]?.id;
-      } else {
-        const smsResult = await sendSms({
-          to: phone,
-          body: smsBody,
-        });
-        const smsProviderMessageId = smsResult.success ? smsResult.providerMessageId : null;
-        smsStatus = smsResult.success ? "sent" : "failed";
-        if (smsStatus === "sent") smsUsage = (smsUsage ?? 0) + 1;
-
-        const notif = await db
-          .insert(smsNotificationsTable)
-          .values({
-            id: generateId(),
-            orderId,
-            customerPhone: phone,
-            body: smsBody,
-            status: smsStatus,
-            providerMessageId: smsProviderMessageId,
-          })
-          .returning();
-        smsNotificationId = notif[0]?.id;
-      }
-    }
+    const sms = await sendOrderSms({
+      orderId,
+      customerPhone: customer?.phone ?? undefined,
+      businessName: business!.name,
+      trackingId: order.trackingId,
+      status,
+      statusMessage: message ?? null,
+      trackingLink,
+      businessPlan: business!.plan,
+      businessId,
+    });
+    const smsStatus = sms.smsStatus;
+    const smsNotificationId = sms.smsNotificationId;
+    const smsUsage = sms.smsUsage;
+    const smsLimit = sms.smsLimit;
 
     // 6. Audit log
     await db.insert(auditLogsTable).values({
@@ -786,59 +743,21 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       .returning();
 
     // Also resend SMS if the customer has a phone and SMS is configured.
-    let smsStatus: "sent" | "failed" | "skipped" | "limit_reached" = "skipped";
-    let smsNotificationId: string | undefined;
-    let smsUsage: number | undefined;
-    let smsLimit: number | null | undefined;
-
-    if (customer.phone && isSmsConfigured()) {
-      const phone = customer.phone;
-      const smsBody = buildSmsBody({
-        businessName: business.name,
-        trackingId: order.trackingId,
-        status: order.currentStatus,
-        statusMessage: null,
-        trackingLink,
-        customerPhone: phone,
-      });
-
-      smsLimit = getPlan(business.plan).smsLimit ?? null;
-      smsUsage = await getMonthlySmsUsage(businessId);
-
-      if (smsLimit !== null && smsUsage >= smsLimit) {
-        smsStatus = "limit_reached";
-        const sn = await db
-          .insert(smsNotificationsTable)
-          .values({
-            id: generateId(),
-            orderId,
-            customerPhone: phone,
-            body: smsBody,
-            status: "limit_reached",
-            providerMessageId: null,
-          })
-          .returning();
-        smsNotificationId = sn[0]?.id;
-      } else {
-        const smsResult = await sendSms({ to: phone, body: smsBody });
-        const smsProviderMessageId = smsResult.success ? smsResult.providerMessageId : null;
-        smsStatus = smsResult.success ? "sent" : "failed";
-        if (smsStatus === "sent") smsUsage = (smsUsage ?? 0) + 1;
-
-        const sn = await db
-          .insert(smsNotificationsTable)
-          .values({
-            id: generateId(),
-            orderId,
-            customerPhone: phone,
-            body: smsBody,
-            status: smsStatus,
-            providerMessageId: smsProviderMessageId,
-          })
-          .returning();
-        smsNotificationId = sn[0]?.id;
-      }
-    }
+    const sms = await sendOrderSms({
+      orderId,
+      customerPhone: customer.phone ?? undefined,
+      businessName: business.name,
+      trackingId: order.trackingId,
+      status: order.currentStatus,
+      statusMessage: null,
+      trackingLink,
+      businessPlan: business.plan,
+      businessId,
+    });
+    const smsStatus = sms.smsStatus;
+    const smsNotificationId = sms.smsNotificationId;
+    const smsUsage = sms.smsUsage;
+    const smsLimit = sms.smsLimit;
 
     await db.insert(auditLogsTable).values({
       id: generateId(),
