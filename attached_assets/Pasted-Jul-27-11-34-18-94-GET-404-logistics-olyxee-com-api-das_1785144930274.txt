@@ -1,0 +1,72 @@
+Jul 27 11:34:18.94
+GET
+404
+logistics.olyxee.com
+/api/dashboard/stats
+{"level":30,"time":1785144859000,"pid":4,"hostname":"169.254.32.253","req":{"id":11,"method":"GET","url":"/api/dashboard/stats"},"res":{"statusCode":404},"responseTime":2,"msg":"request completed"}
+Jul 27 11:34:18.67
+GET
+401
+logistics.olyxee.com
+/api/customers
+{"level":30,"time":1785144858729,"pid":4,"hostname":"169.254.32.253","req":{"id":10,"method":"GET","url":"/api/customers"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+Jul 27 11:34:18.41
+GET
+401
+logistics.olyxee.com
+/api/orders
+{"level":30,"time":1785144858465,"pid":4,"hostname":"169.254.32.253","req":{"id":9,"method":"GET","url":"/api/orders"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+Jul 27 11:34:18.15
+GET
+404
+logistics.olyxee.com
+/api/businesses
+{"level":30,"time":1785144858210,"pid":4,"hostname":"169.254.32.253","req":{"id":8,"method":"GET","url":"/api/businesses"},"res":{"statusCode":404},"responseTime":2,"msg":"request completed"}
+Jul 27 11:34:17.93
+GET
+401
+logistics.olyxee.com
+/api/auth/me
+{"level":30,"time":1785144857996,"pid":4,"hostname":"169.254.32.253","req":{"id":7,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+Jul 27 11:34:17.82
+GET
+401
+order-loop-cz9z95ejz-olyxee.vercel.app
+/api/auth/me
+{"level":30,"time":1785144857879,"pid":4,"hostname":"169.254.32.253","req":{"id":6,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+Jul 27 11:34:17.16
+POST
+401
+logistics.olyxee.com
+/api/auth/login
+{"level":30,"time":1785144857777,"pid":4,"hostname":"169.254.32.253","req":{"id":5,"method":"POST","url":"/api/auth/login"},"res":{"statusCode":401},"responseTime":550,"msg":"request completed"}
+Jul 27 11:34:15.90
+GET
+401
+order-loop-cz9z95ejz-olyxee.vercel.app
+/api/auth/me
+{"level":30,"time":1785144855983,"pid":4,"hostname":"169.254.32.253","req":{"id":4,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":13,"msg":"request completed"}
+Jul 27 11:34:03.11
+POST
+401
+logistics.olyxee.com
+/api/auth/login
+{"level":30,"time":1785144843949,"pid":4,"hostname":"169.254.32.253","req":{"id":3,"method":"POST","url":"/api/auth/login"},"res":{"statusCode":401},"responseTime":741,"msg":"request completed"}
+Jul 27 11:33:54.76
+GET
+401
+logistics.olyxee.com
+/api/auth/me
+{"level":30,"time":1785144834827,"pid":4,"hostname":"169.254.32.253","req":{"id":2,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":3,"msg":"request completed"}
+Jul 27 11:33:53.70
+GET
+404
+logistics.olyxee.com
+/api/health
+{"level":30,"time":1785144834543,"pid":4,"hostname":"169.254.32.253","req":{"id":1,"method":"GET","url":"/api/health"},"res":{"statusCode":404},"responseTime":10,"msg":"request completed"}
+Jul 27 11:24:29.72
+GET
+401
+logistics.olyxee.com
+/api/auth/me
+{"level":30,"time":1785144271061,"pid":4,"hostname":"169.254.30.165","req":{"id":1,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
