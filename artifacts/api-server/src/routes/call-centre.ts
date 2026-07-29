@@ -225,7 +225,10 @@ router.post("/call-centre/enable", requireAuth, async (req: Request, res: Respon
     }
 
     // 4. Enable.
-    await db.update(businessesTable).set({ callCentreEnabled: true }).where(eq(businessesTable.id, businessId));
+    await db
+      .update(businessesTable)
+      .set({ ...updatePayload, callCentreEnabled: true })
+      .where(eq(businessesTable.id, businessId));
 
     await db.insert(auditLogsTable).values({
       id: generateId(),

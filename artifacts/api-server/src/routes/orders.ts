@@ -5,7 +5,6 @@ import {
   customersTable,
   trackingEventsTable,
   emailNotificationsTable,
-  smsNotificationsTable,
   auditLogsTable,
   businessesTable,
 } from "@workspace/db";
