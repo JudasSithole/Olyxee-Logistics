@@ -91,6 +91,7 @@ router.get("/orders", requireAuth, async (req, res) => {
         or(
           ilike(ordersTable.trackingId, `%${search}%`),
           ilike(ordersTable.orderReference, `%${search}%`),
+          ilike(customersTable.fullName, `%${search}%`),
         ),
       );
     }
@@ -113,6 +114,13 @@ router.get("/orders", requireAuth, async (req, res) => {
       db
         .select({ count: sql<number>`count(*)::int` })
         .from(ordersTable)
+        .leftJoin(
+          customersTable,
+          and(
+            eq(ordersTable.customerId, customersTable.id),
+            eq(customersTable.businessId, businessId),
+          ),
+        )
         .where(and(...whereConditions)),
     ]);
 
