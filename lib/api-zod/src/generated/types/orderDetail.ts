@@ -17,6 +17,7 @@ export interface OrderDetail {
   orderReference?: string;
   description?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   trackingLink: string;
   createdAt: string;

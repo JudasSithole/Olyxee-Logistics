@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package,
   Menu, Moon, Sun, Settings, LogOut,
-  Sparkles, ArrowUpCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -75,9 +75,8 @@ const NAV_ITEMS = [
   { href: "/orders", label: "Orders", icon: Package },
 ];
 
-// Launch-prep nav: product news (announcements + roadmap) and pricing.
+// Launch-prep nav: pricing.
 const GROWTH_ITEMS = [
-  { href: "/updates", label: "What's new", icon: Sparkles },
   { href: "/upgrade", label: "Upgrade plan", icon: ArrowUpCircle },
 ];
 
@@ -196,7 +195,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Launch announcement: current plan + live countdown. Compact and
             purely informational - the nav links above already lead to details. */}
         <Link
-          href="/updates"
+          href="/upgrade"
           className="mt-2 flex items-center gap-2.5 rounded-lg bg-sidebar-accent/40 px-3 py-2 transition-colors hover:bg-sidebar-accent/70"
           data-testid="sidebar-launch-card"
         >

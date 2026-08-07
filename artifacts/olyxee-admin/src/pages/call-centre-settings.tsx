@@ -121,7 +121,7 @@ export default function CallCentreSettingsPage() {
         </div>
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            The automated call centre is not yet available. It will launch on 1 August 2026.
+            The automated call centre is not yet available. It will launch on 20 August 2026.
           </CardContent>
         </Card>
       </div>

@@ -111,6 +111,7 @@ interface ApiOrder {
   createdAt: string;
   updatedAt: string;
   customer?: ApiCustomer | null;
+  transportMode?: string | null;
 }
 
 function mapOrder(o: ApiOrder, businessId?: string): Order {
@@ -123,6 +124,7 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     tracking_id: o.trackingId,
     order_reference: o.orderReference ?? null,
     current_status: o.currentStatus,
+    transport_mode: o.transportMode ?? null,
     current_step_position: o.currentStepPosition ?? 0,
     description: o.description ?? null,
     estimated_completion: estimated,
@@ -542,6 +544,7 @@ export function useCreateOrder() {
           orderReference: input.order_reference ?? undefined,
           description: input.description ?? undefined,
           estimatedDeliveryDate: input.estimated_completion ?? undefined,
+          transportMode: (input as { transport_mode?: string }).transport_mode ?? undefined,
         },
       });
       return mapOrder(data);

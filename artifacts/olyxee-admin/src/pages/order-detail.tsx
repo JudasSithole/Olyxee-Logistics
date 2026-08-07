@@ -48,6 +48,12 @@ import {
   statusChoices,
   isTerminal,
   getStatusVisual,
+  isLogisticsTerminal,
+  logisticsStatusLabel,
+  nextLogisticsStatus,
+  remainingLogisticsStatuses,
+  TRANSPORT_MODE_LABELS,
+  type TransportMode,
 } from "@/lib/order-statuses";
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
@@ -80,16 +86,33 @@ function StatusPicker({
   currentStatus,
   selected,
   onSelect,
+  transportMode,
 }: {
   currentStatus: string;
   selected: string;
   onSelect: (s: string) => void;
+  transportMode?: string | null;
 }) {
-  const choices = statusChoices(currentStatus);
-  if (!choices) return null;
-
-  const primaryStep = choices.primary;
-  const exceptionSteps = choices.exceptions;
+  // Transport-aware orders follow their mode's fixed flow: the next stage is
+  // primary, later stages are offered as "skip ahead" options (e.g. combining
+  // steps), and generic exception statuses don't apply.
+  let primaryStep: string;
+  let exceptionSteps: string[];
+  let exceptionsHeading = "Exceptions";
+  if (transportMode) {
+    const next = nextLogisticsStatus(transportMode, currentStatus);
+    if (!next) return null;
+    primaryStep = next;
+    exceptionSteps = remainingLogisticsStatuses(transportMode, currentStatus).filter(
+      (s) => s !== next,
+    );
+    exceptionsHeading = "Skip ahead";
+  } else {
+    const choices = statusChoices(currentStatus);
+    if (!choices) return null;
+    primaryStep = choices.primary;
+    exceptionSteps = choices.exceptions;
+  }
 
   const renderButton = (step: string, isPrimary: boolean) => {
     const cfg = getStatusVisual(step);
@@ -143,7 +166,7 @@ function StatusPicker({
       {exceptionSteps.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider pt-1">
-            Exceptions
+            {exceptionsHeading}
           </p>
           <div className="flex flex-wrap gap-2">
             {exceptionSteps.map((step) => {
@@ -309,6 +332,11 @@ export default function OrderDetailPage() {
         <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold font-mono tracking-tight">{order.tracking_id}</h1>
           <StatusBadge status={order.current_status} />
+          {order.transport_mode && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 border text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40">
+              {TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {order.order_reference && (
@@ -353,11 +381,18 @@ export default function OrderDetailPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {isTerminal(order.current_status) ? (
+              {(order.transport_mode
+                ? isLogisticsTerminal(order.current_status)
+                : isTerminal(order.current_status)) ? (
                 <div className="border bg-muted/40 px-4 py-8 text-center space-y-1">
                   <CheckCircle2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                   <p className="text-sm font-medium">
-                    This order is <span className="font-semibold">{order.current_status}</span>
+                    This order is{" "}
+                    <span className="font-semibold">
+                      {order.transport_mode
+                        ? logisticsStatusLabel(order.current_status)
+                        : order.current_status}
+                    </span>
                   </p>
                   <p className="text-xs text-muted-foreground">No further updates are possible.</p>
                 </div>
@@ -373,6 +408,7 @@ export default function OrderDetailPage() {
                       currentStatus={order.current_status}
                       selected={statusForm.status}
                       onSelect={(s) => setStatusForm(f => ({ ...f, status: s }))}
+                      transportMode={order.transport_mode}
                     />
                     {!statusForm.status && (
                       <p className="text-xs text-muted-foreground">

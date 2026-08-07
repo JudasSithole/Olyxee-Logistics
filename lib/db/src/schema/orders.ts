@@ -30,6 +30,10 @@ export const ordersTable = pgTable(
     orderReference: text("order_reference"),
     description: text("description"),
     currentStatus: text("current_status").notNull().default("Order received"),
+    // Transport mode for LOGISTICS businesses ("AIR" | "SEA"). Null for
+    // non-logistics orders and legacy logistics orders created before the
+    // transport-aware flows existed (those keep the generic status flow).
+    transportMode: text("transport_mode"),
     estimatedDeliveryDate: text("estimated_delivery_date"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

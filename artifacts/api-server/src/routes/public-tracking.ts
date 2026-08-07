@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { db, ordersTable, trackingEventsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import {
+  logisticsFlow,
+  logisticsStatusLabel,
+  isLogisticsTerminal,
+  TRANSPORT_MODE_LABELS,
+  isTransportMode,
+} from "@workspace/order-statuses";
 
 const router = Router();
 
@@ -83,11 +90,31 @@ router.get("/public/track/:trackingId", async (req, res) => {
     // (e.g. an email blast). Public so CDNs can cache too.
     res.setHeader("Cache-Control", "public, max-age=30");
 
-    const currentStatus = publicStatusFor(order.currentStatus);
-    const currentStatusLabel =
-      order.currentStatus && order.currentStatus.trim().length > 0
+    // Transport-aware logistics orders: expose the mode plus a checklist of
+    // the full flow (completed / current / upcoming) so the customer page can
+    // render the ✓ / ● / ○ timeline. Legacy orders (transportMode null) keep
+    // the original generic payload untouched.
+    const mode = order.transportMode;
+    const flowStatuses = mode ? logisticsFlow(mode) : null;
+    let flow: { status: string; label: string; state: string }[] | undefined;
+    if (flowStatuses) {
+      const idx = flowStatuses.indexOf(order.currentStatus);
+      flow = flowStatuses.map((s, i) => ({
+        status: s,
+        label: logisticsStatusLabel(s),
+        state:
+          idx === -1 ? "upcoming" : i < idx ? "completed" : i === idx ? "current" : "upcoming",
+      }));
+    }
+
+    const currentStatus = flowStatuses
+      ? order.currentStatus
+      : publicStatusFor(order.currentStatus);
+    const currentStatusLabel = flowStatuses
+      ? logisticsStatusLabel(order.currentStatus)
+      : order.currentStatus && order.currentStatus.trim().length > 0
         ? order.currentStatus
-        : STATUS_DISPLAY[currentStatus] ?? "Pending";
+        : STATUS_DISPLAY[publicStatusFor(order.currentStatus)] ?? "Pending";
 
     // Response shape matches the customer-integration brief exactly
     // (`currentStatus`, `reference`, `events[].at`, `events[].label`, …).
@@ -103,14 +130,19 @@ router.get("/public/track/:trackingId", async (req, res) => {
       currentStatus,
       status: currentStatus,
       statusLabel: currentStatusLabel,
+      transportMode: mode ?? null,
+      transportModeLabel:
+        mode && isTransportMode(mode) ? TRANSPORT_MODE_LABELS[mode] : null,
+      ...(flow ? { flow } : {}),
       estimatedDeliveryDate: order.estimatedDeliveryDate ?? null,
       lastUpdated: order.updatedAt.toISOString(),
       events: events.map((e) => {
-        const status = publicStatusFor(e.status);
-        const label =
-          e.status && e.status.trim().length > 0
+        const status = flowStatuses ? e.status : publicStatusFor(e.status);
+        const label = flowStatuses
+          ? logisticsStatusLabel(e.status)
+          : e.status && e.status.trim().length > 0
             ? e.status
-            : STATUS_DISPLAY[status] ?? status;
+            : STATUS_DISPLAY[publicStatusFor(e.status)] ?? publicStatusFor(e.status);
         const at = e.createdAt.toISOString();
         return {
           at,

@@ -14,6 +14,7 @@ export interface Order {
   orderReference?: string;
   description?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;

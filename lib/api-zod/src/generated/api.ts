@@ -44,6 +44,7 @@ export const GetBusinessResponse = zod.object({
   "currentPeriodEnd": zod.string().nullish(),
   "emailNotificationsUsed": zod.number().optional(),
   "smsNotificationsUsed": zod.number().optional(),
+  "aiCallMinutesUsed": zod.number().optional(),
   "businessLogoUrl": zod.string().nullish(),
   "emailSenderName": zod.string().nullish(),
   "primaryBrandColour": zod.string().nullish(),
@@ -97,6 +98,7 @@ export const UpdateBusinessResponse = zod.object({
   "currentPeriodEnd": zod.string().nullish(),
   "emailNotificationsUsed": zod.number().optional(),
   "smsNotificationsUsed": zod.number().optional(),
+  "aiCallMinutesUsed": zod.number().optional(),
   "businessLogoUrl": zod.string().nullish(),
   "emailSenderName": zod.string().nullish(),
   "primaryBrandColour": zod.string().nullish(),
@@ -122,6 +124,8 @@ export const GetPublicTrackingResponse = zod.object({
   "orderReference": zod.string().nullish(),
   "status": zod.string(),
   "statusLabel": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "transportModeLabel": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().nullish(),
   "lastUpdated": zod.string(),
   "businessName": zod.string(),
@@ -131,7 +135,12 @@ export const GetPublicTrackingResponse = zod.object({
   "location": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "timestamp": zod.string()
-}))
+})),
+  "flow": zod.array(zod.object({
+  "status": zod.string(),
+  "label": zod.string(),
+  "state": zod.enum(['completed', 'current', 'upcoming'])
+})).optional().describe('Transport-aware checklist for logistics orders (completed\/current\/upcoming).')
 })
 
 
@@ -144,7 +153,9 @@ export const GetDashboardSummaryResponse = zod.object({
   "delayedOrders": zod.number(),
   "deliveredOrders": zod.number(),
   "cancelledOrders": zod.number(),
-  "emailsSentToday": zod.number()
+  "emailsSentToday": zod.number(),
+  "escalatedCallsToday": zod.number(),
+  "callsToday": zod.number()
 })
 
 
@@ -156,6 +167,7 @@ export const GetRecentOrdersResponseItem = zod.object({
   "trackingId": zod.string(),
   "orderReference": zod.string().optional(),
   "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
@@ -289,6 +301,7 @@ export const GetCustomerOrdersResponseItem = zod.object({
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -316,6 +329,7 @@ export const ListOrdersResponse = zod.object({
   "trackingId": zod.string(),
   "orderReference": zod.string().optional(),
   "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
@@ -343,7 +357,8 @@ export const CreateOrderBody = zod.object({
   "customerId": zod.string(),
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
-  "estimatedDeliveryDate": zod.string().optional()
+  "estimatedDeliveryDate": zod.string().optional(),
+  "transportMode": zod.enum(['AIR', 'SEA']).optional().describe('Required for LOGISTICS businesses; rejected otherwise.')
 })
 
 
@@ -362,6 +377,7 @@ export const GetOrderResponse = zod.object({
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "trackingLink": zod.string(),
   "createdAt": zod.string(),
@@ -406,7 +422,7 @@ export const UpdateOrderStatusParams = zod.object({
 })
 
 export const UpdateOrderStatusBody = zod.object({
-  "status": zod.enum(['Order received', 'Processing', 'In transit', 'Delayed', 'Out for delivery', 'Delivered', 'Failed delivery', 'Cancelled']),
+  "status": zod.enum(['Order received', 'Processing', 'In transit', 'Delayed', 'Out for delivery', 'Delivered', 'Failed delivery', 'Cancelled', 'ORDER_CONFIRMED', 'RECEIVED_FROM_SUPPLIER', 'EXPORT_CUSTOMS_CLEARED', 'LOADED_ONTO_VESSEL', 'VESSEL_DEPARTED', 'MID_OCEAN_TRANSIT', 'APPROACHING_DESTINATION_PORT', 'VESSEL_ARRIVED', 'IN_TRANSIT', 'IMPORT_CUSTOMS_CLEARANCE', 'OUT_FOR_DELIVERY', 'DELIVERED']),
   "message": zod.string().optional(),
   "location": zod.string().optional()
 })
@@ -420,6 +436,7 @@ export const UpdateOrderStatusResponse = zod.object({
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -525,6 +542,161 @@ export const ListAuditLogsResponse = zod.object({
   "total": zod.number(),
   "page": zod.number(),
   "limit": zod.number()
+})
+
+
+/**
+ * @summary Get call centre status for the current business
+ */
+export const GetCallCentreStatusResponse = zod.object({
+  "callCentreEnabled": zod.boolean().optional(),
+  "retellAgentId": zod.string().nullish(),
+  "retellPhoneNumber": zod.string().nullish(),
+  "retellKnowledgeBaseId": zod.string().nullish(),
+  "callCentreForwardingNumber": zod.string().nullish(),
+  "plan": zod.string().optional(),
+  "canEnable": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Enable automated call centre for the current business
+ */
+export const enableCallCentreBodyCountryCodeDefault = `US`;
+
+export const EnableCallCentreBody = zod.object({
+  "countryCode": zod.string().default(enableCallCentreBodyCountryCodeDefault),
+  "areaCode": zod.string().optional(),
+  "forwardingNumber": zod.string().optional()
+})
+
+export const EnableCallCentreResponse = zod.object({
+  "status": zod.string().optional(),
+  "retellAgentId": zod.string().optional(),
+  "retellPhoneNumber": zod.string().nullish(),
+  "retellKnowledgeBaseId": zod.string().nullish(),
+  "callCentreForwardingNumber": zod.string().nullish()
+})
+
+
+/**
+ * @summary Disable automated call centre for the current business
+ */
+export const DisableCallCentreResponse = zod.object({
+  "status": zod.string().optional()
+})
+
+
+/**
+ * @summary List call records for the current business
+ */
+export const ListCallsResponseItem = zod.object({
+  "id": zod.string().optional(),
+  "businessId": zod.string().optional(),
+  "retellCallId": zod.string().nullish(),
+  "fromNumber": zod.string().nullish(),
+  "orderId": zod.string().nullish(),
+  "status": zod.enum(['received', 'in_progress', 'completed', 'escalated', 'failed']).optional(),
+  "transcript": zod.string().nullish(),
+  "summary": zod.string().nullish(),
+  "escalated": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+export const ListCallsResponse = zod.array(ListCallsResponseItem)
+
+
+/**
+ * @summary Get a single call record
+ */
+export const GetCallParams = zod.object({
+  "callId": zod.coerce.string()
+})
+
+export const GetCallResponse = zod.object({
+  "id": zod.string().optional(),
+  "businessId": zod.string().optional(),
+  "retellCallId": zod.string().nullish(),
+  "fromNumber": zod.string().nullish(),
+  "orderId": zod.string().nullish(),
+  "status": zod.enum(['received', 'in_progress', 'completed', 'escalated', 'failed']).optional(),
+  "transcript": zod.string().nullish(),
+  "summary": zod.string().nullish(),
+  "escalated": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * Server-to-server endpoint called by Retell during a live call.
+Authenticated by RETELL_INTERNAL_TOKEN bearer header.
+
+ * @summary Look up an order for the Retell voice agent
+ */
+export const InternalVoiceOrderLookupBody = zod.object({
+  "call_id": zod.string().optional(),
+  "from_number": zod.string().optional(),
+  "to_number": zod.string().optional(),
+  "tracking_id": zod.string().optional(),
+  "attempt": zod.number().optional()
+})
+
+export const InternalVoiceOrderLookupResponse = zod.object({
+  "found": zod.boolean().optional(),
+  "call_id": zod.string().optional(),
+  "attempt": zod.number().optional(),
+  "order": zod.object({
+  "tracking_id": zod.string().optional(),
+  "reference": zod.string().nullish(),
+  "order_reference": zod.string().nullish(),
+  "current_status": zod.string().optional(),
+  "status": zod.string().optional(),
+  "status_label": zod.string().optional(),
+  "statusLabel": zod.string().optional(),
+  "estimated_delivery_date": zod.string().nullish(),
+  "last_updated": zod.string().optional(),
+  "events": zod.array(zod.object({
+  "at": zod.string().optional(),
+  "timestamp": zod.string().optional(),
+  "status": zod.string().optional(),
+  "label": zod.string().optional(),
+  "status_label": zod.string().optional(),
+  "statusLabel": zod.string().optional(),
+  "message": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "location": zod.string().nullish()
+})).optional()
+}).optional()
+})
+
+
+/**
+ * Server-to-server endpoint called by Retell when the agent triggers
+a request_human tool call.
+
+ * @summary Record a request-human escalation from the Retell voice agent
+ */
+export const InternalVoiceRequestHumanBody = zod.object({
+  "call_id": zod.string().optional(),
+  "reason": zod.string().optional()
+})
+
+export const InternalVoiceRequestHumanResponse = zod.object({
+  "received": zod.boolean().optional()
+})
+
+
+/**
+ * Receives call lifecycle events from Retell. Signature verified
+against RETELL_WEBHOOK_SECRET.
+
+ * @summary Retell webhook endpoint for call events
+ */
+export const RetellWebhookBody = zod.object({
+  "event": zod.string().optional(),
+  "call": zod.object({
+
+}).passthrough().optional(),
+  "agent_id": zod.string().optional()
 })
 
 

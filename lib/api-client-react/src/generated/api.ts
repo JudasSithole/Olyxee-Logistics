@@ -22,12 +22,17 @@ import type {
 import type {
   Business,
   BusinessUpdate,
+  CallCentreStatus,
+  CallRecord,
   Customer,
   CustomerInput,
   CustomerUpdate,
   DashboardSummary,
+  DisableCallCentreResult,
   EmailNotification,
   EmailResendResult,
+  EnableCallCentreInput,
+  EnableCallCentreResult,
   HealthStatus,
   ListAuditLogsParams,
   ListCustomersParams,
@@ -35,12 +40,17 @@ import type {
   Order,
   OrderDetail,
   OrderInput,
+  OrderLookupInput,
+  OrderLookupResult,
   OrderStatusUpdate,
   OrderWithCustomer,
   PaginatedAuditLogs,
   PaginatedCustomers,
   PaginatedOrders,
   PublicTracking,
+  RequestHumanInput,
+  RequestHumanResult,
+  RetellWebhookEvent,
   StatusCount,
   StatusUpdateResult,
   TrackingEvent
@@ -1661,4 +1671,598 @@ export function useListAuditLogs<TData = Awaited<ReturnType<typeof listAuditLogs
 
 
 
+
+export const getGetCallCentreStatusUrl = () => {
+
+
+
+
+  return `/api/call-centre/status`
+}
+
+/**
+ * @summary Get call centre status for the current business
+ */
+export const getCallCentreStatus = async ( options?: RequestInit): Promise<CallCentreStatus> => {
+
+  return customFetch<CallCentreStatus>(getGetCallCentreStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCallCentreStatusQueryKey = () => {
+    return [
+    `/api/call-centre/status`
+    ] as const;
+    }
+
+
+export const getGetCallCentreStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCallCentreStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCallCentreStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCallCentreStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCallCentreStatus>>> = ({ signal }) => getCallCentreStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCallCentreStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCallCentreStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCallCentreStatus>>>
+export type GetCallCentreStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get call centre status for the current business
+ */
+
+export function useGetCallCentreStatus<TData = Awaited<ReturnType<typeof getCallCentreStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCallCentreStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCallCentreStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getEnableCallCentreUrl = () => {
+
+
+
+
+  return `/api/call-centre/enable`
+}
+
+/**
+ * @summary Enable automated call centre for the current business
+ */
+export const enableCallCentre = async (enableCallCentreInput?: EnableCallCentreInput, options?: RequestInit): Promise<EnableCallCentreResult> => {
+
+  return customFetch<EnableCallCentreResult>(getEnableCallCentreUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      enableCallCentreInput,)
+  }
+);}
+
+
+
+
+export const getEnableCallCentreMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableCallCentre>>, TError,{data?: BodyType<EnableCallCentreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enableCallCentre>>, TError,{data?: BodyType<EnableCallCentreInput>}, TContext> => {
+
+const mutationKey = ['enableCallCentre'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableCallCentre>>, {data?: BodyType<EnableCallCentreInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  enableCallCentre(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnableCallCentreMutationResult = NonNullable<Awaited<ReturnType<typeof enableCallCentre>>>
+    export type EnableCallCentreMutationBody = BodyType<EnableCallCentreInput> | undefined
+    export type EnableCallCentreMutationError = ErrorType<void>
+
+    /**
+ * @summary Enable automated call centre for the current business
+ */
+export const useEnableCallCentre = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableCallCentre>>, TError,{data?: BodyType<EnableCallCentreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enableCallCentre>>,
+        TError,
+        {data?: BodyType<EnableCallCentreInput>},
+        TContext
+      > => {
+      return useMutation(getEnableCallCentreMutationOptions(options));
+    }
+
+export const getDisableCallCentreUrl = () => {
+
+
+
+
+  return `/api/call-centre/disable`
+}
+
+/**
+ * @summary Disable automated call centre for the current business
+ */
+export const disableCallCentre = async ( options?: RequestInit): Promise<DisableCallCentreResult> => {
+
+  return customFetch<DisableCallCentreResult>(getDisableCallCentreUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDisableCallCentreMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableCallCentre>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableCallCentre>>, TError,void, TContext> => {
+
+const mutationKey = ['disableCallCentre'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableCallCentre>>, void> = () => {
+
+
+          return  disableCallCentre(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableCallCentreMutationResult = NonNullable<Awaited<ReturnType<typeof disableCallCentre>>>
+
+    export type DisableCallCentreMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disable automated call centre for the current business
+ */
+export const useDisableCallCentre = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableCallCentre>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableCallCentre>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisableCallCentreMutationOptions(options));
+    }
+
+export const getListCallsUrl = () => {
+
+
+
+
+  return `/api/call-centre/calls`
+}
+
+/**
+ * @summary List call records for the current business
+ */
+export const listCalls = async ( options?: RequestInit): Promise<CallRecord[]> => {
+
+  return customFetch<CallRecord[]>(getListCallsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCallsQueryKey = () => {
+    return [
+    `/api/call-centre/calls`
+    ] as const;
+    }
+
+
+export const getListCallsQueryOptions = <TData = Awaited<ReturnType<typeof listCalls>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCalls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCallsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCalls>>> = ({ signal }) => listCalls({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCalls>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCallsQueryResult = NonNullable<Awaited<ReturnType<typeof listCalls>>>
+export type ListCallsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List call records for the current business
+ */
+
+export function useListCalls<TData = Awaited<ReturnType<typeof listCalls>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCalls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCallsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCallUrl = (callId: string,) => {
+
+
+
+
+  return `/api/call-centre/calls/${callId}`
+}
+
+/**
+ * @summary Get a single call record
+ */
+export const getCall = async (callId: string, options?: RequestInit): Promise<CallRecord> => {
+
+  return customFetch<CallRecord>(getGetCallUrl(callId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCallQueryKey = (callId: string,) => {
+    return [
+    `/api/call-centre/calls/${callId}`
+    ] as const;
+    }
+
+
+export const getGetCallQueryOptions = <TData = Awaited<ReturnType<typeof getCall>>, TError = ErrorType<void>>(callId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCallQueryKey(callId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCall>>> = ({ signal }) => getCall(callId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(callId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCall>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCallQueryResult = NonNullable<Awaited<ReturnType<typeof getCall>>>
+export type GetCallQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single call record
+ */
+
+export function useGetCall<TData = Awaited<ReturnType<typeof getCall>>, TError = ErrorType<void>>(
+ callId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCallQueryOptions(callId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getInternalVoiceOrderLookupUrl = () => {
+
+
+
+
+  return `/api/internal/voice/order-lookup`
+}
+
+/**
+ * Server-to-server endpoint called by Retell during a live call.
+Authenticated by RETELL_INTERNAL_TOKEN bearer header.
+
+ * @summary Look up an order for the Retell voice agent
+ */
+export const internalVoiceOrderLookup = async (orderLookupInput: OrderLookupInput, options?: RequestInit): Promise<OrderLookupResult> => {
+
+  return customFetch<OrderLookupResult>(getInternalVoiceOrderLookupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      orderLookupInput,)
+  }
+);}
+
+
+
+
+export const getInternalVoiceOrderLookupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof internalVoiceOrderLookup>>, TError,{data: BodyType<OrderLookupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof internalVoiceOrderLookup>>, TError,{data: BodyType<OrderLookupInput>}, TContext> => {
+
+const mutationKey = ['internalVoiceOrderLookup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof internalVoiceOrderLookup>>, {data: BodyType<OrderLookupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  internalVoiceOrderLookup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InternalVoiceOrderLookupMutationResult = NonNullable<Awaited<ReturnType<typeof internalVoiceOrderLookup>>>
+    export type InternalVoiceOrderLookupMutationBody = BodyType<OrderLookupInput>
+    export type InternalVoiceOrderLookupMutationError = ErrorType<void>
+
+    /**
+ * @summary Look up an order for the Retell voice agent
+ */
+export const useInternalVoiceOrderLookup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof internalVoiceOrderLookup>>, TError,{data: BodyType<OrderLookupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof internalVoiceOrderLookup>>,
+        TError,
+        {data: BodyType<OrderLookupInput>},
+        TContext
+      > => {
+      return useMutation(getInternalVoiceOrderLookupMutationOptions(options));
+    }
+
+export const getInternalVoiceRequestHumanUrl = () => {
+
+
+
+
+  return `/api/internal/voice/request-human`
+}
+
+/**
+ * Server-to-server endpoint called by Retell when the agent triggers
+a request_human tool call.
+
+ * @summary Record a request-human escalation from the Retell voice agent
+ */
+export const internalVoiceRequestHuman = async (requestHumanInput: RequestHumanInput, options?: RequestInit): Promise<RequestHumanResult> => {
+
+  return customFetch<RequestHumanResult>(getInternalVoiceRequestHumanUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      requestHumanInput,)
+  }
+);}
+
+
+
+
+export const getInternalVoiceRequestHumanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof internalVoiceRequestHuman>>, TError,{data: BodyType<RequestHumanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof internalVoiceRequestHuman>>, TError,{data: BodyType<RequestHumanInput>}, TContext> => {
+
+const mutationKey = ['internalVoiceRequestHuman'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof internalVoiceRequestHuman>>, {data: BodyType<RequestHumanInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  internalVoiceRequestHuman(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InternalVoiceRequestHumanMutationResult = NonNullable<Awaited<ReturnType<typeof internalVoiceRequestHuman>>>
+    export type InternalVoiceRequestHumanMutationBody = BodyType<RequestHumanInput>
+    export type InternalVoiceRequestHumanMutationError = ErrorType<void>
+
+    /**
+ * @summary Record a request-human escalation from the Retell voice agent
+ */
+export const useInternalVoiceRequestHuman = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof internalVoiceRequestHuman>>, TError,{data: BodyType<RequestHumanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof internalVoiceRequestHuman>>,
+        TError,
+        {data: BodyType<RequestHumanInput>},
+        TContext
+      > => {
+      return useMutation(getInternalVoiceRequestHumanMutationOptions(options));
+    }
+
+export const getRetellWebhookUrl = () => {
+
+
+
+
+  return `/api/webhooks/retell`
+}
+
+/**
+ * Receives call lifecycle events from Retell. Signature verified
+against RETELL_WEBHOOK_SECRET.
+
+ * @summary Retell webhook endpoint for call events
+ */
+export const retellWebhook = async (retellWebhookEvent: RetellWebhookEvent, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRetellWebhookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      retellWebhookEvent,)
+  }
+);}
+
+
+
+
+export const getRetellWebhookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retellWebhook>>, TError,{data: BodyType<RetellWebhookEvent>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retellWebhook>>, TError,{data: BodyType<RetellWebhookEvent>}, TContext> => {
+
+const mutationKey = ['retellWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retellWebhook>>, {data: BodyType<RetellWebhookEvent>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  retellWebhook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetellWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof retellWebhook>>>
+    export type RetellWebhookMutationBody = BodyType<RetellWebhookEvent>
+    export type RetellWebhookMutationError = ErrorType<void>
+
+    /**
+ * @summary Retell webhook endpoint for call events
+ */
+export const useRetellWebhook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retellWebhook>>, TError,{data: BodyType<RetellWebhookEvent>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retellWebhook>>,
+        TError,
+        {data: BodyType<RetellWebhookEvent>},
+        TContext
+      > => {
+      return useMutation(getRetellWebhookMutationOptions(options));
+    }
 

@@ -12,6 +12,7 @@ export interface OrderWithCustomer {
   trackingId: string;
   orderReference?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;

@@ -5,10 +5,13 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderInputTransportMode } from './orderInputTransportMode';
 
 export interface OrderInput {
   customerId: string;
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
+  /** Required for LOGISTICS businesses; rejected otherwise. */
+  transportMode?: OrderInputTransportMode;
 }

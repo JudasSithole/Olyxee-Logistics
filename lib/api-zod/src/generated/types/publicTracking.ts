@@ -6,14 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PublicTrackingEvent } from './publicTrackingEvent';
+import type { PublicTrackingFlowItem } from './publicTrackingFlowItem';
 
 export interface PublicTracking {
   trackingId: string;
   orderReference?: string | null;
   status: string;
   statusLabel: string;
+  transportMode?: string | null;
+  transportModeLabel?: string | null;
   estimatedDeliveryDate?: string | null;
   lastUpdated: string;
   businessName: string;
   events: PublicTrackingEvent[];
+  /** Transport-aware checklist for logistics orders (completed/current/upcoming). */
+  flow?: PublicTrackingFlowItem[];
 }

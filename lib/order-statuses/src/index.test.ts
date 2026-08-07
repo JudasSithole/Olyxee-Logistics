@@ -11,8 +11,9 @@ import {
 } from "./index";
 
 describe("ORDER_STATUSES", () => {
-  it("contains the eight canonical statuses", () => {
+  it("contains the nine canonical statuses", () => {
     expect(ORDER_STATUSES).toEqual([
+      "Created",
       "Order received",
       "Processing",
       "In transit",
@@ -184,7 +185,7 @@ describe("suggestedMessages", () => {
 
   it("provides at least one suggestion for every non-initial status", () => {
     for (const s of ORDER_STATUSES) {
-      if (s === "Order received") continue;
+      if (s === "Order received" || s === "Created") continue;
       expect(
         SUGGESTED_MESSAGES[s]?.length ?? 0,
         `expected suggestions for ${s}`,

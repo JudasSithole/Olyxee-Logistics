@@ -12,11 +12,20 @@ interface TrackingEvent {
   location: string | null;
 }
 
+interface FlowStep {
+  status: string;
+  label: string;
+  state: "completed" | "current" | "upcoming";
+}
+
 interface TrackingResponse {
   trackingId: string;
   reference: string | null;
   currentStatus: string;
   statusLabel: string;
+  transportMode?: string | null;
+  transportModeLabel?: string | null;
+  flow?: FlowStep[];
   estimatedDeliveryDate: string | null;
   lastUpdated: string;
   events: TrackingEvent[];
@@ -165,6 +174,11 @@ export default function TrackPage() {
                   {data.statusLabel}
                 </h1>
               </div>
+              {data.transportModeLabel && (
+                <p style={mono} className="mt-3 inline-block text-[11px] tracking-[0.18em] uppercase text-neutral-500 border border-neutral-300 px-2.5 py-1">
+                  {data.transportModeLabel}
+                </p>
+              )}
               {data.reference && (
                 <p className="mt-3 text-sm text-neutral-500">
                   Order reference: <span className="text-neutral-700">{data.reference}</span>
@@ -177,6 +191,60 @@ export default function TrackPage() {
                 </p>
               )}
             </div>
+
+            {/* Transport-aware journey checklist (logistics orders only) */}
+            {data.flow && data.flow.length > 0 && (
+              <div className="px-8 py-7 border-b border-dashed border-neutral-300">
+                <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-5">
+                  Journey
+                </p>
+                <ol className="relative">
+                  {data.flow.map((step, i) => {
+                    const isLast = i === data.flow!.length - 1;
+                    return (
+                      <li key={step.status} className="relative pl-8 pb-5 last:pb-0">
+                        {!isLast && (
+                          <span
+                            className={`absolute left-[9px] top-5 bottom-0 w-px ${
+                              step.state === "completed" ? "bg-green-500" : "bg-neutral-200"
+                            }`}
+                          />
+                        )}
+                        {step.state === "completed" && (
+                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full bg-green-600 text-white flex items-center justify-center text-[11px] leading-none">
+                            ✓
+                          </span>
+                        )}
+                        {step.state === "current" && (
+                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full border-2 border-green-600 flex items-center justify-center">
+                            <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />
+                          </span>
+                        )}
+                        {step.state === "upcoming" && (
+                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full border-2 border-neutral-300" />
+                        )}
+                        <span
+                          className={`text-sm ${
+                            step.state === "current"
+                              ? "font-semibold text-neutral-900"
+                              : step.state === "completed"
+                                ? "text-neutral-700"
+                                : "text-neutral-400"
+                          }`}
+                        >
+                          {step.label}
+                        </span>
+                        {step.state === "current" && (
+                          <span style={mono} className="ml-2 text-[10px] tracking-[0.15em] uppercase text-green-700">
+                            Current
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
 
             {/* Timeline */}
             <div className="px-8 py-7">

@@ -680,10 +680,6 @@ paths:
           description: Invalid signature
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
   schemas:
     HealthStatus:
       type: object
@@ -885,6 +881,12 @@ components:
           type: string
         statusLabel:
           type: string
+        transportMode:
+          type: string
+          nullable: true
+        transportModeLabel:
+          type: string
+          nullable: true
         estimatedDeliveryDate:
           type: string
           nullable: true
@@ -896,6 +898,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PublicTrackingEvent"
+        flow:
+          type: array
+          description: Transport-aware checklist for logistics orders (completed/current/upcoming).
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              label:
+                type: string
+              state:
+                type: string
+                enum: [completed, current, upcoming]
+            required: [status, label, state]
       required:
         - trackingId
         - status
@@ -1008,6 +1024,9 @@ components:
           type: string
         currentStatus:
           type: string
+        transportMode:
+          type: string
+          nullable: true
         estimatedDeliveryDate:
           type: string
         createdAt:
@@ -1034,6 +1053,9 @@ components:
           type: string
         currentStatus:
           type: string
+        transportMode:
+          type: string
+          nullable: true
         estimatedDeliveryDate:
           type: string
         createdAt:
@@ -1067,6 +1089,9 @@ components:
           type: string
         currentStatus:
           type: string
+        transportMode:
+          type: string
+          nullable: true
         estimatedDeliveryDate:
           type: string
         trackingLink:
@@ -1109,6 +1134,12 @@ components:
           type: string
         estimatedDeliveryDate:
           type: string
+        transportMode:
+          type: string
+          enum:
+            - AIR
+            - SEA
+          description: Required for LOGISTICS businesses; rejected otherwise.
       required:
         - customerId
 
@@ -1126,6 +1157,18 @@ components:
             - Delivered
             - Failed delivery
             - Cancelled
+            - ORDER_CONFIRMED
+            - RECEIVED_FROM_SUPPLIER
+            - EXPORT_CUSTOMS_CLEARED
+            - LOADED_ONTO_VESSEL
+            - VESSEL_DEPARTED
+            - MID_OCEAN_TRANSIT
+            - APPROACHING_DESTINATION_PORT
+            - VESSEL_ARRIVED
+            - IN_TRANSIT
+            - IMPORT_CUSTOMS_CLEARANCE
+            - OUT_FOR_DELIVERY
+            - DELIVERED
         message:
           type: string
         location:

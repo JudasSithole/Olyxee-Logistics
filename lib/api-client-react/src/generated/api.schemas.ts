@@ -61,6 +61,7 @@ export interface Business {
   currentPeriodEnd?: string | null;
   emailNotificationsUsed?: number;
   smsNotificationsUsed?: number;
+  aiCallMinutesUsed?: number;
   businessLogoUrl?: string | null;
   emailSenderName?: string | null;
   primaryBrandColour?: string | null;
@@ -92,6 +93,8 @@ export interface DashboardSummary {
   deliveredOrders: number;
   cancelledOrders: number;
   emailsSentToday: number;
+  escalatedCallsToday: number;
+  callsToday: number;
 }
 
 export interface PublicTrackingEvent {
@@ -102,15 +105,34 @@ export interface PublicTrackingEvent {
   timestamp: string;
 }
 
+export type PublicTrackingFlowItemState = typeof PublicTrackingFlowItemState[keyof typeof PublicTrackingFlowItemState];
+
+
+export const PublicTrackingFlowItemState = {
+  completed: 'completed',
+  current: 'current',
+  upcoming: 'upcoming',
+} as const;
+
+export type PublicTrackingFlowItem = {
+  status: string;
+  label: string;
+  state: PublicTrackingFlowItemState;
+};
+
 export interface PublicTracking {
   trackingId: string;
   orderReference?: string | null;
   status: string;
   statusLabel: string;
+  transportMode?: string | null;
+  transportModeLabel?: string | null;
   estimatedDeliveryDate?: string | null;
   lastUpdated: string;
   businessName: string;
   events: PublicTrackingEvent[];
+  /** Transport-aware checklist for logistics orders (completed/current/upcoming). */
+  flow?: PublicTrackingFlowItem[];
 }
 
 export interface StatusCount {
@@ -160,6 +182,7 @@ export interface Order {
   orderReference?: string;
   description?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;
@@ -170,6 +193,7 @@ export interface OrderWithCustomer {
   trackingId: string;
   orderReference?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;
@@ -215,6 +239,7 @@ export interface OrderDetail {
   orderReference?: string;
   description?: string;
   currentStatus: string;
+  transportMode?: string | null;
   estimatedDeliveryDate?: string;
   trackingLink: string;
   createdAt: string;
@@ -224,11 +249,24 @@ export interface OrderDetail {
   emailNotifications: EmailNotification[];
 }
 
+/**
+ * Required for LOGISTICS businesses; rejected otherwise.
+ */
+export type OrderInputTransportMode = typeof OrderInputTransportMode[keyof typeof OrderInputTransportMode];
+
+
+export const OrderInputTransportMode = {
+  AIR: 'AIR',
+  SEA: 'SEA',
+} as const;
+
 export interface OrderInput {
   customerId: string;
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
+  /** Required for LOGISTICS businesses; rejected otherwise. */
+  transportMode?: OrderInputTransportMode;
 }
 
 export type OrderStatusUpdateStatus = typeof OrderStatusUpdateStatus[keyof typeof OrderStatusUpdateStatus];
@@ -243,6 +281,18 @@ export const OrderStatusUpdateStatus = {
   Delivered: 'Delivered',
   Failed_delivery: 'Failed delivery',
   Cancelled: 'Cancelled',
+  ORDER_CONFIRMED: 'ORDER_CONFIRMED',
+  RECEIVED_FROM_SUPPLIER: 'RECEIVED_FROM_SUPPLIER',
+  EXPORT_CUSTOMS_CLEARED: 'EXPORT_CUSTOMS_CLEARED',
+  LOADED_ONTO_VESSEL: 'LOADED_ONTO_VESSEL',
+  VESSEL_DEPARTED: 'VESSEL_DEPARTED',
+  MID_OCEAN_TRANSIT: 'MID_OCEAN_TRANSIT',
+  APPROACHING_DESTINATION_PORT: 'APPROACHING_DESTINATION_PORT',
+  VESSEL_ARRIVED: 'VESSEL_ARRIVED',
+  IN_TRANSIT: 'IN_TRANSIT',
+  IMPORT_CUSTOMS_CLEARANCE: 'IMPORT_CUSTOMS_CLEARANCE',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
 } as const;
 
 export interface OrderStatusUpdate {
@@ -315,6 +365,115 @@ export interface PaginatedAuditLogs {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface CallCentreStatus {
+  callCentreEnabled?: boolean;
+  retellAgentId?: string | null;
+  retellPhoneNumber?: string | null;
+  retellKnowledgeBaseId?: string | null;
+  callCentreForwardingNumber?: string | null;
+  plan?: string;
+  canEnable?: boolean;
+}
+
+export interface EnableCallCentreInput {
+  countryCode?: string;
+  areaCode?: string;
+  forwardingNumber?: string;
+}
+
+export interface EnableCallCentreResult {
+  status?: string;
+  retellAgentId?: string;
+  retellPhoneNumber?: string | null;
+  retellKnowledgeBaseId?: string | null;
+  callCentreForwardingNumber?: string | null;
+}
+
+export interface DisableCallCentreResult {
+  status?: string;
+}
+
+export interface RequestHumanResult {
+  received?: boolean;
+}
+
+export type CallRecordStatus = typeof CallRecordStatus[keyof typeof CallRecordStatus];
+
+
+export const CallRecordStatus = {
+  received: 'received',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  escalated: 'escalated',
+  failed: 'failed',
+} as const;
+
+export interface CallRecord {
+  id?: string;
+  businessId?: string;
+  retellCallId?: string | null;
+  fromNumber?: string | null;
+  orderId?: string | null;
+  status?: CallRecordStatus;
+  transcript?: string | null;
+  summary?: string | null;
+  escalated?: boolean;
+  createdAt?: string;
+}
+
+export interface OrderLookupInput {
+  call_id?: string;
+  from_number?: string;
+  to_number?: string;
+  tracking_id?: string;
+  attempt?: number;
+}
+
+export interface OrderLookupEvent {
+  at?: string;
+  timestamp?: string;
+  status?: string;
+  label?: string;
+  status_label?: string;
+  statusLabel?: string;
+  message?: string | null;
+  notes?: string | null;
+  location?: string | null;
+}
+
+export interface OrderLookupOrder {
+  tracking_id?: string;
+  reference?: string | null;
+  order_reference?: string | null;
+  current_status?: string;
+  status?: string;
+  status_label?: string;
+  statusLabel?: string;
+  estimated_delivery_date?: string | null;
+  last_updated?: string;
+  events?: OrderLookupEvent[];
+}
+
+export interface OrderLookupResult {
+  found?: boolean;
+  call_id?: string;
+  attempt?: number;
+  order?: OrderLookupOrder;
+}
+
+export interface RequestHumanInput {
+  call_id?: string;
+  reason?: string;
+}
+
+export type RetellWebhookEventCall = { [key: string]: unknown };
+
+export interface RetellWebhookEvent {
+  event?: string;
+  call?: RetellWebhookEventCall;
+  agent_id?: string;
 }
 
 export type ListCustomersParams = {

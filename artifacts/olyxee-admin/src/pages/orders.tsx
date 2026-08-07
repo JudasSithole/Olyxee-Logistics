@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
+import { useOrders, useCustomers, useCreateOrder, useBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Plus, Search, Package } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ORDER_STATUSES } from "@/lib/order-statuses";
+import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
 
 function generateOrderReference(): string {
   const d = new Date();
@@ -30,13 +30,14 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
-function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
+function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: () => void; businessId: string; isLogistics: boolean }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
     orderReference: generateOrderReference(),
     description: "",
     estimatedDeliveryDate: "",
+    transportMode: "",
   }));
   const createMutation = useCreateOrder();
   const { data: customersData } = useCustomers(businessId, { limit: 100 });
@@ -48,14 +49,19 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         orderReference: generateOrderReference(),
         description: "",
         estimatedDeliveryDate: "",
+        transportMode: "",
       });
     }
   }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLogistics && !form.transportMode) {
+      toast.error("Please select a transport mode");
+      return;
+    }
     createMutation.mutate(
-      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined },
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, ...(isLogistics && form.transportMode ? { transport_mode: form.transportMode } : {}) },
       {
         onSuccess: () => {
           toast.success("Order created - tracking ID auto-generated");
@@ -88,6 +94,20 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               </SelectContent>
             </Select>
           </div>
+          {isLogistics && (
+            <div className="space-y-2">
+              <Label>Transport Mode *</Label>
+              <Select value={form.transportMode} onValueChange={v => setForm(f => ({ ...f, transportMode: v }))}>
+                <SelectTrigger><SelectValue placeholder="How is this order shipping?" /></SelectTrigger>
+                <SelectContent>
+                  {TRANSPORT_MODES.map(m => (
+                    <SelectItem key={m} value={m}>{TRANSPORT_MODE_LABELS[m as TransportMode]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -118,7 +138,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What's in the shipment?" />
           </div>
           <p className="text-xs text-muted-foreground">A unique tracking ID will be auto-generated for this order.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId}>
+          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || (isLogistics && !form.transportMode)}>
             {createMutation.isPending ? "Creating..." : "Create Order"}
           </Button>
         </form>
@@ -137,6 +157,8 @@ function getInitialStatusFromUrl(): string {
 export default function OrdersPage() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
+  const isLogistics = !!business?.business_type?.toLowerCase().includes("logistics");
   const [search, setSearch] = useState("");
   const [querySearch, setQuerySearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFromUrl);
@@ -162,7 +184,7 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total orders</p>
         </div>
-        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
+        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} isLogistics={isLogistics} />
       </div>
 
       <Card>

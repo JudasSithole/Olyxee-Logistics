@@ -3,6 +3,10 @@
 // frontend (for the live email preview + suggested message chips), so the
 // admin sees exactly what the customer will receive.
 
+import { LOGISTICS_STATUS_COPY, logisticsStatusLabel } from "./logistics";
+
+export * from "./logistics";
+
 export const ORDER_STATUSES = [
   "Created",
   "Order received",
@@ -76,12 +80,15 @@ export const STATUS_COPY: Record<string, StatusCopy> = {
 };
 
 export function statusCopy(status: string): StatusCopy {
-  return STATUS_COPY[status] ?? {
-    headline: `Order update: ${status}`,
-    intro: "Your order status has been updated.",
-    accent: "#2b2b2b",
-    tone: "neutral",
-  };
+  return (
+    STATUS_COPY[status] ??
+    LOGISTICS_STATUS_COPY[status] ?? {
+      headline: `Order update: ${logisticsStatusLabel(status)}`,
+      intro: "Your order status has been updated.",
+      accent: "#2b2b2b",
+      tone: "neutral",
+    }
+  );
 }
 
 // ─── Suggested admin messages per next-status ────────────────────────────────

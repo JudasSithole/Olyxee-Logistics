@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { computeCountdown, orderLoopLaunch, LAUNCH_LABEL } from "@/lib/launch";
 
 interface LaunchCountdownProps {
-  // Defaults to the Order Loop launch date (1 Aug 2026, Africa/Johannesburg).
+  // Defaults to the Order Loop launch date (20 Aug 2026, Africa/Johannesburg).
   target?: string;
   className?: string;
   // Compact = inline "12d 04h 33m" string; full = boxed d/h/m/s grid.

@@ -159,6 +159,7 @@ export interface Database {
           tracking_id: string;
           order_reference: string | null;
           current_status: string;
+          transport_mode: string | null;
           current_step_position: number;
           description: string | null;
           estimated_completion: string | null;
@@ -177,6 +178,7 @@ export interface Database {
           tracking_id?: string;
           order_reference?: string | null;
           current_status?: string;
+          transport_mode?: string | null;
           current_step_position?: number;
           description?: string | null;
           estimated_completion?: string | null;

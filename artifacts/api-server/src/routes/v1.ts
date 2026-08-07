@@ -12,6 +12,8 @@ import { and, eq, isNull, desc } from "drizzle-orm";
 import { isFeatureEnabled } from "@workspace/plans";
 import { logger } from "../lib/logger";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
+import { isTransportMode } from "@workspace/order-statuses";
+import { isLogisticsBusiness } from "./orders";
 
 // ─── Public API /api/v1 (DISABLED) ───────────────────────────────────────────
 // Foundation for the customer-facing public API. The whole surface is gated by
@@ -200,6 +202,7 @@ function serializeOrder(o: typeof ordersTable.$inferSelect) {
     orderReference: o.orderReference,
     description: o.description,
     currentStatus: o.currentStatus,
+    transportMode: o.transportMode,
     estimatedDeliveryDate: o.estimatedDeliveryDate,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
@@ -234,6 +237,7 @@ const createOrderSchema = z.object({
   orderReference: z.string().optional(),
   description: z.string().optional(),
   estimatedDeliveryDate: z.string().optional(),
+  transportMode: z.enum(["AIR", "SEA"]).optional(),
 });
 
 router.post("/v1/orders", async (req: ApiRequest, res: Response) => {
@@ -265,6 +269,26 @@ router.post("/v1/orders", async (req: ApiRequest, res: Response) => {
     business?.slug,
   );
 
+  // Same transport-mode rules as the dashboard route: logistics businesses
+  // must state AIR|SEA (their orders start on the transport-aware flow),
+  // everyone else must not send a mode.
+  const logistics = isLogisticsBusiness(business?.industry);
+  const transportMode = parse.data.transportMode ?? null;
+  if (logistics && !transportMode) {
+    res.status(400).json({
+      error: "transportMode is required for logistics businesses (AIR or SEA)",
+    });
+    return;
+  }
+  if (!logistics && transportMode) {
+    res.status(400).json({ error: "transportMode is only supported for logistics businesses" });
+    return;
+  }
+  if (transportMode && !isTransportMode(transportMode)) {
+    res.status(400).json({ error: "Invalid transportMode" });
+    return;
+  }
+
   // Race-free unique tracking ID: rely on the unique constraint and retry on a
   // 23505 (unique_violation) rather than a pre-check-only loop.
   const MAX_TRACKING_ATTEMPTS = 8;
@@ -281,7 +305,8 @@ router.post("/v1/orders", async (req: ApiRequest, res: Response) => {
           trackingId: generateTrackingId(prefix),
           orderReference: parse.data.orderReference ?? null,
           description: parse.data.description ?? null,
-          currentStatus: "Order received",
+          currentStatus: transportMode ? "ORDER_CONFIRMED" : "Order received",
+          transportMode,
           estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
         })
         .returning();

@@ -29,6 +29,20 @@ import {
   ConcurrentTransitionError,
   type OrderFsmStatus,
 } from "../lib/order-fsm";
+import {
+  isTransportMode,
+  isStatusValidForMode,
+  isLogisticsStatus,
+  isLogisticsTerminal,
+  logisticsFlow,
+  logisticsStatusLabel,
+} from "@workspace/order-statuses";
+
+// A business is "logistics" when its industry (aka business type in the UI)
+// mentions logistics — the UI stores the label "Logistics Company".
+export function isLogisticsBusiness(industry: string | null | undefined): boolean {
+  return !!industry && industry.toLowerCase().includes("logistics");
+}
 
 const router = Router();
 
@@ -129,6 +143,7 @@ router.get("/orders", requireAuth, async (req, res) => {
       trackingId: o.trackingId,
       orderReference: o.orderReference,
       currentStatus: o.currentStatus,
+      transportMode: o.transportMode,
       estimatedDeliveryDate: o.estimatedDeliveryDate,
       createdAt: o.createdAt.toISOString(),
       updatedAt: o.updatedAt.toISOString(),
@@ -168,6 +183,34 @@ router.post("/orders", requireAuth, async (req, res) => {
       where: eq(businessesTable.id, businessId),
     });
 
+    // Transport-aware flows: LOGISTICS businesses must state how the order
+    // ships (AIR | SEA) so the right status flow applies. Non-logistics
+    // businesses must NOT send a transport mode — it would silently switch
+    // their orders onto the logistics flow.
+    const logistics = isLogisticsBusiness(business?.industry);
+    const transportMode = parse.data.transportMode ?? null;
+    if (logistics && !transportMode) {
+      res.status(400).json({
+        error: "transportMode is required for logistics businesses (AIR or SEA)",
+      });
+      return;
+    }
+    if (!logistics && transportMode) {
+      res.status(400).json({
+        error: "transportMode is only supported for logistics businesses",
+      });
+      return;
+    }
+    if (transportMode && !isTransportMode(transportMode)) {
+      res.status(400).json({ error: "Invalid transportMode" });
+      return;
+    }
+
+    const initialStatus = transportMode ? "ORDER_CONFIRMED" : "Order received";
+    const initialMessage = transportMode
+      ? "Order confirmed and tracking started"
+      : "Order has been received";
+
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
     // - this is the only race-free pattern. Concurrent inserts under a
@@ -194,7 +237,8 @@ router.post("/orders", requireAuth, async (req, res) => {
             trackingId: candidate,
             orderReference: parse.data.orderReference ?? null,
             description: parse.data.description ?? null,
-            currentStatus: "Order received",
+            currentStatus: initialStatus,
+            transportMode,
             estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
           })
           .returning();
@@ -223,8 +267,8 @@ router.post("/orders", requireAuth, async (req, res) => {
     await db.insert(trackingEventsTable).values({
       id: generateId(),
       orderId: o.id,
-      status: "Order received",
-      message: "Order has been received",
+      status: initialStatus,
+      message: initialMessage,
       createdBy: userId,
     });
 
@@ -338,6 +382,33 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       return;
     }
 
+    // Transport-aware validation. Orders with a transport mode may only move
+    // through their mode's flow (e.g. no vessel stages on AIR shipments) and
+    // DELIVERED is terminal. Orders WITHOUT a mode (non-logistics + legacy
+    // logistics orders) keep the generic flow and must not receive logistics
+    // status codes.
+    if (order.transportMode) {
+      if (isLogisticsTerminal(order.currentStatus)) {
+        res.status(409).json({
+          error: "Order is already delivered; no further status changes allowed",
+        });
+        return;
+      }
+      if (!isStatusValidForMode(order.transportMode, status)) {
+        res.status(422).json({
+          error: `Status "${status}" is not valid for ${order.transportMode} shipments`,
+          allowedStatuses: logisticsFlow(order.transportMode) ?? [],
+        });
+        return;
+      }
+    } else if (isLogisticsStatus(status)) {
+      res.status(422).json({
+        error:
+          "This order has no transport mode, so transport-specific statuses cannot be applied",
+      });
+      return;
+    }
+
     const [customer, business] = await Promise.all([
       db.query.customersTable.findFirst({
         where: and(
@@ -403,7 +474,9 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         customerEmail: customer.email,
         customerName: customer.fullName,
         trackingId: order.trackingId,
-        status,
+        // For transport-aware orders the internal code (e.g. VESSEL_DEPARTED)
+        // must never leak into customer emails — use the friendly label.
+        status: order.transportMode ? logisticsStatusLabel(status) : status,
         statusMessage: message ?? null,
         trackingLink,
         businessName: business.name,
@@ -465,7 +538,8 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       customerPhone: customer?.phone ?? undefined,
       businessName: business!.name,
       trackingId: order.trackingId,
-      status,
+      // SMS is customer-facing too: send the friendly label, not the code.
+      status: order.transportMode ? logisticsStatusLabel(status) : status,
       statusMessage: message ?? null,
       trackingLink,
       businessPlan: business!.plan,
@@ -682,7 +756,10 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       customerEmail: customer.email,
       customerName: customer.fullName,
       trackingId: order.trackingId,
-      status: order.currentStatus,
+      // Never leak internal logistics codes into a resent customer email.
+      status: order.transportMode
+        ? logisticsStatusLabel(order.currentStatus)
+        : order.currentStatus,
       statusMessage: null,
       trackingLink,
       businessName: business.name,
@@ -756,7 +833,9 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       customerPhone: customer.phone ?? undefined,
       businessName: business.name,
       trackingId: order.trackingId,
-      status: order.currentStatus,
+      status: order.transportMode
+        ? logisticsStatusLabel(order.currentStatus)
+        : order.currentStatus,
       statusMessage: null,
       trackingLink,
       businessPlan: business.plan,

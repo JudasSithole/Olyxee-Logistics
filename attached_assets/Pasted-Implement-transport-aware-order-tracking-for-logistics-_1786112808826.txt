@@ -1,0 +1,527 @@
+Implement transport-aware order tracking for logistics businesses in the system.
+
+## Goal
+
+When a business using the platform is configured as a **Logistics business**, every new order must specify how the shipment will be transported:
+
+* Air
+* Sea
+
+The selected transport mode determines which tracking statuses are available and shown to the business and customer.
+
+Do not apply this requirement to non-logistics businesses.
+
+## 1. Order Creation
+
+For businesses where:
+
+`businessType = "logistics"`
+
+Add a required field when creating an order:
+
+**Transport Mode**
+
+Options:
+
+* Air Freight
+* Sea Freight
+
+Store this permanently on the order, for example:
+
+```ts
+transportMode: "AIR" | "SEA"
+```
+
+The transport mode must:
+
+* Be required for logistics orders.
+* Be returned by the order APIs.
+* Be visible when viewing an order.
+* Be editable only where changing the shipping method is still operationally valid.
+* Control the tracking/status workflow for that order.
+
+Existing non-logistics order creation must continue working without this field.
+
+---
+
+# 2. Sea Freight Status Flow
+
+When:
+
+```ts
+transportMode === "SEA"
+```
+
+The tracking flow must be:
+
+1. `ORDER_CONFIRMED`
+
+   * Customer label: **Order Confirmed**
+
+2. `RECEIVED_FROM_SUPPLIER`
+
+   * Customer label: **Received from Supplier**
+
+3. `EXPORT_CUSTOMS_CLEARED`
+
+   * Customer label: **Export Customs Cleared**
+
+4. `LOADED_ONTO_VESSEL`
+
+   * Customer label: **Loaded onto Vessel**
+
+5. `VESSEL_DEPARTED`
+
+   * Customer label: **Vessel Departed**
+
+6. `MID_OCEAN_TRANSIT`
+
+   * Customer label: **Mid-Ocean Transit**
+
+7. `APPROACHING_DESTINATION_PORT`
+
+   * Customer label: **Approaching Destination Port**
+
+8. `VESSEL_ARRIVED`
+
+   * Customer label: **Vessel Arrived**
+
+9. `IMPORT_CUSTOMS_CLEARANCE`
+
+   * Customer label: **Import Customs Clearance**
+
+10. `OUT_FOR_DELIVERY`
+
+* Customer label: **Out for Delivery**
+
+11. `DELIVERED`
+
+* Customer label: **Delivered**
+
+Do NOT include "At Local Distribution Center" in the sea workflow.
+
+---
+
+# 3. Air Freight Status Flow
+
+When:
+
+```ts
+transportMode === "AIR"
+```
+
+The tracking flow must be:
+
+1. `ORDER_CONFIRMED`
+
+   * Customer label: **Order Confirmed**
+
+2. `RECEIVED_FROM_SUPPLIER`
+
+   * Customer label: **Received from Supplier**
+
+3. `EXPORT_CUSTOMS_CLEARED`
+
+   * Customer label: **Export Customs Cleared**
+
+4. `IN_TRANSIT`
+
+   * Customer label: **In Transit**
+
+5. `IMPORT_CUSTOMS_CLEARANCE`
+
+   * Customer label: **Import Customs Clearance**
+
+6. `OUT_FOR_DELIVERY`
+
+   * Customer label: **Out for Delivery**
+
+7. `DELIVERED`
+
+   * Customer label: **Delivered**
+
+Air freight must NOT display vessel-specific statuses.
+
+---
+
+# 4. Status Validation
+
+Do not allow arbitrary status changes.
+
+The backend must validate the selected status against the order's transport mode.
+
+For example:
+
+```ts
+SEA -> LOADED_ONTO_VESSEL // valid
+
+AIR -> LOADED_ONTO_VESSEL // invalid
+```
+
+Likewise:
+
+```ts
+AIR -> IN_TRANSIT // valid
+
+SEA -> IN_TRANSIT // invalid
+```
+
+Prefer defining the workflows centrally instead of scattering status checks throughout the application.
+
+For example:
+
+```ts
+const LOGISTICS_STATUS_FLOWS = {
+  AIR: [
+    "ORDER_CONFIRMED",
+    "RECEIVED_FROM_SUPPLIER",
+    "EXPORT_CUSTOMS_CLEARED",
+    "IN_TRANSIT",
+    "IMPORT_CUSTOMS_CLEARANCE",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+  ],
+
+  SEA: [
+    "ORDER_CONFIRMED",
+    "RECEIVED_FROM_SUPPLIER",
+    "EXPORT_CUSTOMS_CLEARED",
+    "LOADED_ONTO_VESSEL",
+    "VESSEL_DEPARTED",
+    "MID_OCEAN_TRANSIT",
+    "APPROACHING_DESTINATION_PORT",
+    "VESSEL_ARRIVED",
+    "IMPORT_CUSTOMS_CLEARANCE",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+  ],
+};
+```
+
+Use the existing architecture and naming conventions in the repository where appropriate.
+
+---
+
+# 5. Status History
+
+Every status update must create a tracking-history entry.
+
+Each entry should preserve at least:
+
+```ts
+{
+  orderId,
+  status,
+  timestamp,
+  updatedBy,
+  note?,
+  location?
+}
+```
+
+Do not overwrite previous tracking events.
+
+We need a complete shipment timeline.
+
+Example:
+
+```text
+08 Aug, 09:12
+Order Confirmed
+
+09 Aug, 14:30
+Received from Supplier
+
+10 Aug, 11:05
+Export Customs Cleared
+
+11 Aug, 18:42
+Loaded onto Vessel
+
+12 Aug, 06:15
+Vessel Departed
+```
+
+---
+
+# 6. Sea Freight Long-Transit Experience
+
+The main reason for adding the expanded sea workflow is that ocean shipments can remain in transit for many days or weeks.
+
+Do NOT leave customers looking at one generic "In Transit" status for the entire sea journey.
+
+The customer tracking interface should visually show progress through:
+
+```text
+Loaded onto Vessel
+        ↓
+Vessel Departed
+        ↓
+Mid-Ocean Transit
+        ↓
+Approaching Destination Port
+        ↓
+Vessel Arrived
+```
+
+This should make a 20+ day shipment feel actively tracked instead of frozen.
+
+If ETA data already exists in the system, show it alongside these statuses.
+
+Do not invent vessel locations or percentages unless the system actually has data to support them.
+
+---
+
+# 7. Customer Tracking UI
+
+Update the customer-facing tracking page.
+
+Display:
+
+* Order/reference number
+* Transport mode: Air Freight / Sea Freight
+* Current status
+* Current status description
+* Tracking timeline
+* Completed statuses
+* Current status
+* Remaining statuses
+* Last updated timestamp
+* ETA if available
+
+Example for sea:
+
+```text
+SEA FREIGHT
+
+✓ Order Confirmed
+✓ Received from Supplier
+✓ Export Customs Cleared
+✓ Loaded onto Vessel
+✓ Vessel Departed
+● Mid-Ocean Transit
+○ Approaching Destination Port
+○ Vessel Arrived
+○ Import Customs Clearance
+○ Out for Delivery
+○ Delivered
+```
+
+Example for air:
+
+```text
+AIR FREIGHT
+
+✓ Order Confirmed
+✓ Received from Supplier
+✓ Export Customs Cleared
+● In Transit
+○ Import Customs Clearance
+○ Out for Delivery
+○ Delivered
+```
+
+Keep the interface clean and easy for non-technical customers to understand.
+
+---
+
+# 8. Business/Admin Order UI
+
+When staff open an order, show:
+
+```text
+Transport
+Sea Freight
+
+Current Status
+Mid-Ocean Transit
+```
+
+The **Update Status** control must only display the statuses valid for that transport mode.
+
+Prefer guiding the operator toward the next logical status rather than showing a huge unrestricted dropdown.
+
+For example:
+
+```text
+Current:
+Vessel Departed
+
+Next suggested status:
+Mid-Ocean Transit
+```
+
+Staff should still be able to inspect the full tracking history.
+
+---
+
+# 9. Notifications
+
+If the project already has customer notifications, connect status changes to the existing notification system.
+
+Example:
+
+```text
+Shipment Update
+
+Your order #ORD-2048 has departed the origin port and is now on its way to the destination.
+```
+
+Do not build an entirely separate notification architecture if one already exists.
+
+Notifications should use customer-friendly labels rather than internal enum names.
+
+---
+
+# 10. Database / Migration
+
+Inspect the existing order schema first.
+
+Add the minimum required changes.
+
+Likely additions:
+
+```text
+orders
+- transport_mode
+```
+
+And if tracking history does not already exist:
+
+```text
+order_tracking_events
+- id
+- order_id
+- status
+- note
+- location
+- updated_by
+- created_at
+```
+
+Use migrations consistent with the project's existing database architecture.
+
+Do not break existing orders.
+
+For existing logistics orders where transport mode is unknown, handle them safely instead of blindly assigning AIR or SEA.
+
+---
+
+# 11. API
+
+Update the appropriate endpoints/services so transport mode and tracking are supported.
+
+Expected capabilities:
+
+```text
+POST /orders
+GET /orders/:id
+PATCH /orders/:id
+PATCH /orders/:id/status
+GET /orders/:id/tracking
+```
+
+These are conceptual endpoints; reuse the repository's current API structure rather than creating duplicates unnecessarily.
+
+Example order creation:
+
+```json
+{
+  "customerId": "...",
+  "transportMode": "SEA"
+}
+```
+
+Example tracking response:
+
+```json
+{
+  "orderId": "ORD-2048",
+  "transportMode": "SEA",
+  "currentStatus": "MID_OCEAN_TRANSIT",
+  "currentStatusLabel": "Mid-Ocean Transit",
+  "timeline": [],
+  "availableStatuses": []
+}
+```
+
+---
+
+# 12. Business-Type Rule
+
+This functionality is specifically for businesses using the system for logistics.
+
+Conceptually:
+
+```ts
+if (business.type === "LOGISTICS") {
+  requireTransportMode();
+  useLogisticsTrackingWorkflow();
+}
+```
+
+Do not force Air/Sea selection onto unrelated business types.
+
+Design this cleanly enough that additional transport modes could later be introduced, such as:
+
+```text
+ROAD
+RAIL
+MULTIMODAL
+```
+
+But DO NOT implement those now.
+
+---
+
+# 13. Tests
+
+Add tests covering at minimum:
+
+* Logistics order cannot be created without transport mode.
+* AIR order can be created.
+* SEA order can be created.
+* Non-logistics order remains unaffected.
+* AIR receives the correct status workflow.
+* SEA receives the correct status workflow.
+* AIR cannot use vessel statuses.
+* SEA cannot use AIR's generic IN_TRANSIT status.
+* Status update creates tracking-history entry.
+* Previous status history is preserved.
+* Customer tracking endpoint returns the correct timeline.
+* Existing orders do not break after migration.
+* Delivered remains the terminal status.
+
+Run the existing test suite and fix regressions caused by this implementation.
+
+---
+
+# Implementation Principle
+
+Do not merely change labels in the frontend.
+
+This must be implemented as a real domain-level transport-aware tracking system:
+
+```text
+Business Type
+      ↓
+LOGISTICS
+      ↓
+Create Order
+      ↓
+Choose Transport Mode
+   ↙       ↘
+ AIR       SEA
+  ↓         ↓
+Air Flow   Sea Flow
+   ↘       ↙
+ Import Customs
+       ↓
+ Out for Delivery
+       ↓
+    Delivered
+```
+
+Inspect the existing repository before changing anything. Reuse existing models, order services, tracking logic, APIs, UI components, authentication, permissions, and notification systems wherever possible.
+
+Keep the changes production-quality, backwards-compatible, typed, validated, and tested.

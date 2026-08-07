@@ -49,7 +49,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     smsLimit: 0,
     advancedCustomization: false,
     removeOlyxeeBranding: false,
-    availableFrom: "2026-08-01",
+    availableFrom: "2026-08-20",
     features: [
       "Up to 50 orders per month",
       "No-app customer tracking",
@@ -67,7 +67,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     smsLimit: 100,
     advancedCustomization: true,
     removeOlyxeeBranding: true,
-    availableFrom: "2026-08-01",
+    availableFrom: "2026-08-20",
     features: [
       "Up to 300 orders per month",
       "SMS and email communication",
@@ -89,7 +89,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     removeOlyxeeBranding: true,
     apiAccess: true,
     automatedCallCentre: true,
-    availableFrom: "2026-08-01",
+    availableFrom: "2026-08-20",
     features: [
       "Up to 1,000 orders per month",
       "Order Communication API",
@@ -142,15 +142,15 @@ export function isFeatureEnabled(flag: FeatureFlag): boolean {
 }
 
 // ─── Launch + trial dates ────────────────────────────────────────────────────
-// 1 August 2026 00:00 Africa/Johannesburg (UTC+02:00). Existing users get Pro
-// free from 1–7 August 2026.
+// 20 August 2026 00:00 Africa/Johannesburg (UTC+02:00). Existing users get Pro
+// free from 20–26 August 2026.
 
 export const orderLoopLaunch = {
-  launchDate: "2026-08-01T00:00:00+02:00",
-  trialStartDate: "2026-08-01T00:00:00+02:00",
-  trialEndDate: "2026-08-07T23:59:59+02:00",
+  launchDate: "2026-08-20T00:00:00+02:00",
+  trialStartDate: "2026-08-20T00:00:00+02:00",
+  trialEndDate: "2026-08-26T23:59:59+02:00",
 } as const;
 
 // Convenience: pricing pages / countdown labels.
-export const LAUNCH_LABEL = "1 August 2026";
-export const TRIAL_LABEL = "1–7 August 2026";
+export const LAUNCH_LABEL = "20 August 2026";
+export const TRIAL_LABEL = "20–26 August 2026";
