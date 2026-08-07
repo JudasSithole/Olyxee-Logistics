@@ -38,7 +38,6 @@ import {
   Package,
   User,
   Send,
-  Globe,
   CheckCircle2,
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
@@ -301,9 +300,6 @@ export default function OrderDetailPage() {
   }
 
   const lastEvent = (order.tracking_events as any[])?.[0];
-  const trackingLink = business?.website_url
-    ? `${business.website_url}/track?code=${order.tracking_id}`
-    : null;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -625,44 +621,6 @@ export default function OrderDetailPage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Tracking link */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Globe className="h-3.5 w-3.5" />
-                Tracking Link
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {trackingLink && !trackingLink.startsWith("/track") ? (
-                <>
-                  <div className="flex items-center border bg-muted/30">
-                    <span className="text-[11px] text-primary truncate flex-1 font-mono px-2 py-1.5">
-                      {trackingLink}
-                    </span>
-                    <CopyButton text={trackingLink} />
-                  </div>
-                  <a
-                    href={trackingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full border px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open tracking page
-                  </a>
-                </>
-              ) : (
-                <p className="text-[11px] text-amber-600 border border-amber-200 bg-amber-50 px-2 py-1.5 leading-snug">
-                  Set your website URL in Settings to generate the customer tracking link.
-                </p>
-              )}
-              <p className="text-[11px] text-muted-foreground">
-                Sent as <span className="font-mono">{"{yoursite.com}"}/track?code={order.tracking_id}</span>
-              </p>
-            </CardContent>
-          </Card>
 
           {/* Order details */}
           <Card>

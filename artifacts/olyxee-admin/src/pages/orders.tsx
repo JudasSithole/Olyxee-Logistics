@@ -5,13 +5,16 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { StatusBadge } from "@/components/status-badge";
-import { Plus, Search, Package } from "lucide-react";
+import { Plus, Search, Package, Check, ChevronsUpDown } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,7 +43,20 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
     transportMode: "",
   }));
   const createMutation = useCreateOrder();
-  const { data: customersData } = useCustomers(businessId, { limit: 100 });
+  // Server-side customer search so every customer is reachable, not just the
+  // most recent page. The picker debounces typing before hitting the API.
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(customerSearch.trim()), 250);
+    return () => clearTimeout(t);
+  }, [customerSearch]);
+  const { data: customersData, isFetching: customersFetching } = useCustomers(businessId, {
+    limit: 100,
+    search: debouncedSearch || undefined,
+  });
+  const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; label: string } | null>(null);
 
   React.useEffect(() => {
     if (open) {
@@ -51,6 +67,9 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
         estimatedDeliveryDate: "",
         transportMode: "",
       });
+      setSelectedCustomer(null);
+      setCustomerSearch("");
+      setDebouncedSearch("");
     }
   }, [open]);
 
@@ -85,14 +104,54 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="space-y-2">
             <Label>Customer *</Label>
-            <Select value={form.customerId} onValueChange={v => setForm(f => ({ ...f, customerId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
-              <SelectContent>
-                {customersData?.customers.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.full_name} - {c.email}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={customerPickerOpen}
+                  className="w-full justify-between font-normal"
+                  data-testid="button-select-customer"
+                >
+                  <span className="truncate">
+                    {selectedCustomer ? selectedCustomer.label : "Select customer..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search by name, email or company..."
+                    value={customerSearch}
+                    onValueChange={setCustomerSearch}
+                  />
+                  <CommandList className="max-h-64 overflow-y-auto">
+                    <CommandEmpty>
+                      {customersFetching ? "Searching..." : "No customers found."}
+                    </CommandEmpty>
+                    {customersData?.customers.map(c => {
+                      const label = `${c.full_name} - ${c.email}`;
+                      return (
+                        <CommandItem
+                          key={c.id}
+                          value={c.id}
+                          onSelect={() => {
+                            setForm(f => ({ ...f, customerId: c.id }));
+                            setSelectedCustomer({ id: c.id, label });
+                            setCustomerPickerOpen(false);
+                          }}
+                        >
+                          <Check className={`mr-2 h-4 w-4 ${form.customerId === c.id ? "opacity-100" : "opacity-0"}`} />
+                          <span className="truncate">{label}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           {isLogistics && (
             <div className="space-y-2">
@@ -135,7 +194,19 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What's in the shipment?" />
+            <Textarea
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={3}
+              placeholder={isLogistics
+                ? "e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
+                : "e.g. 3x oak dining chairs, natural finish — gift wrap requested"}
+            />
+            <p className="text-xs text-muted-foreground">
+              {isLogistics
+                ? "Include contents, quantity, weight/volume, origin → destination, and any handling notes."
+                : "Include the items, quantities, and any special instructions."}
+            </p>
           </div>
           <p className="text-xs text-muted-foreground">A unique tracking ID will be auto-generated for this order.</p>
           <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || (isLogistics && !form.transportMode)}>

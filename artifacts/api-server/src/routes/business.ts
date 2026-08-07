@@ -101,18 +101,20 @@ function serialize(
 router.get("/business", requireAuth, async (req, res) => {
   const businessId = (req as any).businessId;
 
-  // Demo session - return hardcoded data, no DB needed.
-  if (businessId === DEMO_BUSINESS_ID) {
-    res.json(DEMO_BUSINESS);
-    return;
-  }
-
   try {
     const business = await db.query.businessesTable.findFirst({
       where: eq(businessesTable.id, businessId),
     });
 
     if (!business) {
+      // Demo session before the lazy seed has run - fall back to the
+      // hardcoded snapshot so demo login always works. Once the seeded row
+      // exists we serve it from the DB like any other business, so edits
+      // (e.g. setting the industry) are actually reflected.
+      if (businessId === DEMO_BUSINESS_ID) {
+        res.json(DEMO_BUSINESS);
+        return;
+      }
       res.status(404).json({ error: "Business not found" });
       return;
     }

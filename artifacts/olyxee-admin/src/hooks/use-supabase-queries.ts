@@ -366,8 +366,11 @@ export function useCustomers(
   opts?: { search?: string; limit?: number; page?: number },
 ) {
   return useQuery({
-    queryKey: qk.customers(businessId ?? ""),
+    // Include the filter options in the key so a search actually refetches
+    // instead of serving the cached unfiltered page.
+    queryKey: [...qk.customers(businessId ?? ""), opts?.search ?? "", opts?.limit ?? 0, opts?.page ?? 1],
     enabled: !!businessId,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       const res = await apiFetch<{ data: ApiCustomer[]; total: number }>("/api/customers", {
         query: {
