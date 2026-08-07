@@ -34,7 +34,7 @@ export default function CustomerDetailPage() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(
-      { id: id!, full_name: form.full_name, email: form.email, phone: form.phone || undefined, company_name: form.company_name || undefined, address: form.address || undefined },
+      { id: id!, business_id: customer!.business_id, full_name: form.full_name, email: form.email, phone: form.phone || undefined, company_name: form.company_name || undefined, address: form.address || undefined },
       {
         onSuccess: () => { toast.success("Customer updated"); setEditOpen(false); refetch(); },
         onError: () => toast.error("Failed to update customer"),

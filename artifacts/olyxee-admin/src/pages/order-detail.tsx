@@ -357,7 +357,7 @@ export default function OrderDetailPage() {
                 <div className="border bg-muted/40 px-4 py-8 text-center space-y-1">
                   <CheckCircle2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                   <p className="text-sm font-medium">
-                    This order is <span className="font-semibold">{order.currentStatus}</span>
+                    This order is <span className="font-semibold">{order.current_status}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">No further updates are possible.</p>
                 </div>
@@ -599,16 +599,16 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {order.trackingLink && !order.trackingLink.startsWith("/track") ? (
+              {trackingLink && !trackingLink.startsWith("/track") ? (
                 <>
                   <div className="flex items-center border bg-muted/30">
                     <span className="text-[11px] text-primary truncate flex-1 font-mono px-2 py-1.5">
-                      {order.trackingLink}
+                      {trackingLink}
                     </span>
-                    <CopyButton text={order.trackingLink} />
+                    <CopyButton text={trackingLink} />
                   </div>
                   <a
-                    href={order.trackingLink}
+                    href={trackingLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full border px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors"
@@ -623,7 +623,7 @@ export default function OrderDetailPage() {
                 </p>
               )}
               <p className="text-[11px] text-muted-foreground">
-                Sent as <span className="font-mono">{"{yoursite.com}"}/track?code={order.trackingId}</span>
+                Sent as <span className="font-mono">{"{yoursite.com}"}/track?code={order.tracking_id}</span>
               </p>
             </CardContent>
           </Card>

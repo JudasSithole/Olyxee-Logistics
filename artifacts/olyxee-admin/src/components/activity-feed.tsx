@@ -92,7 +92,7 @@ export function ActivityFeed() {
         <>
           <ul className="space-y-1.5">
             {logs.map((log) => {
-              const { title, detail, tone } = humanizeAudit(log);
+              const { title, detail, tone } = humanizeAudit({ action: log.action, entityType: log.entity_type, entityId: log.entity_id, metadata: log.metadata as Record<string, unknown> | null });
               const when = formatWhen(log.created_at);
               const { icon: Icon, ring } = TONE_STYLES[tone];
               return (

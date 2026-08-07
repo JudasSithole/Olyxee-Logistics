@@ -55,7 +55,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(
-      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_delivery_date: form.estimatedDeliveryDate || undefined },
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined },
       {
         onSuccess: () => {
           toast.success("Order created - tracking ID auto-generated");

@@ -162,6 +162,7 @@ export interface Database {
           current_step_position: number;
           description: string | null;
           estimated_completion: string | null;
+          estimated_delivery_date: string | null;
           notes: string | null;
           is_archived: boolean;
           created_by: string | null;
@@ -179,6 +180,7 @@ export interface Database {
           current_step_position?: number;
           description?: string | null;
           estimated_completion?: string | null;
+          estimated_delivery_date?: string | null;
           notes?: string | null;
           is_archived?: boolean;
           created_by?: string | null;
