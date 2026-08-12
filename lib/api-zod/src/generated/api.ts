@@ -155,7 +155,16 @@ export const GetDashboardSummaryResponse = zod.object({
   "cancelledOrders": zod.number(),
   "emailsSentToday": zod.number(),
   "escalatedCallsToday": zod.number(),
-  "callsToday": zod.number()
+  "callsToday": zod.number(),
+  "ordersAwaitingPayment": zod.number().optional(),
+  "paidAwaitingActivation": zod.number().optional(),
+  "failedInvoiceDeliveries": zod.number().optional(),
+  "awaitingWarehouseReceipt": zod.number().optional(),
+  "unmatchedCargo": zod.number().optional(),
+  "cargoBeforePayment": zod.number().optional(),
+  "airShipments": zod.number().optional(),
+  "seaShipments": zod.number().optional(),
+  "stuckShipments": zod.number().optional()
 })
 
 
@@ -303,6 +312,19 @@ export const GetCustomerOrdersResponseItem = zod.object({
   "currentStatus": zod.string(),
   "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -353,13 +375,89 @@ export const ListOrdersResponse = zod.object({
 /**
  * @summary Create a new order
  */
+export const createOrderBodySubtotalMinorMin = 0;
+
+export const createOrderBodyAdditionalChargesMinorDefault = 0;
+export const createOrderBodyAdditionalChargesMinorMin = 0;
+
+export const createOrderBodyCurrencyMin = 3;
+export const createOrderBodyCurrencyMax = 3;
+
+export const createOrderBodyIdempotencyKeyMax = 100;
+
+
+
 export const CreateOrderBody = zod.object({
   "customerId": zod.string(),
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
   "estimatedDeliveryDate": zod.string().optional(),
-  "transportMode": zod.enum(['AIR', 'SEA']).optional().describe('Required for LOGISTICS businesses; rejected otherwise.')
+  "transportMode": zod.enum(['AIR', 'SEA']).optional().describe('Required for LOGISTICS businesses; rejected otherwise.'),
+  "cargoType": zod.string().optional(),
+  "serviceRequired": zod.string().optional(),
+  "origin": zod.string().optional(),
+  "destination": zod.string().optional(),
+  "weightKg": zod.string().optional(),
+  "dimensions": zod.string().optional(),
+  "subtotalMinor": zod.number().min(createOrderBodySubtotalMinorMin).optional().describe('Agreed price in integer minor units (e.g. cents). Required for logistics orders.'),
+  "additionalChargesMinor": zod.number().min(createOrderBodyAdditionalChargesMinorMin).default(createOrderBodyAdditionalChargesMinorDefault),
+  "currency": zod.string().min(createOrderBodyCurrencyMin).max(createOrderBodyCurrencyMax).optional().describe('ISO 4217 code, e.g. ZAR, USD. Required for logistics orders.'),
+  "dueDate": zod.string().optional().describe('Optional invoice due date (YYYY-MM-DD).'),
+  "invoiceNotes": zod.string().optional(),
+  "idempotencyKey": zod.string().max(createOrderBodyIdempotencyKeyMax).optional().describe('Client-generated key; retries with the same key return the original order instead of creating a duplicate.')
 })
+
+export const CreateOrderResponse = zod.object({
+  "order": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "trackingId": zod.string(),
+  "orderReference": zod.string().optional(),
+  "description": zod.string().optional(),
+  "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),
+  "invoice": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "orderId": zod.string(),
+  "createdBy": zod.string().nullish(),
+  "invoiceNumber": zod.string(),
+  "subtotalMinor": zod.number(),
+  "additionalChargesMinor": zod.number(),
+  "totalMinor": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['DRAFT', 'SENT', 'PAID', 'CANCELLED']),
+  "sentAt": zod.string().nullish(),
+  "lastSendStatus": zod.string().nullish(),
+  "lastSendError": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "paidConfirmedBy": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).nullish(),
+  "invoiceEmailStatus": zod.enum(['sent', 'failed', 'skipped']).nullish()
+}).describe('Result of creating a logistics order together with its invoice.')
 
 
 /**
@@ -382,6 +480,19 @@ export const GetOrderResponse = zod.object({
   "trackingLink": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
   "customer": zod.object({
   "id": zod.string(),
   "businessId": zod.string(),
@@ -392,6 +503,45 @@ export const GetOrderResponse = zod.object({
   "address": zod.string().optional(),
   "createdAt": zod.string()
 }),
+  "invoice": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "orderId": zod.string(),
+  "createdBy": zod.string().nullish(),
+  "invoiceNumber": zod.string(),
+  "subtotalMinor": zod.number(),
+  "additionalChargesMinor": zod.number(),
+  "totalMinor": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['DRAFT', 'SENT', 'PAID', 'CANCELLED']),
+  "sentAt": zod.string().nullish(),
+  "lastSendStatus": zod.string().nullish(),
+  "lastSendError": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "paidConfirmedBy": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).nullish(),
+  "warehouseReceipts": zod.array(zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "supplierTrackingNumber": zod.string(),
+  "orderId": zod.string().nullish(),
+  "status": zod.enum(['UNMATCHED', 'MATCHED']),
+  "receivedAt": zod.string(),
+  "packageCount": zod.number().nullish(),
+  "weightKg": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "matchedBy": zod.string().nullish(),
+  "matchedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})).optional(),
   "trackingEvents": zod.array(zod.object({
   "id": zod.string(),
   "orderId": zod.string(),
@@ -422,7 +572,7 @@ export const UpdateOrderStatusParams = zod.object({
 })
 
 export const UpdateOrderStatusBody = zod.object({
-  "status": zod.enum(['Order received', 'Processing', 'In transit', 'Delayed', 'Out for delivery', 'Delivered', 'Failed delivery', 'Cancelled', 'ORDER_CONFIRMED', 'RECEIVED_FROM_SUPPLIER', 'EXPORT_CUSTOMS_CLEARED', 'LOADED_ONTO_VESSEL', 'VESSEL_DEPARTED', 'MID_OCEAN_TRANSIT', 'APPROACHING_DESTINATION_PORT', 'VESSEL_ARRIVED', 'IN_TRANSIT', 'IMPORT_CUSTOMS_CLEARANCE', 'OUT_FOR_DELIVERY', 'DELIVERED']),
+  "status": zod.enum(['Order received', 'Processing', 'In transit', 'Delayed', 'Out for delivery', 'Delivered', 'Failed delivery', 'Cancelled', 'AWAITING_PAYMENT', 'ORDER_CONFIRMED', 'RECEIVED_FROM_SUPPLIER', 'EXPORT_CUSTOMS_CLEARED', 'LOADED_ONTO_VESSEL', 'VESSEL_DEPARTED', 'MID_OCEAN_TRANSIT', 'APPROACHING_DESTINATION_PORT', 'VESSEL_ARRIVED', 'IN_TRANSIT', 'IMPORT_CUSTOMS_CLEARANCE', 'OUT_FOR_DELIVERY', 'DELIVERED']),
   "message": zod.string().optional(),
   "location": zod.string().optional()
 })
@@ -438,6 +588,19 @@ export const UpdateOrderStatusResponse = zod.object({
   "currentStatus": zod.string(),
   "transportMode": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }),
@@ -471,6 +634,310 @@ export const ResendOrderEmailResponse = zod.object({
   "emailStatus": zod.enum(['sent', 'failed', 'limit_reached']).optional(),
   "emailUsage": zod.number().optional(),
   "emailLimit": zod.number().optional()
+})
+
+
+/**
+ * @summary Activate a paid order (AWAITING_PAYMENT -> first active status)
+ */
+export const ActivateOrderParams = zod.object({
+  "orderId": zod.coerce.string()
+})
+
+export const ActivateOrderResponse = zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "trackingId": zod.string(),
+  "orderReference": zod.string().optional(),
+  "description": zod.string().optional(),
+  "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Search orders for warehouse cargo matching
+ */
+export const SearchOrdersForMatchingQueryParams = zod.object({
+  "q": zod.coerce.string().describe('Matches order reference, tracking ID, customer name, company, phone, or email.')
+})
+
+export const SearchOrdersForMatchingResponseItem = zod.object({
+  "id": zod.string(),
+  "trackingId": zod.string(),
+  "orderReference": zod.string().nullish(),
+  "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "customer": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().optional(),
+  "companyName": zod.string().optional(),
+  "address": zod.string().optional(),
+  "createdAt": zod.string()
+}).nullish()
+})
+export const SearchOrdersForMatchingResponse = zod.array(SearchOrdersForMatchingResponseItem)
+
+
+/**
+ * @summary Get an invoice with its customer and order
+ */
+export const GetInvoiceParams = zod.object({
+  "invoiceId": zod.coerce.string()
+})
+
+export const GetInvoiceResponse = zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "orderId": zod.string(),
+  "createdBy": zod.string().nullish(),
+  "invoiceNumber": zod.string(),
+  "subtotalMinor": zod.number(),
+  "additionalChargesMinor": zod.number(),
+  "totalMinor": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['DRAFT', 'SENT', 'PAID', 'CANCELLED']),
+  "sentAt": zod.string().nullish(),
+  "lastSendStatus": zod.string().nullish(),
+  "lastSendError": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "paidConfirmedBy": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).and(zod.object({
+  "customer": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().optional(),
+  "companyName": zod.string().optional(),
+  "address": zod.string().optional(),
+  "createdAt": zod.string()
+}).optional(),
+  "order": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "trackingId": zod.string(),
+  "orderReference": zod.string().optional(),
+  "description": zod.string().optional(),
+  "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).optional()
+}))
+
+
+/**
+ * @summary Send (or retry sending) the invoice email to the customer
+ */
+export const SendInvoiceParams = zod.object({
+  "invoiceId": zod.coerce.string()
+})
+
+export const SendInvoiceResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "invoice": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "orderId": zod.string(),
+  "createdBy": zod.string().nullish(),
+  "invoiceNumber": zod.string(),
+  "subtotalMinor": zod.number(),
+  "additionalChargesMinor": zod.number(),
+  "totalMinor": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['DRAFT', 'SENT', 'PAID', 'CANCELLED']),
+  "sentAt": zod.string().nullish(),
+  "lastSendStatus": zod.string().nullish(),
+  "lastSendError": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "paidConfirmedBy": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+})
+
+
+/**
+ * @summary Manually confirm the invoice was paid (records staff + timestamp; idempotent)
+ */
+export const MarkInvoicePaidParams = zod.object({
+  "invoiceId": zod.coerce.string()
+})
+
+export const MarkInvoicePaidResponse = zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "orderId": zod.string(),
+  "createdBy": zod.string().nullish(),
+  "invoiceNumber": zod.string(),
+  "subtotalMinor": zod.number(),
+  "additionalChargesMinor": zod.number(),
+  "totalMinor": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['DRAFT', 'SENT', 'PAID', 'CANCELLED']),
+  "sentAt": zod.string().nullish(),
+  "lastSendStatus": zod.string().nullish(),
+  "lastSendError": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "paidConfirmedBy": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List warehouse receipts for the current business
+ */
+export const ListWarehouseReceiptsQueryParams = zod.object({
+  "status": zod.enum(['UNMATCHED', 'MATCHED']).optional(),
+  "orderId": zod.coerce.string().optional()
+})
+
+export const ListWarehouseReceiptsResponseItem = zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "supplierTrackingNumber": zod.string(),
+  "orderId": zod.string().nullish(),
+  "status": zod.enum(['UNMATCHED', 'MATCHED']),
+  "receivedAt": zod.string(),
+  "packageCount": zod.number().nullish(),
+  "weightKg": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "matchedBy": zod.string().nullish(),
+  "matchedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListWarehouseReceiptsResponse = zod.array(ListWarehouseReceiptsResponseItem)
+
+
+/**
+ * @summary Record cargo received at the China warehouse (optionally matched immediately)
+ */
+export const createWarehouseReceiptBodySupplierTrackingNumberMax = 120;
+
+
+
+
+export const CreateWarehouseReceiptBody = zod.object({
+  "supplierTrackingNumber": zod.string().min(1).max(createWarehouseReceiptBodySupplierTrackingNumberMax),
+  "orderId": zod.string().optional().describe('Optional; when given, the receipt is matched to this order immediately.'),
+  "receivedAt": zod.string().optional().describe('When the cargo arrived at the China warehouse (ISO timestamp). Defaults to now.'),
+  "packageCount": zod.number().min(1).optional(),
+  "weightKg": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "photoUrl": zod.string().optional()
+})
+
+
+/**
+ * @summary Link an unmatched receipt to an order
+ */
+export const MatchWarehouseReceiptParams = zod.object({
+  "receiptId": zod.coerce.string()
+})
+
+export const MatchWarehouseReceiptBody = zod.object({
+  "orderId": zod.string()
+})
+
+export const MatchWarehouseReceiptResponse = zod.object({
+  "receipt": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "supplierTrackingNumber": zod.string(),
+  "orderId": zod.string().nullish(),
+  "status": zod.enum(['UNMATCHED', 'MATCHED']),
+  "receivedAt": zod.string(),
+  "packageCount": zod.number().nullish(),
+  "weightKg": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "matchedBy": zod.string().nullish(),
+  "matchedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),
+  "order": zod.object({
+  "id": zod.string(),
+  "businessId": zod.string(),
+  "customerId": zod.string(),
+  "trackingId": zod.string(),
+  "orderReference": zod.string().optional(),
+  "description": zod.string().optional(),
+  "currentStatus": zod.string(),
+  "transportMode": zod.string().nullish(),
+  "estimatedDeliveryDate": zod.string().optional(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weightKg": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "subtotalMinor": zod.number().nullish(),
+  "additionalChargesMinor": zod.number().nullish(),
+  "totalMinor": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.string().nullish(),
+  "chinaWarehouseReceivedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),
+  "statusAdvanced": zod.boolean().describe('True when the order moved to RECEIVED_FROM_SUPPLIER as part of the match.'),
+  "paymentBlocked": zod.boolean().describe('True when cargo was linked but the order is still awaiting payment.')
 })
 
 

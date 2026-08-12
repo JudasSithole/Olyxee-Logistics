@@ -16,6 +16,19 @@ export interface Order {
   currentStatus: string;
   transportMode?: string | null;
   estimatedDeliveryDate?: string;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weightKg?: string | null;
+  dimensions?: string | null;
+  subtotalMinor?: number | null;
+  additionalChargesMinor?: number | null;
+  totalMinor?: number | null;
+  currency?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
+  chinaWarehouseReceivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

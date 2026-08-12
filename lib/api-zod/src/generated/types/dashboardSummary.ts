@@ -15,4 +15,13 @@ export interface DashboardSummary {
   emailsSentToday: number;
   escalatedCallsToday: number;
   callsToday: number;
+  ordersAwaitingPayment?: number;
+  paidAwaitingActivation?: number;
+  failedInvoiceDeliveries?: number;
+  awaitingWarehouseReceipt?: number;
+  unmatchedCargo?: number;
+  cargoBeforePayment?: number;
+  airShipments?: number;
+  seaShipments?: number;
+  stuckShipments?: number;
 }

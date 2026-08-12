@@ -25,8 +25,9 @@ describe("transport modes", () => {
 });
 
 describe("flows", () => {
-  it("SEA flow has 11 stages including vessel stages, in order", () => {
+  it("SEA flow has 12 stages starting at AWAITING_PAYMENT, in order", () => {
     expect(LOGISTICS_STATUS_FLOWS.SEA).toEqual([
+      "AWAITING_PAYMENT",
       "ORDER_CONFIRMED",
       "RECEIVED_FROM_SUPPLIER",
       "EXPORT_CUSTOMS_CLEARED",
@@ -41,8 +42,9 @@ describe("flows", () => {
     ]);
   });
 
-  it("AIR flow has 7 stages with generic IN_TRANSIT and no vessel stages", () => {
+  it("AIR flow has 8 stages with generic IN_TRANSIT and no vessel stages", () => {
     expect(LOGISTICS_STATUS_FLOWS.AIR).toEqual([
+      "AWAITING_PAYMENT",
       "ORDER_CONFIRMED",
       "RECEIVED_FROM_SUPPLIER",
       "EXPORT_CUSTOMS_CLEARED",
@@ -88,6 +90,7 @@ describe("mode validation", () => {
 
 describe("next status + terminal", () => {
   it("suggests the next stage in order", () => {
+    expect(nextLogisticsStatus("SEA", "AWAITING_PAYMENT")).toBe("ORDER_CONFIRMED");
     expect(nextLogisticsStatus("SEA", "ORDER_CONFIRMED")).toBe("RECEIVED_FROM_SUPPLIER");
     expect(nextLogisticsStatus("SEA", "VESSEL_ARRIVED")).toBe("IMPORT_CUSTOMS_CLEARANCE");
     expect(nextLogisticsStatus("AIR", "EXPORT_CUSTOMS_CLEARED")).toBe("IN_TRANSIT");
@@ -111,6 +114,19 @@ describe("next status + terminal", () => {
       "DELIVERED",
     ]);
     expect(remainingLogisticsStatuses("AIR", "DELIVERED")).toEqual([]);
+  });
+});
+
+describe("AWAITING_PAYMENT helpers", () => {
+  it("both flows start at AWAITING_PAYMENT and first active status follows it", async () => {
+    const { AWAITING_PAYMENT_STATUS, firstActiveLogisticsStatus, isAwaitingPayment } = await import("./index");
+    expect(AWAITING_PAYMENT_STATUS).toBe("AWAITING_PAYMENT");
+    expect(LOGISTICS_STATUS_FLOWS.AIR[0]).toBe("AWAITING_PAYMENT");
+    expect(LOGISTICS_STATUS_FLOWS.SEA[0]).toBe("AWAITING_PAYMENT");
+    expect(firstActiveLogisticsStatus("AIR")).toBe("ORDER_CONFIRMED");
+    expect(firstActiveLogisticsStatus("SEA")).toBe("ORDER_CONFIRMED");
+    expect(isAwaitingPayment("AWAITING_PAYMENT")).toBe(true);
+    expect(isAwaitingPayment("ORDER_CONFIRMED")).toBe(false);
   });
 });
 

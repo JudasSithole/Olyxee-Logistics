@@ -22,6 +22,9 @@ import CustomersPage from "@/pages/customers";
 import CustomerDetailPage from "@/pages/customer-detail";
 import OrdersPage from "@/pages/orders";
 import OrderDetailPage from "@/pages/order-detail";
+import InvoiceDetailPage from "@/pages/invoice-detail";
+import WarehouseReceiptsPage from "@/pages/warehouse-receipts";
+import UnmatchedCargoPage from "@/pages/unmatched-cargo";
 import SettingsPage from "@/pages/settings";
 import ProfilePage from "@/pages/profile";
 import UpdatesPage from "@/pages/updates";
@@ -158,6 +161,9 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
+      <Route path="/invoices/:id" component={() => <Protected component={InvoiceDetailPage} />} />
+      <Route path="/warehouse-receipts" component={() => <Protected component={WarehouseReceiptsPage} />} />
+      <Route path="/unmatched-cargo" component={() => <Protected component={UnmatchedCargoPage} />} />
       {/* Legacy /audit-logs URL - bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">
         {() => {

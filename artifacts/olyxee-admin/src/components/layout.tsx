@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package,
   Menu, Moon, Sun, Settings, LogOut,
-  ArrowUpCircle,
+  ArrowUpCircle, Warehouse, PackageSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -73,6 +73,8 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Orders", icon: Package },
+  { href: "/warehouse-receipts", label: "Warehouse", icon: Warehouse },
+  { href: "/unmatched-cargo", label: "Unmatched Cargo", icon: PackageSearch },
 ];
 
 // Launch-prep nav: pricing.

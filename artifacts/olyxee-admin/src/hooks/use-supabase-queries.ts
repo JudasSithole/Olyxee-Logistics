@@ -49,6 +49,9 @@ export const qk = {
   teamInvites: (businessId: string) => ["team_invites", businessId] as const,
   auditLogs: (businessId: string) => ["audit_logs", businessId] as const,
   dashboard: (businessId: string) => ["dashboard", businessId] as const,
+  invoice: (id: string) => ["invoices", id] as const,
+  warehouseReceipts: (businessId: string, filters?: Record<string, unknown>) =>
+    ["warehouse_receipts", businessId, filters] as const,
 } as const;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -112,6 +115,63 @@ interface ApiOrder {
   updatedAt: string;
   customer?: ApiCustomer | null;
   transportMode?: string | null;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weightKg?: string | null;
+  dimensions?: string | null;
+  subtotalMinor?: number | null;
+  additionalChargesMinor?: number | null;
+  totalMinor?: number | null;
+  currency?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
+  chinaWarehouseReceivedAt?: string | null;
+}
+
+export interface ApiInvoice {
+  id: string;
+  businessId: string;
+  customerId: string;
+  orderId: string;
+  invoiceNumber: string;
+  subtotalMinor: number;
+  additionalChargesMinor: number;
+  totalMinor: number;
+  currency: string;
+  status: "DRAFT" | "SENT" | "PAID" | "CANCELLED";
+  sentAt?: string | null;
+  lastSendStatus?: string | null;
+  lastSendError?: string | null;
+  paidAt?: string | null;
+  paidConfirmedBy?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiWarehouseReceipt {
+  id: string;
+  businessId: string;
+  supplierTrackingNumber: string;
+  orderId?: string | null;
+  status: "UNMATCHED" | "MATCHED";
+  receivedAt: string;
+  packageCount?: number | null;
+  weightKg?: string | null;
+  notes?: string | null;
+  photoUrl?: string | null;
+  matchedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Format integer minor units for display, e.g. (123456, "ZAR") → "ZAR 1,234.56". */
+export function formatMoneyMinor(minor: number | null | undefined, currency?: string | null): string {
+  if (minor === null || minor === undefined || !currency) return "—";
+  return `${currency} ${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function mapOrder(o: ApiOrder, businessId?: string): Order {
@@ -136,7 +196,20 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     created_by: o.createdBy ?? null,
     created_at: o.createdAt,
     updated_at: o.updatedAt,
-  } as Order;
+    // Logistics MVP fields (pass-through, camelCase→snake_case).
+    cargo_type: o.cargoType ?? null,
+    service_required: o.serviceRequired ?? null,
+    origin: o.origin ?? null,
+    destination: o.destination ?? null,
+    weight_kg: o.weightKg ?? null,
+    dimensions: o.dimensions ?? null,
+    subtotal_minor: o.subtotalMinor ?? null,
+    additional_charges_minor: o.additionalChargesMinor ?? null,
+    total_minor: o.totalMinor ?? null,
+    currency: o.currency ?? null,
+    supplier_tracking_number: o.supplierTrackingNumber ?? null,
+    china_warehouse_received_at: o.chinaWarehouseReceivedAt ?? null,
+  } as unknown as Order;
 }
 
 interface ApiTrackingEvent {
@@ -519,6 +592,8 @@ interface ApiOrderDetail extends ApiOrder {
   customer?: ApiCustomer | null;
   trackingEvents?: ApiTrackingEvent[];
   emailNotifications?: ApiEmailNotification[];
+  invoice?: ApiInvoice | null;
+  warehouseReceipts?: ApiWarehouseReceipt[];
 }
 
 export function useOrder(id: string | null | undefined) {
@@ -531,16 +606,42 @@ export function useOrder(id: string | null | undefined) {
         ...mapOrder(data),
         customers: data.customer ? mapCustomer(data.customer) : (null as unknown as Customer),
         tracking_events: (data.trackingEvents ?? []).map(mapTrackingEvent),
-      } as Order & { customers: Customer; tracking_events: unknown[] };
+        invoice: data.invoice ?? null,
+        warehouse_receipts: data.warehouseReceipts ?? [],
+      } as Order & {
+        customers: Customer;
+        tracking_events: unknown[];
+        invoice: ApiInvoice | null;
+        warehouse_receipts: ApiWarehouseReceipt[];
+      };
     },
   });
+}
+
+export interface CreateOrderExtras {
+  cargoType?: string;
+  serviceRequired?: string;
+  origin?: string;
+  destination?: string;
+  weightKg?: string;
+  dimensions?: string;
+  subtotalMinor?: number;
+  additionalChargesMinor?: number;
+  currency?: string;
+  dueDate?: string;
+  invoiceNotes?: string;
+  idempotencyKey?: string;
 }
 
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: InsertOrder) => {
-      const data = await apiFetch<ApiOrder>("/api/orders", {
+    mutationFn: async (input: InsertOrder & CreateOrderExtras) => {
+      const data = await apiFetch<{
+        order: ApiOrder;
+        invoice: ApiInvoice | null;
+        invoiceEmailStatus: "sent" | "failed" | "skipped" | null;
+      }>("/api/orders", {
         method: "POST",
         body: {
           customerId: input.customer_id,
@@ -548,14 +649,178 @@ export function useCreateOrder() {
           description: input.description ?? undefined,
           estimatedDeliveryDate: input.estimated_completion ?? undefined,
           transportMode: (input as { transport_mode?: string }).transport_mode ?? undefined,
+          cargoType: input.cargoType,
+          serviceRequired: input.serviceRequired,
+          origin: input.origin,
+          destination: input.destination,
+          weightKg: input.weightKg,
+          dimensions: input.dimensions,
+          subtotalMinor: input.subtotalMinor,
+          additionalChargesMinor: input.additionalChargesMinor,
+          currency: input.currency,
+          dueDate: input.dueDate,
+          invoiceNotes: input.invoiceNotes,
+          idempotencyKey: input.idempotencyKey,
         },
       });
-      return mapOrder(data);
+      return {
+        order: mapOrder(data.order),
+        invoice: data.invoice,
+        invoiceEmailStatus: data.invoiceEmailStatus,
+      };
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.orders(variables.business_id) });
       qc.invalidateQueries({ queryKey: qk.dashboard(variables.business_id) });
     },
+  });
+}
+
+// ── Invoices ──────────────────────────────────────────────────────────────
+
+export function useInvoice(id: string | null | undefined) {
+  return useQuery({
+    queryKey: qk.invoice(id ?? ""),
+    enabled: !!id,
+    queryFn: async () =>
+      apiFetch<ApiInvoice & { customer?: ApiCustomer | null; order?: ApiOrder | null }>(
+        `/api/invoices/${id}`,
+      ),
+  });
+}
+
+export function useSendInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId }: { invoiceId: string; orderId?: string }) =>
+      apiFetch<{ success: boolean; message: string; invoice: ApiInvoice }>(
+        `/api/invoices/${invoiceId}/send`,
+        { method: "POST" },
+      ),
+    onSuccess: (_d, variables) => {
+      qc.invalidateQueries({ queryKey: qk.invoice(variables.invoiceId) });
+      if (variables.orderId) qc.invalidateQueries({ queryKey: qk.order(variables.orderId) });
+    },
+  });
+}
+
+export function useMarkInvoicePaid() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId }: { invoiceId: string; orderId?: string }) =>
+      apiFetch<ApiInvoice>(`/api/invoices/${invoiceId}/mark-paid`, { method: "POST" }),
+    onSuccess: (_d, variables) => {
+      qc.invalidateQueries({ queryKey: qk.invoice(variables.invoiceId) });
+      if (variables.orderId) qc.invalidateQueries({ queryKey: qk.order(variables.orderId) });
+    },
+  });
+}
+
+export function useActivateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId }: { orderId: string; businessId?: string }) =>
+      apiFetch<ApiOrder>(`/api/orders/${orderId}/activate`, { method: "POST" }),
+    onSuccess: (_d, variables) => {
+      qc.invalidateQueries({ queryKey: qk.order(variables.orderId) });
+      if (variables.businessId) {
+        qc.invalidateQueries({ queryKey: qk.orders(variables.businessId) });
+        qc.invalidateQueries({ queryKey: qk.dashboard(variables.businessId) });
+      }
+    },
+  });
+}
+
+// ── Warehouse receipts ────────────────────────────────────────────────────
+
+export function useWarehouseReceipts(
+  businessId: string | null | undefined,
+  filters: { status?: "UNMATCHED" | "MATCHED"; orderId?: string } = {},
+) {
+  return useQuery({
+    queryKey: qk.warehouseReceipts(businessId ?? "", filters as Record<string, unknown>),
+    enabled: !!businessId,
+    queryFn: async () =>
+      apiFetch<ApiWarehouseReceipt[]>("/api/warehouse-receipts", {
+        query: { status: filters.status, orderId: filters.orderId },
+      }),
+  });
+}
+
+export interface WarehouseMatchResult {
+  receipt: ApiWarehouseReceipt;
+  order: ApiOrder | null;
+  statusAdvanced: boolean;
+  paymentBlocked: boolean;
+}
+
+export function useCreateWarehouseReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      input: {
+        businessId: string;
+        supplierTrackingNumber: string;
+        orderId?: string;
+        receivedAt?: string;
+        packageCount?: number;
+        weightKg?: string;
+        notes?: string;
+      },
+    ) =>
+      apiFetch<WarehouseMatchResult>("/api/warehouse-receipts", {
+        method: "POST",
+        body: {
+          supplierTrackingNumber: input.supplierTrackingNumber,
+          orderId: input.orderId,
+          receivedAt: input.receivedAt,
+          packageCount: input.packageCount,
+          weightKg: input.weightKg,
+          notes: input.notes,
+        },
+      }),
+    onSuccess: (data, variables) => {
+      qc.invalidateQueries({ queryKey: ["warehouse_receipts"] });
+      qc.invalidateQueries({ queryKey: qk.orders(variables.businessId) });
+      qc.invalidateQueries({ queryKey: qk.dashboard(variables.businessId) });
+      if (data.order) qc.invalidateQueries({ queryKey: qk.order(data.order.id) });
+    },
+  });
+}
+
+export function useMatchWarehouseReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ receiptId, orderId }: { receiptId: string; orderId: string; businessId: string }) =>
+      apiFetch<WarehouseMatchResult>(`/api/warehouse-receipts/${receiptId}/match`, {
+        method: "POST",
+        body: { orderId },
+      }),
+    onSuccess: (_d, variables) => {
+      qc.invalidateQueries({ queryKey: ["warehouse_receipts"] });
+      qc.invalidateQueries({ queryKey: qk.order(variables.orderId) });
+      qc.invalidateQueries({ queryKey: qk.orders(variables.businessId) });
+      qc.invalidateQueries({ queryKey: qk.dashboard(variables.businessId) });
+    },
+  });
+}
+
+export interface OrderMatchCandidate {
+  id: string;
+  trackingId: string;
+  orderReference?: string | null;
+  currentStatus: string;
+  transportMode?: string | null;
+  supplierTrackingNumber?: string | null;
+  customer?: ApiCustomer | null;
+}
+
+export function useOrderMatchSearch(q: string) {
+  return useQuery({
+    queryKey: ["order_match_search", q],
+    enabled: q.trim().length > 0,
+    queryFn: async () =>
+      apiFetch<OrderMatchCandidate[]>("/api/orders/match-search", { query: { q } }),
   });
 }
 
@@ -631,6 +896,15 @@ export function useDashboardStats(businessId: string | null | undefined) {
           emailsSentToday: number;
           escalatedCallsToday: number;
           callsToday: number;
+          ordersAwaitingPayment?: number;
+          paidAwaitingActivation?: number;
+          failedInvoiceDeliveries?: number;
+          awaitingWarehouseReceipt?: number;
+          unmatchedCargo?: number;
+          cargoBeforePayment?: number;
+          airShipments?: number;
+          seaShipments?: number;
+          stuckShipments?: number;
         }>("/api/dashboard/summary"),
         apiFetch<{ status: string; count: number }[]>("/api/dashboard/status-breakdown"),
         apiFetch<{ total: number }>("/api/customers", { query: { limit: 1 } }),
@@ -652,6 +926,14 @@ export function useDashboardStats(businessId: string | null | undefined) {
         emailsSentToday: summary.emailsSentToday,
         escalatedCallsToday: summary.escalatedCallsToday,
         callsToday: summary.callsToday,
+        ordersAwaitingPayment: summary.ordersAwaitingPayment ?? 0,
+        paidAwaitingActivation: summary.paidAwaitingActivation ?? 0,
+        failedInvoiceDeliveries: summary.failedInvoiceDeliveries ?? 0,
+        awaitingWarehouseReceipt: summary.awaitingWarehouseReceipt ?? 0,
+        unmatchedCargo: summary.unmatchedCargo ?? 0,
+        cargoBeforePayment: summary.cargoBeforePayment ?? 0,
+        airShipments: summary.airShipments ?? 0,
+        seaShipments: summary.seaShipments ?? 0,
       };
     },
   });

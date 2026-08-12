@@ -5,6 +5,8 @@ import businessRouter from "./business";
 import dashboardRouter from "./dashboard";
 import customersRouter from "./customers";
 import ordersRouter from "./orders";
+import invoicesRouter from "./invoices";
+import warehouseRouter from "./warehouse";
 import auditRouter from "./audit";
 import workflowTemplatesRouter from "./workflow-templates";
 import billingRouter from "./billing";
@@ -19,6 +21,8 @@ router.use(businessRouter);
 router.use(dashboardRouter);
 router.use(customersRouter);
 router.use(ordersRouter);
+router.use(invoicesRouter);
+router.use(warehouseRouter);
 router.use(auditRouter);
 router.use(workflowTemplatesRouter);
 // Launch-prep foundations. Both self-gate: billing responds 503 unless test

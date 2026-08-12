@@ -22,6 +22,7 @@ export function isTransportMode(value: unknown): value is TransportMode {
 // Internal status codes per mode, in strict shipment order.
 export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = {
   AIR: [
+    "AWAITING_PAYMENT",
     "ORDER_CONFIRMED",
     "RECEIVED_FROM_SUPPLIER",
     "EXPORT_CUSTOMS_CLEARED",
@@ -31,6 +32,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
     "DELIVERED",
   ],
   SEA: [
+    "AWAITING_PAYMENT",
     "ORDER_CONFIRMED",
     "RECEIVED_FROM_SUPPLIER",
     "EXPORT_CUSTOMS_CLEARED",
@@ -47,6 +49,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
 
 // Customer-facing labels for every logistics status code.
 export const LOGISTICS_STATUS_LABELS: Record<string, string> = {
+  AWAITING_PAYMENT: "Awaiting Payment",
   ORDER_CONFIRMED: "Order Confirmed",
   RECEIVED_FROM_SUPPLIER: "Received from Supplier",
   EXPORT_CUSTOMS_CLEARED: "Export Customs Cleared",
@@ -91,6 +94,23 @@ export function isLogisticsTerminal(status: string): boolean {
 }
 
 /**
+ * Pre-payment state: the order exists (with its invoice) but must not enter
+ * the shipping workflow until staff confirm payment and activate it.
+ */
+export const AWAITING_PAYMENT_STATUS = "AWAITING_PAYMENT";
+
+/** The first ACTIVE (post-activation) status for a mode's flow. */
+export function firstActiveLogisticsStatus(mode: string): string | null {
+  const flow = logisticsFlow(mode);
+  if (!flow) return null;
+  return flow.find((s) => s !== AWAITING_PAYMENT_STATUS) ?? null;
+}
+
+export function isAwaitingPayment(status: string): boolean {
+  return status === AWAITING_PAYMENT_STATUS;
+}
+
+/**
  * The next suggested status for an order in `mode` currently at `current`.
  * Returns null when current is terminal, unknown, or the mode is invalid.
  */
@@ -125,6 +145,7 @@ export interface LogisticsStatusCopy {
 }
 
 export const LOGISTICS_STATUS_COPY: Record<string, LogisticsStatusCopy> = {
+  AWAITING_PAYMENT:              { headline: "Your order has been created",           intro: "We've created your order and sent your invoice. Shipping begins once payment is confirmed.", accent: "#d97706", tone: "neutral" },
   ORDER_CONFIRMED:              { headline: "Your order is confirmed",              intro: "We've confirmed your order and will start preparing the shipment.",           accent: "#0284c7", tone: "neutral" },
   RECEIVED_FROM_SUPPLIER:       { headline: "We've received your goods",            intro: "Your shipment has been received from the supplier and is being prepared.",   accent: "#7c3aed", tone: "neutral" },
   EXPORT_CUSTOMS_CLEARED:       { headline: "Export customs cleared",               intro: "Your shipment has cleared customs at the origin and is ready to travel.",    accent: "#0ea5e9", tone: "positive" },

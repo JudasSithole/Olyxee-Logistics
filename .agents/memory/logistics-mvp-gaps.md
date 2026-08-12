@@ -1,10 +1,16 @@
 ---
-name: Logistics MVP corrected workflow
-description: The agreed MVP has no quotes; invoices + payment gating + China-warehouse matching are the planned commercial layer on top of existing shipping primitives.
+name: Logistics MVP workflow
+description: Agreed design + shipped state of the invoice/payment-gate/warehouse-receipt MVP
 ---
 
-The corrected Order Loop logistics MVP works like this: quotes happen outside the platform; staff create an order at the agreed price, which auto-creates and emails an invoice; the order waits in AWAITING_PAYMENT until staff manually confirm offline payment; only then can it enter the air/sea shipping flow. The supplier tracking number arrives later (when the China warehouse receives cargo) so it must be nullable, unique per business, and never a primary key — it is distinct from the internal order ID, public tracking ID, and order reference.
+# Logistics MVP workflow
 
-**Why:** an earlier draft assumed in-platform quotes and a payment gateway; both were explicitly dropped. No quote code was ever built — do not hunt for quote functionality to remove.
+Shipped (Aug 2026): logistics orders start at AWAITING_PAYMENT; order+invoice created in one transaction with a client idempotency key (replay returns 200 with the existing order); invoice email is post-commit best-effort, outcome recorded on the invoice (lastSendStatus/lastSendError). Mark-paid is idempotent + server-stamped; activation to first active status requires invoice PAID (backend-enforced 409). Warehouse receipts UNMATCHED/MATCHED; matching is transactional, normalizes tracking numbers (strip whitespace, uppercase), advances to RECEIVED_FROM_SUPPLIER only from the first active status, and flags-but-allows cargo-before-payment (order stays blocked).
 
-**How to apply:** build invoices/payment gating/warehouse matching by extending the existing order, status-flow, notification, and audit primitives rather than adding parallel ones; keep the public tracking payload free of invoice, payment, and warehouse-internal data.
+**Why:** no quotes, no payment gateway in MVP — invoice + manual payment confirmation is the agreed gate; supplier tracking numbers arrive late/hand-typed so they are nullable + normalized + tenant-scoped unique.
+
+**How to apply:** any new order-mutating endpoint must respect the AWAITING_PAYMENT gate; never let clients set AWAITING_PAYMENT manually (422) or supply paidAt/paidConfirmedBy.
+
+Known limitations (deliberate): invoice "PDF" = browser print of /invoices/:id; dashboard stuckShipments hardcoded 0; repo is drizzle-push based (no migration files) — prod schema must be updated via the documented diff-and-ALTER procedure, never push.
+
+Test conventions: api-server routes are tested with a fully mocked `@workspace/db` (mockDb.transaction receives a fake tx with its own insert/update/query chains) and mocked ../lib/auth + ../lib/invoice-email; run tests per-package (`pnpm -r test` fails on lib/plans which has no tests). Demo login is `demo`/`demo` (non-production only); demo business needed `industry: "logistics"` set via PUT /api/business for logistics e2e.

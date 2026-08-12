@@ -7,6 +7,7 @@ import {
   isLogisticsTerminal,
   TRANSPORT_MODE_LABELS,
   isTransportMode,
+  LOGISTICS_STATUS_COPY,
 } from "@workspace/order-statuses";
 
 const router = Router();
@@ -144,14 +145,20 @@ router.get("/public/track/:trackingId", async (req, res) => {
             ? e.status
             : STATUS_DISPLAY[publicStatusFor(e.status)] ?? publicStatusFor(e.status);
         const at = e.createdAt.toISOString();
+        // Privacy: staff-written event messages are internal and must never
+        // surface publicly (they can contain supplier names, pricing, ops
+        // notes). Customers only see the customer-safe copy for each status.
+        const safeMessage = flowStatuses
+          ? LOGISTICS_STATUS_COPY[e.status]?.intro ?? null
+          : null;
         return {
           at,
           timestamp: at,
           status,
           label,
           statusLabel: label,
-          message: e.message ?? null,
-          notes: e.message ?? null,
+          message: safeMessage,
+          notes: safeMessage,
           location: e.location ?? null,
         };
       }),
