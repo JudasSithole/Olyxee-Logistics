@@ -1,0 +1,204 @@
+Review the existing **Olyxee Logistics / Order Loop** implementation and verify whether it matches the corrected MVP workflow below.
+
+This is primarily a verification task. Do not immediately redesign or rewrite the system. First inspect the code, database schema, API contract, generated clients, tests and UI. Report what is complete, partially complete, incorrect or missing.
+
+## Correct MVP workflow
+
+Olyxee Logistics does **not** manage quotations in this version.
+
+Staff and the client agree on the service and price outside the platform. The system begins when staff create an order.
+
+The required workflow is:
+
+1. Staff select an existing customer or create a new customer.
+2. Staff create an order using the price already agreed with the client.
+3. Creating the order also creates an invoice linked to that order.
+4. The system sends the invoice to the client.
+5. The order remains in `AWAITING_PAYMENT`.
+6. Payment happens outside the platform.
+7. Staff manually confirm that payment was received.
+8. Staff complete/activate the order.
+9. The client’s supplier sends the cargo to the China warehouse.
+10. The China warehouse receives the cargo with the supplier/courier tracking number.
+11. Staff add that tracking number to the existing order.
+12. Staff update the air or sea shipment status.
+13. The client receives notifications and can view progress through the public tracking page.
+
+## Important business rules
+
+* Quotes are outside the system.
+* The client does not submit the supplier tracking number during order creation.
+* The supplier tracking number becomes available only when the China warehouse receives the cargo.
+* `supplierTrackingNumber` must therefore be nullable when the order is created.
+* The order must not enter the active shipping workflow until payment is manually confirmed.
+* No payment-gateway integration is required.
+* The internal order ID, public tracking ID, order reference and supplier tracking number must remain separate.
+* The supplier tracking number must not be used as a database primary key.
+* Existing customer, tracking, air/sea status, notification and public-tracking functionality must be reused.
+
+## Verify order and invoice creation
+
+Confirm whether the application allows staff to:
+
+* Select an existing customer.
+* Create a customer without leaving the order workflow.
+* Enter cargo and shipment details.
+* Select air or sea transport.
+* Enter the agreed price, currency and additional charges.
+* Create the order and invoice together in one operation.
+* Generate unique order and invoice references.
+* Link the invoice to the order and customer.
+* Send the invoice to the customer.
+* Retry sending the invoice if delivery fails.
+* View the invoice from the order and customer pages.
+
+The creation operation must be transactional. A database or notification failure must not leave duplicate or incorrectly linked records.
+
+Invoice-delivery failure should be recorded and retriable without creating another order or invoice.
+
+## Verify payment gating
+
+Confirm that:
+
+* A newly created order starts in `AWAITING_PAYMENT`.
+* It cannot enter the air or sea shipment state machine before payment.
+* Staff can manually mark its invoice as paid.
+* Payment confirmation records the staff member and timestamp.
+* Only a paid order can be activated.
+* The backend enforces this rule, not only the frontend.
+* Repeated payment or activation requests are idempotent.
+* The dashboard clearly shows orders awaiting payment.
+
+## Verify China warehouse matching
+
+Confirm that:
+
+* The order can exist without a supplier tracking number.
+* The order page displays a clear waiting state while the number is missing.
+* Staff can record cargo received at the China warehouse.
+* Staff can enter the supplier/courier tracking number at that stage.
+* Staff can search for the correct existing order.
+* The warehouse receipt can be linked to the order.
+* Unidentified cargo can be stored in an unmatched-cargo queue.
+* Unmatched cargo can later be linked to an order.
+* Duplicate supplier tracking numbers are detected per business.
+* Matching cargo records an audit event.
+* Linking the cargo moves the order to the correct `RECEIVED_FROM_SUPPLIER` status when valid.
+
+## Verify shipment updates
+
+Confirm that:
+
+* Air orders follow only the air status workflow.
+* Sea orders follow only the sea status workflow.
+* Invalid status transitions are rejected by the backend.
+* Every status change creates a tracking event.
+* Customer email/SMS notifications use the existing notification service.
+* Failed notifications are recorded and can be retried.
+* Public tracking shows only customer-safe shipment information.
+* Public tracking does not expose invoices, payment details, internal notes or warehouse information.
+
+## Identify obsolete quote functionality
+
+Inspect the recently added quote implementation, including:
+
+* Quote database tables
+* Quote history
+* Quote routes
+* Quote pages
+* Quote dashboard metrics
+* Quote-to-order conversion
+* OpenAPI quote contracts
+* Generated quote clients and schemas
+* Quote tests
+
+Classify each item as:
+
+* Safe to remove
+* Required temporarily for migration compatibility
+* Used by another existing feature
+* Uncertain and requiring a business decision
+
+Do not remove quote functionality during the initial verification. First report its dependencies and propose a safe removal plan that preserves existing data and migrations.
+
+## Required test scenarios
+
+Verify existing tests or add missing verification tests for:
+
+1. Creating a customer during order creation.
+2. Creating an order and invoice together.
+3. Rolling back if linked record creation fails.
+4. Preventing duplicate invoices on repeated requests.
+5. Recording invoice delivery failure without duplicating records.
+6. Creating an order without a supplier tracking number.
+7. New order starting in `AWAITING_PAYMENT`.
+8. Blocking activation before payment.
+9. Manually marking the invoice as paid.
+10. Activating the order after payment.
+11. Repeated payment and activation requests.
+12. Adding the supplier tracking number later.
+13. Matching a China warehouse receipt to an order.
+14. Saving and later matching unidentified cargo.
+15. Detecting duplicate supplier tracking numbers.
+16. Enforcing tenant isolation.
+17. Enforcing air and sea status transitions.
+18. Creating tracking and audit events.
+19. Sending and retrying customer notifications.
+20. Protecting private information on public tracking.
+21. Confirming quote functionality is unnecessary for the corrected workflow.
+
+## Verification process
+
+Run:
+
+* Database/schema validation
+* OpenAPI validation and generation
+* Type checking
+* Relevant unit and integration tests
+* API build
+* Frontend production build
+* Available lint checks
+* A manual end-to-end walkthrough if a usable local database is configured
+
+Do not apply migrations to production or delete quote data without explicit approval.
+
+## Required report
+
+Return a concise report containing:
+
+### Overall result
+
+Choose one:
+
+* `ACHIEVED`
+* `PARTIALLY ACHIEVED`
+* `NOT ACHIEVED`
+* `CANNOT FULLY VERIFY`
+
+### Workflow matrix
+
+For every required workflow step, report:
+
+* Complete
+* Partial
+* Missing
+* Incorrect
+* Not verified
+
+Include supporting file paths, API endpoints, database fields and test names.
+
+### Critical gaps
+
+List anything that would prevent the design partner from using the workflow safely.
+
+### Quote-removal impact
+
+Explain what can be removed and what must be migrated or preserved.
+
+### Verification results
+
+Report exact test, typecheck, build and OpenAPI results. Do not claim a check passed unless it was actually executed successfully.
+
+### Recommended next action
+
+If gaps exist, provide a focused implementation plan ordered by operational importance. Do not implement changes until the verification report is complete.
