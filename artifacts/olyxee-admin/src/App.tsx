@@ -33,6 +33,7 @@ import CallsPage from "@/pages/calls";
 import CallDetailPage from "@/pages/call-detail";
 import NotFound from "@/pages/not-found";
 import InvoiceDetailPage from "@/pages/invoice-detail";
+import InvoicesPage from "@/pages/invoices";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -178,6 +179,7 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
+      <Route path="/invoices" component={() => <Protected component={InvoicesPage} />} />
       <Route path="/invoices/:id" component={() => <Protected component={InvoiceDetailPage} />} />
       {/* Legacy /audit-logs URL - bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
-import { db, invoicesTable, ordersTable, auditLogsTable } from "@workspace/db";
+import { db, invoicesTable, ordersTable, customersTable, auditLogsTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { canConfirmInvoicePaid } from "../lib/invoice-workflow";
@@ -19,8 +19,16 @@ router.get("/invoices", requireAuth, async (req,res) => {
   const businessId=(req as any).businessId; const conditions:any[]=[eq(invoicesTable.businessId,businessId)];
   if(req.query.customerId)conditions.push(eq(invoicesTable.customerId,String(req.query.customerId)));
   if(req.query.orderId)conditions.push(eq(invoicesTable.orderId,String(req.query.orderId)));
-  const rows=await db.select().from(invoicesTable).where(and(...conditions)).orderBy(desc(invoicesTable.createdAt));
-  res.json({data:rows.map(serialize),total:rows.length});
+  const rows=await db.select({
+    invoice: invoicesTable,
+    trackingId: ordersTable.trackingId,
+    orderReference: ordersTable.orderReference,
+    customerName: customersTable.fullName,
+  }).from(invoicesTable)
+    .leftJoin(ordersTable, eq(invoicesTable.orderId, ordersTable.id))
+    .leftJoin(customersTable, eq(invoicesTable.customerId, customersTable.id))
+    .where(and(...conditions)).orderBy(desc(invoicesTable.createdAt));
+  res.json({data:rows.map(({invoice,...related})=>({...serialize(invoice),...related})),total:rows.length});
 });
 
 router.post("/invoices", requireAuth, async (req,res) => {

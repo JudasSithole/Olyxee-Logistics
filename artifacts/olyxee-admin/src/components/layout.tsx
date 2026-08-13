@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import {
-  LayoutDashboard, Users, Package,
+  LayoutDashboard, Users, Package, FileText,
   Menu, Moon, Sun, Settings, LogOut,
   ArrowUpCircle,
 } from "lucide-react";
@@ -73,6 +73,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Orders", icon: Package },
+  { href: "/invoices", label: "Invoices", icon: FileText },
 ];
 
 // Launch-prep nav: pricing.
