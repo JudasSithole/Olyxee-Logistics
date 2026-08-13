@@ -385,6 +385,10 @@ export default function DashboardPage() {
             icon={<Phone className="h-4 w-4 text-muted-foreground" />}
             href="/calls"
           />
+          <KpiCard label="Unpaid invoices" value={summary.unpaidInvoices} icon={<AlertTriangle className="h-4 w-4 text-amber-500" />} href="/orders" />
+          <KpiCard label="Awaiting supplier tracking" value={summary.ordersAwaitingSupplierTracking} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
+          <KpiCard label="Air orders" value={summary.airOrders} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
+          <KpiCard label="Sea orders" value={summary.seaOrders} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
         </div>
       ) : null}
 

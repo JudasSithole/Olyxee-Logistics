@@ -112,6 +112,15 @@ interface ApiOrder {
   updatedAt: string;
   customer?: ApiCustomer | null;
   transportMode?: string | null;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weight?: string | null;
+  dimensions?: string | null;
 }
 
 function mapOrder(o: ApiOrder, businessId?: string): Order {
@@ -125,6 +134,15 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     order_reference: o.orderReference ?? null,
     current_status: o.currentStatus,
     transport_mode: o.transportMode ?? null,
+    invoice_id: o.invoiceId ?? null,
+    supplier_tracking_number: o.supplierTrackingNumber ?? null,
+    supplier_tracking_number_added_at: o.supplierTrackingNumberAddedAt ?? null,
+    cargo_type: o.cargoType ?? null,
+    service_required: o.serviceRequired ?? null,
+    origin: o.origin ?? null,
+    destination: o.destination ?? null,
+    weight: o.weight ?? null,
+    dimensions: o.dimensions ?? null,
     current_step_position: o.currentStepPosition ?? 0,
     description: o.description ?? null,
     estimated_completion: estimated,
@@ -548,6 +566,12 @@ export function useCreateOrder() {
           description: input.description ?? undefined,
           estimatedDeliveryDate: input.estimated_completion ?? undefined,
           transportMode: (input as { transport_mode?: string }).transport_mode ?? undefined,
+          cargoType: (input as { cargo_type?: string }).cargo_type ?? undefined,
+          serviceRequired: (input as { service_required?: string }).service_required ?? undefined,
+          origin: (input as { origin?: string }).origin ?? undefined,
+          destination: (input as { destination?: string }).destination ?? undefined,
+          weight: (input as { weight?: string }).weight ?? undefined,
+          dimensions: (input as { dimensions?: string }).dimensions ?? undefined,
         },
       });
       return mapOrder(data);
@@ -631,6 +655,11 @@ export function useDashboardStats(businessId: string | null | undefined) {
           emailsSentToday: number;
           escalatedCallsToday: number;
           callsToday: number;
+          unpaidInvoices: number;
+          ordersAwaitingSupplierTracking: number;
+          airOrders: number;
+          seaOrders: number;
+          delayedOrStuckShipments: number;
         }>("/api/dashboard/summary"),
         apiFetch<{ status: string; count: number }[]>("/api/dashboard/status-breakdown"),
         apiFetch<{ total: number }>("/api/customers", { query: { limit: 1 } }),
@@ -652,6 +681,11 @@ export function useDashboardStats(businessId: string | null | undefined) {
         emailsSentToday: summary.emailsSentToday,
         escalatedCallsToday: summary.escalatedCallsToday,
         callsToday: summary.callsToday,
+        unpaidInvoices: summary.unpaidInvoices,
+        ordersAwaitingSupplierTracking: summary.ordersAwaitingSupplierTracking,
+        airOrders: summary.airOrders,
+        seaOrders: summary.seaOrders,
+        delayedOrStuckShipments: summary.delayedOrStuckShipments,
       };
     },
   });

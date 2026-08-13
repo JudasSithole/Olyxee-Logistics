@@ -43,6 +43,7 @@ import {
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { apiFetch } from "@/lib/api";
 import {
   statusChoices,
   isTerminal,
@@ -211,6 +212,29 @@ export default function OrderDetailPage() {
     status: "",
     location: "",
   });
+  const [supplierTracking, setSupplierTracking] = useState("");
+  const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
+  const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
+  const [invoiceCharges, setInvoiceCharges] = useState("0");
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const saveSupplierTracking = async () => {
+    if (!id || !supplierTracking.trim()) return;
+    setSavingSupplierTracking(true);
+    try {
+      await apiFetch(`/api/orders/${id}/supplier-tracking`, { method: "POST", body: { supplierTrackingNumber: supplierTracking } });
+      toast.success("Supplier tracking number saved"); setSupplierTracking(""); refetch();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save supplier tracking number"); }
+    finally { setSavingSupplierTracking(false); }
+  };
+  const createInvoice = async () => {
+    if (!id || !invoiceSubtotal.trim()) return;
+    setCreatingInvoice(true);
+    try {
+      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR" } });
+      toast.success("Draft invoice generated"); refetch(); window.location.href = `${import.meta.env.BASE_URL}invoices/${invoice.id}`;
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to generate invoice"); }
+    finally { setCreatingInvoice(false); }
+  };
 
   const handleStatusUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -653,6 +677,21 @@ export default function OrderDetailPage() {
                   <p className="text-sm font-mono">{order.order_reference}</p>
                 </div>
               )}
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Public tracking ID</p>
+                <p className="text-sm font-mono">{order.tracking_id}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier tracking number</p>
+                {order.supplier_tracking_number ? (
+                  <p className="text-sm font-mono">{order.supplier_tracking_number}</p>
+                ) : (
+                  <div className="space-y-2"><p className="text-sm text-amber-700">Waiting for supplier or courier tracking number</p>{order.transport_mode && <div className="flex gap-2"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Supplier/courier tracking"/><Button size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Save</Button></div>}</div>
+                )}
+              </div>
+              {order.invoice_id && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link></div>}
+              {!order.invoice_id && <div className="space-y-2 border-t pt-3"><p className="text-muted-foreground uppercase font-medium">Generate invoice</p><Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>Generate draft invoice</Button></div>}
+              {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>
           </Card>
         </div>

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, foreignKey, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { businessesTable } from "./businesses";
@@ -26,6 +26,7 @@ export const ordersTable = pgTable(
       .notNull()
       .references(() => businessesTable.id),
     customerId: text("customer_id").notNull(),
+    invoiceId: text("invoice_id"),
     trackingId: text("tracking_id").notNull().unique(),
     orderReference: text("order_reference"),
     description: text("description"),
@@ -34,6 +35,15 @@ export const ordersTable = pgTable(
     // non-logistics orders and legacy logistics orders created before the
     // transport-aware flows existed (those keep the generic status flow).
     transportMode: text("transport_mode"),
+    supplierTrackingNumber: text("supplier_tracking_number"),
+    supplierTrackingNumberAddedAt: timestamp("supplier_tracking_number_added_at"),
+    supplierTrackingNumberAddedBy: text("supplier_tracking_number_added_by"),
+    cargoType: text("cargo_type"),
+    serviceRequired: text("service_required"),
+    origin: text("origin"),
+    destination: text("destination"),
+    weight: text("weight"),
+    dimensions: text("dimensions"),
     estimatedDeliveryDate: text("estimated_delivery_date"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -47,6 +57,8 @@ export const ordersTable = pgTable(
       foreignColumns: [customersTable.id, customersTable.businessId],
       name: "orders_customer_business_fk",
     }),
+    orderReferenceIdx: index("orders_business_order_reference_idx").on(t.businessId, t.orderReference),
+    supplierTrackingIdx: index("orders_business_supplier_tracking_idx").on(t.businessId, t.supplierTrackingNumber),
   }),
 );
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useOrders, useCustomers, useCreateOrder, useBusiness } from "@/hooks/use-supabase-queries";
+import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
-function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: () => void; businessId: string; isLogistics: boolean }) {
+function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
@@ -41,6 +41,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
     description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
+    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
   }));
   const createMutation = useCreateOrder();
   // Server-side customer search so every customer is reachable, not just the
@@ -66,6 +67,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
         description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
+        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
       });
       setSelectedCustomer(null);
       setCustomerSearch("");
@@ -75,12 +77,12 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogistics && !form.transportMode) {
+    if (!form.transportMode) {
       toast.error("Please select a transport mode");
       return;
     }
     createMutation.mutate(
-      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, ...(isLogistics && form.transportMode ? { transport_mode: form.transportMode } : {}) },
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, cargo_type: form.cargoType || undefined, service_required: form.serviceRequired || undefined, origin: form.origin || undefined, destination: form.destination || undefined, weight: form.weight || undefined, dimensions: form.dimensions || undefined, transport_mode: form.transportMode },
       {
         onSuccess: () => {
           toast.success("Order created - tracking ID auto-generated");
@@ -153,7 +155,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               </PopoverContent>
             </Popover>
           </div>
-          {isLogistics && (
+          {(
             <div className="space-y-2">
               <Label>Transport Mode *</Label>
               <Select value={form.transportMode} onValueChange={v => setForm(f => ({ ...f, transportMode: v }))}>
@@ -167,6 +169,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
             </div>
           )}
+          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Origin</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))}/></div><div className="space-y-2"><Label>Destination</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))}/></div><div className="space-y-2"><Label>Cargo type</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))}/></div><div className="space-y-2"><Label>Service required</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))}/></div><div className="space-y-2"><Label>Weight</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))}/></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))}/></div></div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -198,18 +201,14 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={3}
-              placeholder={isLogistics
-                ? "e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
-                : "e.g. 3x oak dining chairs, natural finish — gift wrap requested"}
+              placeholder="e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
             />
             <p className="text-xs text-muted-foreground">
-              {isLogistics
-                ? "Include contents, quantity, weight/volume, origin → destination, and any handling notes."
-                : "Include the items, quantities, and any special instructions."}
+              Include contents, quantity, weight/volume, origin → destination, and any handling notes.
             </p>
           </div>
           <p className="text-xs text-muted-foreground">A unique tracking ID will be auto-generated for this order.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || (isLogistics && !form.transportMode)}>
+          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode}>
             {createMutation.isPending ? "Creating..." : "Create Order"}
           </Button>
         </form>
@@ -228,8 +227,6 @@ function getInitialStatusFromUrl(): string {
 export default function OrdersPage() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
-  const { data: business } = useBusiness(user?.businessId);
-  const isLogistics = !!business?.business_type?.toLowerCase().includes("logistics");
   const [search, setSearch] = useState("");
   const [querySearch, setQuerySearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFromUrl);
@@ -255,7 +252,7 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total orders</p>
         </div>
-        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} isLogistics={isLogistics} />
+        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
       </div>
 
       <Card>

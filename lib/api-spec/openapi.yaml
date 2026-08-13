@@ -24,6 +24,8 @@ tags:
     description: Dashboard summary data
   - name: audit
     description: Audit log
+  - name: invoices
+    description: Manual invoice lifecycle management
 paths:
   /healthz:
     get:
@@ -37,6 +39,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: API and database readiness check
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: A required dependency is unavailable
 
   /business:
     get:
@@ -679,8 +696,70 @@ paths:
         "401":
           description: Invalid signature
 
+  /orders/{orderId}/supplier-tracking:
+    post:
+      operationId: setSupplierTrackingNumber
+      tags: [orders]
+      summary: Add or replace the supplier or courier tracking number on a cross-border order
+      parameters: [{ in: path, name: orderId, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupplierTrackingInput" }
+      responses:
+        "200": { description: Supplier tracking number recorded }
+        "409": { description: Tracking number belongs to another order in the tenant }
+
+  /invoices:
+    get:
+      operationId: listInvoices
+      tags: [invoices]
+      responses: { "200": { description: Paginated invoices } }
+    post:
+      operationId: createInvoice
+      tags: [invoices]
+      summary: Generate a draft invoice for an existing cross-border order
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/InvoiceInput" } } }
+      responses: { "201": { description: Invoice created } }
+  /invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      tags: [invoices]
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice details } }
+  /invoices/{invoiceId}/send:
+    post:
+      operationId: sendInvoice
+      tags: [invoices]
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice marked sent } }
+  /invoices/{invoiceId}/pay:
+    post:
+      operationId: markInvoicePaid
+      tags: [invoices]
+      summary: Manually confirm invoice payment
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice marked paid } }
 components:
   schemas:
+    SupplierTrackingInput:
+      type: object
+      required: [supplierTrackingNumber]
+      properties:
+        supplierTrackingNumber: { type: string }
+    InvoiceInput:
+      type: object
+      required: [orderId, subtotal]
+      properties:
+        orderId: { type: string }
+        subtotal: { type: string }
+        additionalCharges: { type: string, default: "0" }
+        currency: { type: string, default: ZAR }
+        dueDate: { type: string, format: date-time }
+        notes: { type: string }
     HealthStatus:
       type: object
       properties:
@@ -839,6 +918,11 @@ components:
           type: integer
         callsToday:
           type: integer
+        unpaidInvoices: { type: integer }
+        ordersAwaitingSupplierTracking: { type: integer }
+        airOrders: { type: integer }
+        seaOrders: { type: integer }
+        delayedOrStuckShipments: { type: integer }
       required:
         - totalOrders
         - activeDeliveries
@@ -892,8 +976,6 @@ components:
           nullable: true
         lastUpdated:
           type: string
-        businessName:
-          type: string
         events:
           type: array
           items:
@@ -917,7 +999,6 @@ components:
         - status
         - statusLabel
         - lastUpdated
-        - businessName
         - events
 
     StatusCount:
@@ -1027,6 +1108,15 @@ components:
         transportMode:
           type: string
           nullable: true
+        invoiceId: { type: string, nullable: true }
+        supplierTrackingNumber: { type: string, nullable: true }
+        supplierTrackingNumberAddedAt: { type: string, format: date-time, nullable: true }
+        cargoType: { type: string, nullable: true }
+        serviceRequired: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        destination: { type: string, nullable: true }
+        weight: { type: string, nullable: true }
+        dimensions: { type: string, nullable: true }
         estimatedDeliveryDate:
           type: string
         createdAt:
@@ -1092,6 +1182,15 @@ components:
         transportMode:
           type: string
           nullable: true
+        invoiceId: { type: string, nullable: true }
+        supplierTrackingNumber: { type: string, nullable: true }
+        supplierTrackingNumberAddedAt: { type: string, format: date-time, nullable: true }
+        cargoType: { type: string, nullable: true }
+        serviceRequired: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        destination: { type: string, nullable: true }
+        weight: { type: string, nullable: true }
+        dimensions: { type: string, nullable: true }
         estimatedDeliveryDate:
           type: string
         trackingLink:
@@ -1139,9 +1238,16 @@ components:
           enum:
             - AIR
             - SEA
-          description: Required for LOGISTICS businesses; rejected otherwise.
+          description: Required cross-border transport workflow.
+        cargoType: { type: string }
+        serviceRequired: { type: string }
+        origin: { type: string }
+        destination: { type: string }
+        weight: { type: string }
+        dimensions: { type: string }
       required:
         - customerId
+        - transportMode
 
     OrderStatusUpdate:
       type: object

@@ -17,7 +17,6 @@ export interface PublicTracking {
   transportModeLabel?: string | null;
   estimatedDeliveryDate?: string | null;
   lastUpdated: string;
-  businessName: string;
   events: PublicTrackingEvent[];
   /** Transport-aware checklist for logistics orders (completed/current/upcoming). */
   flow?: PublicTrackingFlowItem[];

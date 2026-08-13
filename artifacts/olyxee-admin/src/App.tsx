@@ -32,6 +32,7 @@ import CallCentreSettingsPage from "@/pages/call-centre-settings";
 import CallsPage from "@/pages/calls";
 import CallDetailPage from "@/pages/call-detail";
 import NotFound from "@/pages/not-found";
+import InvoiceDetailPage from "@/pages/invoice-detail";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -76,6 +77,25 @@ function Protected({
             aria-label="Loading"
           >
             <Spinner className="size-6 text-primary" />
+          </div>
+        </AppLayout>
+      );
+    }
+    if (businessQuery.isError) {
+      return (
+        <AppLayout>
+          <div className="mx-auto max-w-lg rounded-lg border border-destructive/30 bg-card p-6 text-center shadow-sm">
+            <h1 className="text-lg font-semibold">Unable to load your workspace</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The server could not load the business data. Check the database connection and try again.
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              onClick={() => businessQuery.refetch()}
+            >
+              Try again
+            </button>
           </div>
         </AppLayout>
       );
@@ -158,6 +178,7 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
+      <Route path="/invoices/:id" component={() => <Protected component={InvoiceDetailPage} />} />
       {/* Legacy /audit-logs URL - bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">
         {() => {

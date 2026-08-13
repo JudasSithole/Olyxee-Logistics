@@ -15,4 +15,9 @@ export interface DashboardSummary {
   emailsSentToday: number;
   escalatedCallsToday: number;
   callsToday: number;
+  unpaidInvoices?: number;
+  ordersAwaitingSupplierTracking?: number;
+  airOrders?: number;
+  seaOrders?: number;
+  delayedOrStuckShipments?: number;
 }

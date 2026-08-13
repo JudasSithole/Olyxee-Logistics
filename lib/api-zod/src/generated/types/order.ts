@@ -15,6 +15,15 @@ export interface Order {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: Date | null;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weight?: string | null;
+  dimensions?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable } from "@workspace/db";
+import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable } from "@workspace/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -9,7 +9,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
 
-    const [orders, emailsToday, escalatedToday, callsToday] = await Promise.all([
+    const [orders, emailsToday, escalatedToday, callsToday, invoices] = await Promise.all([
       db.select().from(ordersTable).where(eq(ordersTable.businessId, businessId)),
       db
         .select()
@@ -44,6 +44,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
             gte(callRecordsTable.createdAt, new Date(new Date().setHours(0, 0, 0, 0))),
           ),
         ),
+      db.select().from(invoicesTable).where(eq(invoicesTable.businessId, businessId)),
     ]);
 
     const activeStatuses = [
@@ -64,6 +65,11 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       emailsSentToday: emailsToday.length,
       escalatedCallsToday: escalatedToday[0]?.count ?? 0,
       callsToday: callsToday[0]?.count ?? 0,
+      unpaidInvoices: invoices.filter((i) => i.status === "sent" || i.status === "overdue").length,
+      ordersAwaitingSupplierTracking: orders.filter((o) => !!o.transportMode && !o.supplierTrackingNumber).length,
+      airOrders: orders.filter((o) => o.transportMode === "AIR").length,
+      seaOrders: orders.filter((o) => o.transportMode === "SEA").length,
+      delayedOrStuckShipments: orders.filter((o) => o.currentStatus === "Delayed" || o.currentStatus === "DELAYED").length,
     };
 
     res.json(summary);

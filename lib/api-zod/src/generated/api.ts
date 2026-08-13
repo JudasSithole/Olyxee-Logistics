@@ -17,6 +17,14 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary API and database readiness check
+ */
+export const ReadinessCheckResponse = zod.object({
+  "status": zod.string()
+})
+
+
+/**
  * @summary Get current user's business
  */
 export const GetBusinessResponse = zod.object({
@@ -128,7 +136,6 @@ export const GetPublicTrackingResponse = zod.object({
   "transportModeLabel": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().nullish(),
   "lastUpdated": zod.string(),
-  "businessName": zod.string(),
   "events": zod.array(zod.object({
   "status": zod.string(),
   "statusLabel": zod.string(),
@@ -155,7 +162,12 @@ export const GetDashboardSummaryResponse = zod.object({
   "cancelledOrders": zod.number(),
   "emailsSentToday": zod.number(),
   "escalatedCallsToday": zod.number(),
-  "callsToday": zod.number()
+  "callsToday": zod.number(),
+  "unpaidInvoices": zod.number().optional(),
+  "ordersAwaitingSupplierTracking": zod.number().optional(),
+  "airOrders": zod.number().optional(),
+  "seaOrders": zod.number().optional(),
+  "delayedOrStuckShipments": zod.number().optional()
 })
 
 
@@ -302,6 +314,15 @@ export const GetCustomerOrdersResponseItem = zod.object({
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
   "transportMode": zod.string().nullish(),
+  "invoiceId": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.coerce.date().nullish(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -358,7 +379,13 @@ export const CreateOrderBody = zod.object({
   "orderReference": zod.string().optional(),
   "description": zod.string().optional(),
   "estimatedDeliveryDate": zod.string().optional(),
-  "transportMode": zod.enum(['AIR', 'SEA']).optional().describe('Required for LOGISTICS businesses; rejected otherwise.')
+  "transportMode": zod.enum(['AIR', 'SEA']).describe('Required cross-border transport workflow.'),
+  "cargoType": zod.string().optional(),
+  "serviceRequired": zod.string().optional(),
+  "origin": zod.string().optional(),
+  "destination": zod.string().optional(),
+  "weight": zod.string().optional(),
+  "dimensions": zod.string().optional()
 })
 
 
@@ -378,6 +405,15 @@ export const GetOrderResponse = zod.object({
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
   "transportMode": zod.string().nullish(),
+  "invoiceId": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.coerce.date().nullish(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "trackingLink": zod.string(),
   "createdAt": zod.string(),
@@ -437,6 +473,15 @@ export const UpdateOrderStatusResponse = zod.object({
   "description": zod.string().optional(),
   "currentStatus": zod.string(),
   "transportMode": zod.string().nullish(),
+  "invoiceId": zod.string().nullish(),
+  "supplierTrackingNumber": zod.string().nullish(),
+  "supplierTrackingNumberAddedAt": zod.coerce.date().nullish(),
+  "cargoType": zod.string().nullish(),
+  "serviceRequired": zod.string().nullish(),
+  "origin": zod.string().nullish(),
+  "destination": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
   "estimatedDeliveryDate": zod.string().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -697,6 +742,52 @@ export const RetellWebhookBody = zod.object({
 
 }).passthrough().optional(),
   "agent_id": zod.string().optional()
+})
+
+
+/**
+ * @summary Add or replace the supplier or courier tracking number on a cross-border order
+ */
+export const SetSupplierTrackingNumberParams = zod.object({
+  "orderId": zod.coerce.string()
+})
+
+export const SetSupplierTrackingNumberBody = zod.object({
+  "supplierTrackingNumber": zod.string()
+})
+
+
+/**
+ * @summary Generate a draft invoice for an existing cross-border order
+ */
+export const createInvoiceBodyAdditionalChargesDefault = `0`;
+export const createInvoiceBodyCurrencyDefault = `ZAR`;
+
+export const CreateInvoiceBody = zod.object({
+  "orderId": zod.string(),
+  "subtotal": zod.string(),
+  "additionalCharges": zod.string().default(createInvoiceBodyAdditionalChargesDefault),
+  "currency": zod.string().default(createInvoiceBodyCurrencyDefault),
+  "dueDate": zod.coerce.date().optional(),
+  "notes": zod.string().optional()
+})
+
+
+export const GetInvoiceParams = zod.object({
+  "invoiceId": zod.coerce.string()
+})
+
+
+export const SendInvoiceParams = zod.object({
+  "invoiceId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Manually confirm invoice payment
+ */
+export const MarkInvoicePaidParams = zod.object({
+  "invoiceId": zod.coerce.string()
 })
 
 

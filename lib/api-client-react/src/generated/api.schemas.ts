@@ -5,6 +5,19 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
+export interface SupplierTrackingInput {
+  supplierTrackingNumber: string;
+}
+
+export interface InvoiceInput {
+  orderId: string;
+  subtotal: string;
+  additionalCharges?: string;
+  currency?: string;
+  dueDate?: string;
+  notes?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -95,6 +108,11 @@ export interface DashboardSummary {
   emailsSentToday: number;
   escalatedCallsToday: number;
   callsToday: number;
+  unpaidInvoices?: number;
+  ordersAwaitingSupplierTracking?: number;
+  airOrders?: number;
+  seaOrders?: number;
+  delayedOrStuckShipments?: number;
 }
 
 export interface PublicTrackingEvent {
@@ -129,7 +147,6 @@ export interface PublicTracking {
   transportModeLabel?: string | null;
   estimatedDeliveryDate?: string | null;
   lastUpdated: string;
-  businessName: string;
   events: PublicTrackingEvent[];
   /** Transport-aware checklist for logistics orders (completed/current/upcoming). */
   flow?: PublicTrackingFlowItem[];
@@ -183,6 +200,15 @@ export interface Order {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weight?: string | null;
+  dimensions?: string | null;
   estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;
@@ -240,6 +266,15 @@ export interface OrderDetail {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
+  cargoType?: string | null;
+  serviceRequired?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  weight?: string | null;
+  dimensions?: string | null;
   estimatedDeliveryDate?: string;
   trackingLink: string;
   createdAt: string;
@@ -250,7 +285,7 @@ export interface OrderDetail {
 }
 
 /**
- * Required for LOGISTICS businesses; rejected otherwise.
+ * Required cross-border transport workflow.
  */
 export type OrderInputTransportMode = typeof OrderInputTransportMode[keyof typeof OrderInputTransportMode];
 
@@ -265,8 +300,14 @@ export interface OrderInput {
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
-  /** Required for LOGISTICS businesses; rejected otherwise. */
-  transportMode?: OrderInputTransportMode;
+  /** Required cross-border transport workflow. */
+  transportMode: OrderInputTransportMode;
+  cargoType?: string;
+  serviceRequired?: string;
+  origin?: string;
+  destination?: string;
+  weight?: string;
+  dimensions?: string;
 }
 
 export type OrderStatusUpdateStatus = typeof OrderStatusUpdateStatus[keyof typeof OrderStatusUpdateStatus];

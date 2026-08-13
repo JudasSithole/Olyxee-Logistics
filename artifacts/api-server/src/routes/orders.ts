@@ -45,6 +45,7 @@ export function isLogisticsBusiness(industry: string | null | undefined): boolea
 }
 
 const router = Router();
+const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
 
 // Where customers go to see their order status. Businesses with their own
 // website link to their own /track page; businesses without one fall back to
@@ -183,33 +184,22 @@ router.post("/orders", requireAuth, async (req, res) => {
       where: eq(businessesTable.id, businessId),
     });
 
-    // Transport-aware flows: LOGISTICS businesses must state how the order
-    // ships (AIR | SEA) so the right status flow applies. Non-logistics
-    // businesses must NOT send a transport mode — it would silently switch
-    // their orders onto the logistics flow.
-    const logistics = isLogisticsBusiness(business?.industry);
-    const transportMode = parse.data.transportMode ?? null;
-    if (logistics && !transportMode) {
+    // The console covers cross-border shipments only. Selecting AIR or SEA
+    // is mandatory so the order enters the correct tracking workflow.
+    const transportMode = parse.data.transportMode;
+    if (!transportMode) {
       res.status(400).json({
-        error: "transportMode is required for logistics businesses (AIR or SEA)",
+        error: "transportMode is required (AIR or SEA)",
       });
       return;
     }
-    if (!logistics && transportMode) {
-      res.status(400).json({
-        error: "transportMode is only supported for logistics businesses",
-      });
-      return;
-    }
-    if (transportMode && !isTransportMode(transportMode)) {
+    if (!isTransportMode(transportMode)) {
       res.status(400).json({ error: "Invalid transportMode" });
       return;
     }
 
-    const initialStatus = transportMode ? "ORDER_CONFIRMED" : "Order received";
-    const initialMessage = transportMode
-      ? "Order confirmed and tracking started"
-      : "Order has been received";
+    const initialStatus = "ORDER_CONFIRMED";
+    const initialMessage = "Order confirmed and tracking started";
 
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
@@ -239,6 +229,12 @@ router.post("/orders", requireAuth, async (req, res) => {
             description: parse.data.description ?? null,
             currentStatus: initialStatus,
             transportMode,
+            cargoType: parse.data.cargoType ?? null,
+            serviceRequired: parse.data.serviceRequired ?? null,
+            origin: parse.data.origin ?? null,
+            destination: parse.data.destination ?? null,
+            weight: parse.data.weight ?? null,
+            dimensions: parse.data.dimensions ?? null,
             estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
           })
           .returning();
@@ -288,6 +284,25 @@ router.post("/orders", requireAuth, async (req, res) => {
     req.log.error({ err }, "Failed to create order");
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+router.post("/orders/:orderId/supplier-tracking", requireAuth, async (req, res) => {
+  try {
+    const parsed = SupplierTrackingBody.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: "Invalid input", details: parsed.error.issues }); return; }
+    const businessId = (req as any).businessId, userId = (req as any).userId;
+    const orderId = String(req.params.orderId);
+    const order = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)) });
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    if (!order.transportMode) { res.status(409).json({ error: "Supplier tracking is only available for air or sea orders" }); return; }
+    const supplierTrackingNumber = parsed.data.supplierTrackingNumber.toUpperCase();
+    const duplicate = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.businessId, businessId), eq(ordersTable.supplierTrackingNumber, supplierTrackingNumber)) });
+    if (duplicate && duplicate.id !== orderId) { res.status(409).json({ error: `Supplier tracking number is already linked to order ${duplicate.orderReference ?? duplicate.id}` }); return; }
+    const now = new Date();
+    const [updated] = await db.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
+    await db.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber } });
+    res.json(serializeOrder(updated));
+  } catch (err) { req.log.error({ err }, "Failed to set supplier tracking number"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // GET /orders/stuck - must be declared BEFORE /orders/:orderId so Express

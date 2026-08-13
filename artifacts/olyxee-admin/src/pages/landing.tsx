@@ -16,7 +16,7 @@ import unboxingPhoto from "@assets/image_1779935870578.png";
 import closingPhoto from "@assets/image_1780016743161.png";
 import dryCleanerPhoto from "@assets/image_1781655294134.png";
 import bakeryPhoto from "@assets/image_1781655422517.png";
-import warehousePhoto from "@assets/image_1781655528508.png";
+import logisticsPhoto from "@assets/image_1781655528508.png";
 import repairPhoto from "@assets/image_1781655658557.png";
 import { LaunchCountdown } from "@/components/launch-countdown";
 import { plans, LAUNCH_LABEL, type PlanId } from "@/lib/launch";
@@ -381,7 +381,7 @@ const CreateOrderMock: FC = () => {
 
 const TrackingMapMock: FC = () => (
   <div className="w-full h-full bg-neutral-900 relative overflow-hidden">
-    <img src={warehousePhoto} alt="Warehouse team member managing a customer order on a call" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+    <img src={logisticsPhoto} alt="Logistics team member managing a customer order" className="absolute inset-0 w-full h-full object-cover opacity-90" />
     <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/55 to-neutral-950/35" />
     <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
       <div style={mono} className="text-[10px] tracking-widest text-white/70">TRACKING · #OLY-1042</div>

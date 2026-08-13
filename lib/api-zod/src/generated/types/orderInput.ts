@@ -12,6 +12,12 @@ export interface OrderInput {
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
-  /** Required for LOGISTICS businesses; rejected otherwise. */
-  transportMode?: OrderInputTransportMode;
+  /** Required cross-border transport workflow. */
+  transportMode: OrderInputTransportMode;
+  cargoType?: string;
+  serviceRequired?: string;
+  origin?: string;
+  destination?: string;
+  weight?: string;
+  dimensions?: string;
 }

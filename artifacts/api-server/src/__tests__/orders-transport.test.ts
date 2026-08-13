@@ -93,24 +93,40 @@ beforeEach(() => {
 });
 
 describe("POST /orders — transport mode requirements", () => {
-  it("rejects logistics order creation without transportMode", async () => {
+  it("rejects cross-border order creation without transportMode", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
     const app = await buildApp();
     const res = await request(app).post("/orders").send({ customerId: "cust_1" });
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/transportMode is required/);
+    expect(res.body.error).toBe("Invalid input");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: ["transportMode"] })]),
+    );
   });
 
-  it("rejects transportMode for non-logistics businesses", async () => {
+  it("accepts a cross-border mode regardless of legacy industry metadata", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(RETAIL_BIZ);
+    const inserted = {
+      id: "ord_retail_metadata",
+      businessId: "biz_test",
+      customerId: "cust_1",
+      trackingId: "OLY-AAA-BBBB",
+      currentStatus: "ORDER_CONFIRMED",
+      transportMode: "SEA",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockDb.insert
+      .mockReturnValueOnce(insertChain([inserted]) as any)
+      .mockReturnValue(insertChainPlain() as any);
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
       .send({ customerId: "cust_1", transportMode: "SEA" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/only supported for logistics/);
+    expect(res.status).toBe(201);
+    expect(res.body.transportMode).toBe("SEA");
   });
 
   it("rejects invalid transportMode values at the schema layer", async () => {
@@ -151,27 +167,13 @@ describe("POST /orders — transport mode requirements", () => {
     expect(res.body.transportMode).toBe("SEA");
   });
 
-  it("creates a non-logistics order with the generic flow, unaffected", async () => {
+  it("requires transport mode even for legacy non-logistics business records", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(RETAIL_BIZ);
-    const inserted = {
-      id: "ord_2",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      trackingId: "OLY-AAA-BBBB",
-      currentStatus: "Order received",
-      transportMode: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    mockDb.insert
-      .mockReturnValueOnce(insertChain([inserted]) as any)
-      .mockReturnValue(insertChainPlain() as any);
     const app = await buildApp();
     const res = await request(app).post("/orders").send({ customerId: "cust_1" });
-    expect(res.status).toBe(201);
-    expect(res.body.currentStatus).toBe("Order received");
-    expect(res.body.transportMode).toBeNull();
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid input");
   });
 });
 
