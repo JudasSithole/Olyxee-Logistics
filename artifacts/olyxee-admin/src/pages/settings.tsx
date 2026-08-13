@@ -322,25 +322,25 @@ function SectionShell({
       // with breathing room above the section title.
       className="scroll-mt-24 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500"
     >
-      <header className="px-1 mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0 flex items-start gap-2.5">
+      <header className="mb-3 flex items-start justify-between gap-3 px-1.5">
+        <div className="min-w-0 flex items-center gap-3">
           <span
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] shadow-sm ring-1 ring-black/5"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5"
             style={{ backgroundColor: tint }}
           >
-            <Icon className="h-[18px] w-[18px] text-white" aria-hidden="true" />
+            <Icon className="h-[19px] w-[19px] text-white" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
+            <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-foreground">{title}</h2>
             {description && (
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
             )}
           </div>
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}
       </header>
 
-      <div className="bg-card border border-border divide-y divide-border/70 rounded-2xl shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.04)] divide-y divide-border/60">
         {children}
       </div>
     </section>
@@ -499,10 +499,10 @@ function BrandIdentityPreview({
 // Each entry drives one TabsTrigger and matches the `id` of one TabsContent
 // below. Order here is the order shown to the user.
 const NAV_ITEMS = [
-  { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
-  { id: "invoice", label: "Invoice", icon: FileText, tint: TINTS.green },
-  { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
-  { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
+  { id: "identity", label: "Business", icon: Building2, tint: TINTS.blue },
+  { id: "invoice", label: "Invoices", icon: FileText, tint: TINTS.green },
+  { id: "appearance", label: "Display", icon: SunMoon, tint: TINTS.orange },
+  { id: "billing", label: "Plan & Billing", icon: CreditCard, tint: TINTS.green },
 ] as const;
 
 // ─── Billing & plan ───────────────────────────────────────────────────────────
@@ -645,7 +645,7 @@ function InvoiceProfileSection() {
   const pickLogo=async(file:File)=>{if(file.type==="image/svg+xml"){toast.error("Invoice logos must be PNG or JPEG so every PDF renders reliably.");return;}try{update("logoUrl",await compressLogo(file));}catch{toast.error("Could not process that logo. Use a PNG or JPEG image.");}};
   const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!user?.businessId)return;try{await save.mutateAsync({id:user.businessId,invoice_legal_name:profile.legalName||null,invoice_registration_number:profile.registrationNumber||null,invoice_tax_number:profile.taxNumber||null,invoice_address:profile.address||null,invoice_email:profile.email||null,invoice_phone:profile.phone||null,invoice_logo_url:profile.logoUrl||null,invoice_payment_details:formatPaymentDetails(profile)||null,invoice_payment_terms:profile.paymentTerms||null,invoice_footer_note:profile.footerNote||null});toast.success("Invoice profile saved");}catch(error){toast.error(error instanceof Error?error.message:"Could not save invoice profile");}};
   const ready=[profile.legalName,profile.address,profile.email,profile.bank,profile.accountName,profile.accountNumber].filter(v=>v.trim()).length;
-  return <SectionShell icon={CreditCard} tint={TINTS.green} title="Invoice profile" description="Set this up once. These details are reused on every invoice and PDF.">
+  return <SectionShell icon={CreditCard} tint={TINTS.green} title="Invoice details" description="Add these once and we’ll reuse them on every invoice and PDF.">
     <form onSubmit={submit}>
       <div className="grid items-start gap-5 p-4 lg:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-5">
@@ -655,7 +655,7 @@ function InvoiceProfileSection() {
         <div className="space-y-5 lg:sticky lg:top-5">
           <div className="rounded-xl border border-border p-4"><div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-semibold">Invoice readiness</p><p className="text-xs text-muted-foreground">{ready} of 6 essentials completed</p></div><span className="text-lg font-bold text-primary">{Math.round(ready/6*100)}%</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{width:`${ready/6*100}%`}}/></div></div>
           <div className="rounded-xl border border-border p-4"><Label>Invoice logo</Label><div className="mt-2"><LogoUpload value={profile.logoUrl} businessName={profile.legalName} onFile={pickLogo} onRemove={()=>update("logoUrl","")}/></div><p className="mt-2 text-xs text-muted-foreground">PNG or JPEG. The legal name is used if no logo is uploaded.</p></div>
-          <div className="rounded-xl border border-border p-4"><p className="text-sm font-semibold">Payment terms</p><div className="mt-3 grid grid-cols-2 gap-2">{['Payment due on receipt.','Payment due within 7 days.','Payment due within 14 days.','Payment due within 30 days.'].map(term=><Button key={term} type="button" size="sm" variant={profile.paymentTerms===term?'default':'outline'} onClick={()=>update("paymentTerms",term)}>{term.match(/receipt|\d+ days/)?.[0]}</Button>)}</div><Label htmlFor="paymentTerms" className="mt-4 block">Custom wording</Label><Input id="paymentTerms" className="mt-1.5" value={profile.paymentTerms} onChange={e=>update("paymentTerms",e.target.value)}/></div>
+          <div className="rounded-xl border border-border p-4"><p className="text-sm font-semibold">When is payment due?</p><div className="mt-3 grid grid-cols-2 gap-2">{([['Payment due on receipt.','Due now'],['Payment due within 7 days.','7 days'],['Payment due within 14 days.','14 days'],['Payment due within 30 days.','30 days']] as const).map(([term,label])=><Button key={term} type="button" size="sm" variant={profile.paymentTerms===term?'default':'outline'} onClick={()=>update("paymentTerms",term)}>{label}</Button>)}</div><Label htmlFor="paymentTerms" className="mt-4 block">Message shown on invoice</Label><Input id="paymentTerms" className="mt-1.5" value={profile.paymentTerms} onChange={e=>update("paymentTerms",e.target.value)}/></div>
           <div className="rounded-xl border border-border p-4"><Label htmlFor="invoiceFooter">Footer note</Label><Textarea id="invoiceFooter" className="mt-1.5" rows={3} value={profile.footerNote} onChange={e=>update("footerNote",e.target.value)} placeholder="Thank you for your business."/></div>
         </div>
       </div>
@@ -811,22 +811,40 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-full pb-32">
+    <div className="settings-ios mx-auto min-h-full max-w-5xl pb-32">
+      <style>{`
+        .settings-ios input:not([type="color"]):not([type="range"]),
+        .settings-ios textarea,
+        .settings-ios select {
+          min-height: 44px;
+          border-radius: 12px !important;
+          border-color: hsl(var(--border) / .72);
+          background: hsl(var(--muted) / .28);
+          box-shadow: inset 0 1px 0 rgb(255 255 255 / .04);
+        }
+        .settings-ios input:focus, .settings-ios textarea:focus, .settings-ios select:focus {
+          background: hsl(var(--background));
+          box-shadow: 0 0 0 3px hsl(var(--ring) / .12);
+        }
+        .settings-ios label { letter-spacing: -.005em; }
+        .settings-ios fieldset { border-color: hsl(var(--border) / .65); background: hsl(var(--muted) / .12); }
+      `}</style>
       {/* Page header - kept generous; this is the moment the page "establishes
           itself" before the content groups begin. */}
-      <header className="mb-8 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-500">
-        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1.5 text-[15px]">
-          Manage your business profile, branding, invoices, and appearance.
+      <header className="mb-6 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-500">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[.16em] text-muted-foreground">Workspace</p>
+        <h1 className="text-[34px] font-bold tracking-[-0.035em]">Settings</h1>
+        <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+          Set up how your business looks, bills customers, and works for your team.
         </p>
       </header>
 
       {/* Tabs - replace the long scroll. Only the active panel renders, so
           there's no off-screen content competing for attention. */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="max-w-4xl">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         {/* TabsList scrolls horizontally on narrow viewports so the labels
             never wrap or truncate. */}
-        <TabsList className="h-auto p-1 bg-muted/60 w-full sm:w-auto flex flex-wrap justify-start gap-0.5">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted/70 p-1.5 sm:grid-cols-4">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isDirty = dirty.has(item.id);
@@ -835,13 +853,13 @@ export default function SettingsPage() {
               <TabsTrigger
                 key={item.id}
                 value={item.id}
-                className="relative gap-2 px-3 py-1.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                className="relative gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium focus-visible:ring-[#0a84ff]/35 focus-visible:ring-offset-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
                 {isActive && (
                   <motion.span
                     layoutId="settingsTabHighlight"
                     aria-hidden="true"
-                    className="absolute inset-0 rounded-md bg-background shadow-sm pointer-events-none"
+                    className="pointer-events-none absolute inset-0 rounded-xl bg-background shadow-[0_1px_3px_rgba(0,0,0,.12)]"
                     transition={{ type: "spring", stiffness: 500, damping: 34 }}
                   />
                 )}
@@ -867,7 +885,7 @@ export default function SettingsPage() {
             preview - far shorter and calmer than the old stacked sections. */}
         <TabsContent value="identity" className="mt-6 focus-visible:outline-none">
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)]">
-            <SectionShell icon={Building2} tint={TINTS.blue} title="Brand & Identity" description="The essentials customers and staff see." action={dirty.has("identity") ? <RestoreButton onClick={() => setForm({...initial})} /> : undefined}>
+            <SectionShell icon={Building2} tint={TINTS.blue} title="Business profile" description="Your name, logo, and color across the app." action={dirty.has("identity") ? <RestoreButton onClick={() => setForm({...initial})} /> : undefined}>
               <div className="grid gap-4 p-4 sm:grid-cols-2">
                 <div className="space-y-1.5"><Label htmlFor="businessName">Business name</Label><Input id="businessName" value={form.businessName} onChange={(e)=>setForm(f=>({...f,businessName:e.target.value}))} placeholder="Your business name" autoComplete="organization"/><p className="text-xs text-muted-foreground">Used across the app and customer emails.</p></div>
                 <div className="space-y-1.5"><Label htmlFor="businessTagline">Tagline</Label><Input id="businessTagline" value={form.businessTagline} onChange={(e)=>setForm(f=>({...f,businessTagline:e.target.value.slice(0,80)}))} placeholder="Fast, reliable cross-border logistics" maxLength={80}/><p className="text-xs text-muted-foreground">Optional, up to 80 characters.</p></div>
@@ -891,8 +909,8 @@ export default function SettingsPage() {
           <SectionShell
             icon={SunMoon}
             tint={TINTS.orange}
-            title="Appearance"
-            description="Pick the look that's easier on your eyes."
+            title="Display"
+            description="Choose the look that feels best to use."
           >
             <div className="p-4">
               <div className="grid grid-cols-2 gap-3">
