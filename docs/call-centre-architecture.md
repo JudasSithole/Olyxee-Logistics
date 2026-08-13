@@ -2,7 +2,7 @@
 
 ## Overview
 
-An AI-powered inbound call centre built on **Retell AI** that answers customer calls, looks up orders, and escalates to humans when needed. Operates as three surfaces in the Order Loop admin panel and a set of server-to-server endpoints for Retell callbacks.
+An AI-powered inbound call centre built on **Retell AI** that answers customer calls, looks up orders, and escalates to humans when needed. Operates as three surfaces in the Olyxee Logistics admin panel and a set of server-to-server endpoints for Retell callbacks.
 
 ---
 

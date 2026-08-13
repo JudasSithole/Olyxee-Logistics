@@ -346,7 +346,7 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
       return;
     }
 
-    const [customer, business, trackingEvents, emailNotifications] = await Promise.all([
+    const [customer, business, invoice, trackingEvents, emailNotifications] = await Promise.all([
       db.query.customersTable.findFirst({
         where: and(
           eq(customersTable.id, order.customerId),
@@ -354,6 +354,7 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
         ),
       }),
       db.query.businessesTable.findFirst({ where: eq(businessesTable.id, businessId) }),
+      order.invoiceId ? db.query.invoicesTable.findFirst({ where: and(eq(invoicesTable.id, order.invoiceId), eq(invoicesTable.businessId, businessId)) }) : Promise.resolve(null),
       db
         .select()
         .from(trackingEventsTable)
@@ -373,6 +374,7 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
     res.json({
       ...serializeOrder(order),
       trackingLink,
+      invoiceStatus: invoice?.status ?? null,
       customer: customer ? serializeCustomer(customer) : null,
       trackingEvents: trackingEvents.map((e) => ({
         ...e,

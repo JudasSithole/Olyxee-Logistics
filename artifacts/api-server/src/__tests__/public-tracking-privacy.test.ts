@@ -21,6 +21,7 @@ it("keeps customer, invoice, supplier and staff data out of public tracking", as
     expect(JSON.stringify(res.body)).not.toContain(privateField);
   }
   expect(res.body.trackingId).toBe("OLY-ABC-2345");
-  expect(res.body.currentStatus).toBe("PENDING_TRACKING_NUMBER");
-  expect(res.body.statusLabel).toBe("Pending Tracking Number");
+  expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
+  expect(res.body.statusLabel).toBe("Order Confirmed");
+  expect(JSON.stringify(res.body)).not.toContain("PENDING_TRACKING_NUMBER");
 });

@@ -121,7 +121,7 @@ export default function TrackPage() {
       {/* Brand dateline */}
       <div className="w-full max-w-xl flex items-center justify-between mb-8">
         <span style={mono} className="text-[11px] tracking-[0.22em] text-neutral-500 uppercase">
-          Olyxee · Order Loop
+          Olyxee Logistics
         </span>
         <span style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase">
           Order Status

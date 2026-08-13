@@ -113,6 +113,7 @@ interface ApiOrder {
   customer?: ApiCustomer | null;
   transportMode?: string | null;
   invoiceId?: string | null;
+  invoiceStatus?: string | null;
   supplierTrackingNumber?: string | null;
   supplierTrackingNumberAddedAt?: string | null;
   cargoType?: string | null;
@@ -548,9 +549,10 @@ export function useOrder(id: string | null | undefined) {
       const data = await apiFetch<ApiOrderDetail>(`/api/orders/${id}`);
       return {
         ...mapOrder(data),
+        invoice_status: data.invoiceStatus ?? null,
         customers: data.customer ? mapCustomer(data.customer) : (null as unknown as Customer),
         tracking_events: (data.trackingEvents ?? []).map(mapTrackingEvent),
-      } as Order & { customers: Customer; tracking_events: unknown[] };
+      } as Order & { invoice_status: string | null; customers: Customer; tracking_events: unknown[] };
     },
   });
 }

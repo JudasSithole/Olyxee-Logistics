@@ -19,7 +19,7 @@ interface ThemeContextValue extends ThemeSettings {
   setBusinessName: (name: string) => void;
   setBusinessTagline: (tagline: string) => void;
   saveSettings: (partial: Partial<ThemeSettings>) => void;
-  // When false, the browser tab always shows the Courier Loop favicon/title
+  // When false, the browser tab always shows the Olyxee Logistics favicon/title
   // (our default). When true (i.e. the user is signed in), the tenant's own
   // uploaded favicon and business name take over.
   setBrandingActive: (active: boolean) => void;
@@ -118,12 +118,12 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 // Our own default tab title, shown to logged-out visitors.
-const DEFAULT_TITLE = "Courier Loop · Logistics Operations Console";
+const DEFAULT_TITLE = "Olyxee Logistics · Cross-Border Operations";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<ThemeSettings>(loadSettings);
   // Tenant branding only takes over once the user is signed in. Until then we
-  // always show our own (Courier Loop) favicon and tab title.
+  // always show our own (Olyxee Logistics) favicon and tab title.
   const [brandingActive, setBrandingActive] = useState(false);
 
   const persist = useCallback((next: ThemeSettings) => {
@@ -141,13 +141,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [settings.primaryColor]);
 
   // Use the tenant's uploaded favicon only when signed in; otherwise fall back
-  // to our bundled Courier Loop favicon (passing an empty string does this).
+  // to our bundled Olyxee Logistics favicon (passing an empty string does this).
   useEffect(() => {
     applyFavicon(brandingActive ? settings.faviconUrl : "");
   }, [settings.faviconUrl, brandingActive]);
 
   // Keep the browser tab title in sync with the business name once signed in.
-  // Logged out, it always shows our Courier Loop default.
+  // Logged out, it always shows our Olyxee Logistics default.
   useEffect(() => {
     const name = settings.businessName.trim();
     document.title =

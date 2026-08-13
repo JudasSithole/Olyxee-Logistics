@@ -19,7 +19,7 @@ const ANNOUNCEMENTS: Announcement[] = [
   {
     date: "July 2026",
     tag: "Launch",
-    title: `Order Loop is going live on ${LAUNCH_LABEL}`,
+    title: `Olyxee Logistics is going live on ${LAUNCH_LABEL}`,
     body: `We're moving out of beta. On launch day, new plans become available and existing beta businesses get Growth free for the first week (${TRIAL_LABEL}). Nothing changes for you before then — keep using everything as you do today.`,
   },
   {
@@ -58,7 +58,7 @@ const FEATURES: UpcomingFeature[] = [
     icon: Code2,
     title: "Public API",
     description:
-      "Create and track orders programmatically with API keys, so you can plug Order Loop into your own systems.",
+      "Create and track orders programmatically with API keys, so you can plug Olyxee Logistics into your own systems.",
     plan: "Scale",
   },
   {

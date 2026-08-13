@@ -53,7 +53,7 @@ export default function BusinessTypePage() {
               What kind of business are you?
             </h1>
             <p className="text-[15px] text-[hsl(220,9%,46%)] mt-1.5">
-              Choose your industry so Courier Loop can tailor the experience for
+              Choose your industry so Olyxee Logistics can tailor the experience for
               your team. You can change this later in Settings.
             </p>
           </div>

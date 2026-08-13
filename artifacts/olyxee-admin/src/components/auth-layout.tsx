@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
-import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,12 +10,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         aria-label="Back to home"
         data-testid="link-auth-home"
       >
-        <img
-          src={orderLoopLogo}
-          alt="Order Loop"
-          className="h-8 sm:h-10 w-auto"
-          draggable={false}
-        />
+        <span className="text-lg font-bold tracking-tight text-neutral-900">Olyxee Logistics</span>
       </Link>
       <div className="w-full max-w-[420px]">{children}</div>
     </div>

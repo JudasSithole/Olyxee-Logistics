@@ -1,4 +1,4 @@
-# Olyxee Logistics / Order Loop
+# Olyxee Logistics
 
 Olyxee Logistics is an operations console for managing cross-border air and sea shipments after a customer has accepted a quote.
 
@@ -8,7 +8,7 @@ There is no payment-gateway integration in the current workflow, and the warehou
 
 ## Current workflow
 
-1. The customer receives and accepts a quote outside Order Loop.
+1. The customer receives and accepts a quote outside Olyxee Logistics.
 2. An administrator creates or selects the customer.
 3. The administrator creates an AIR or SEA cross-border order.
 4. The order records its route, cargo, service, weight, dimensions, reference, and estimated delivery date.

@@ -37,7 +37,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Product
 
-Order Loop is an order-tracking and customer-notification tool for small businesses: create orders, advance status, and auto-email customers a branded tracking update. Launch-prep adds a "What's New"/"Coming soon" announcement surface, public + in-app pricing (Free/Pro/Business, ZAR), and a countdown to the 1 Aug 2026 launch. Billing, SMS, custom branding, a public API, and an automated call centre are scaffolded but disabled until launch.
+Olyxee Logistics is a cross-border order-tracking and customer-notification system: create orders, generate invoices, confirm payment manually, advance shipment status, and email customers branded updates. Billing gateways, SMS, a public API, and an automated call centre remain scaffolded or disabled.
 
 ## User preferences
 
