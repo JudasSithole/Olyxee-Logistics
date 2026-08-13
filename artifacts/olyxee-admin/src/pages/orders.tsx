@@ -112,8 +112,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">Add the accepted shipment details and invoice amount. The customer receives the pending invoice automatically.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
-          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
-            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 1</p><h3 className="mt-1 font-semibold">Customer</h3><p className="mt-1 text-xs text-muted-foreground">Choose who receives the invoice and shipment updates.</p></div>
+          <section className="space-y-4 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5 dark:border-blue-900/60 dark:bg-blue-950/20">
+            <div className="flex items-start gap-3"><span className="rounded-full bg-blue-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 1</span><div><h3 className="font-semibold text-blue-950 dark:text-blue-100">Customer</h3><p className="mt-1 text-xs text-blue-900/65 dark:text-blue-200/70">Choose who receives the invoice and shipment updates.</p></div></div>
           <div className="space-y-2">
             <Label>Customer *</Label>
             <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
@@ -165,8 +165,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               </PopoverContent>
             </Popover>
           </div></section>
-          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
-            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 2</p><h3 className="mt-1 font-semibold">Shipment and cargo</h3><p className="mt-1 text-xs text-muted-foreground">Add the route and details customers should see.</p></div>
+          <section className="space-y-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+            <div className="flex items-start gap-3"><span className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 2</span><div><h3 className="font-semibold text-emerald-950 dark:text-emerald-100">Shipment and cargo</h3><p className="mt-1 text-xs text-emerald-900/65 dark:text-emerald-200/70">Add the route and details customers should see.</p></div></div>
           {(
             <div className="space-y-2">
               <Label>Transport mode *</Label>
@@ -184,8 +184,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
           <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Origin *</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))} placeholder="China" required/></div><div className="space-y-2"><Label>Destination *</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="South Africa" required/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="e.g. 40 × 30 × 25 cm"/></div></div>
           <div className="space-y-2"><Label>Handling notes</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling, or other useful notes" /></div>
           </section>
-          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
-            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 3</p><h3 className="mt-1 font-semibold">Reference and invoice</h3><p className="mt-1 text-xs text-muted-foreground">Confirm the accepted amount before creating the order.</p></div>
+          <section className="space-y-4 rounded-2xl border border-violet-200/80 bg-violet-50/60 p-5 dark:border-violet-900/60 dark:bg-violet-950/20">
+            <div className="flex items-start gap-3"><span className="rounded-full bg-violet-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 3</span><div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Reference and invoice</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Confirm the accepted amount before creating the order.</p></div></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
