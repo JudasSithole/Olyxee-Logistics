@@ -10,9 +10,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
-import { useBusiness } from "@/hooks/use-supabase-queries";
-import { LaunchCountdown } from "@/components/launch-countdown";
-import { plans, type PlanId } from "@/lib/launch";
 
 function UserRow() {
   const { user, signOut } = useAuth();
@@ -80,22 +77,6 @@ const NAV_ITEMS = [
 const GROWTH_ITEMS = [
   { href: "/upgrade", label: "Upgrade plan", icon: ArrowUpCircle },
 ];
-
-// Small badge in the sidebar showing the business's current plan.
-function PlanBadge() {
-  const { user } = useAuth();
-  const { data: business } = useBusiness(user?.businessId);
-  const planId = (business?.plan ?? "beta") as PlanId;
-  const label = plans[planId]?.name ?? "BETA";
-  return (
-    <span
-      className="inline-flex items-center rounded-full bg-sidebar-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-accent-foreground"
-      data-testid="sidebar-plan-badge"
-    >
-      {label}
-    </span>
-  );
-}
 
 // A single nav row used for every sidebar link so the active treatment -
 // a left accent bar plus filled background - stays perfectly consistent.
@@ -172,8 +153,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Secondary area - product news, pricing and settings live at the bottom,
-          away from the main nav, plus a quiet plan + countdown strip. */}
+      {/* Secondary navigation stays separate from the primary workflow. */}
       <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-sidebar-border">
         <div className="space-y-0.5">
           {GROWTH_ITEMS.map((item) => (
@@ -193,24 +173,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
         </div>
 
-        {/* Launch announcement: current plan + live countdown. Compact and
-            purely informational - the nav links above already lead to details. */}
-        <Link
-          href="/upgrade"
-          className="mt-2 flex items-center gap-2.5 rounded-lg bg-sidebar-accent/40 px-3 py-2 transition-colors hover:bg-sidebar-accent/70"
-          data-testid="sidebar-launch-card"
-        >
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">
-              New features coming
-            </p>
-            <LaunchCountdown
-              variant="compact"
-              className="block text-[11px] tabular-nums text-sidebar-foreground/55"
-            />
-          </div>
-          <PlanBadge />
-        </Link>
       </div>
 
       {/* Footer */}
