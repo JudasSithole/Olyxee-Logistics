@@ -59,6 +59,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     search: debouncedSearch || undefined,
   });
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; label: string } | null>(null);
+  const invoiceTotal = (Number(form.invoiceSubtotal) || 0) + (Number(form.invoiceAdditionalCharges) || 0);
 
   React.useEffect(() => {
     if (open) {
@@ -105,11 +106,14 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" /> New Order</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle>New Order</DialogTitle>
+      <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-[760px]">
+        <DialogHeader className="border-b border-border/60 px-6 pb-5 pt-6 text-left">
+          <DialogTitle className="text-xl">Create a new order</DialogTitle>
+          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">Add the accepted shipment details and invoice amount. The customer receives the pending invoice automatically.</p>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
+          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
+            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 1</p><h3 className="mt-1 font-semibold">Customer</h3><p className="mt-1 text-xs text-muted-foreground">Choose who receives the invoice and shipment updates.</p></div>
           <div className="space-y-2">
             <Label>Customer *</Label>
             <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
@@ -160,10 +164,12 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 </Command>
               </PopoverContent>
             </Popover>
-          </div>
+          </div></section>
+          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
+            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 2</p><h3 className="mt-1 font-semibold">Shipment and cargo</h3><p className="mt-1 text-xs text-muted-foreground">Add the route and details customers should see.</p></div>
           {(
             <div className="space-y-2">
-              <Label>Transport Mode *</Label>
+              <Label>Transport mode *</Label>
               <Select value={form.transportMode} onValueChange={v => setForm(f => ({ ...f, transportMode: v }))}>
                 <SelectTrigger><SelectValue placeholder="How is this order shipping?" /></SelectTrigger>
                 <SelectContent>
@@ -175,8 +181,12 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Origin</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))}/></div><div className="space-y-2"><Label>Destination</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))}/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))}/></div></div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Origin *</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))} placeholder="China" required/></div><div className="space-y-2"><Label>Destination *</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="South Africa" required/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="e.g. 40 × 30 × 25 cm"/></div></div>
+          <div className="space-y-2"><Label>Handling notes</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling, or other useful notes" /></div>
+          </section>
+          <section className="space-y-4 rounded-2xl border border-border/70 bg-muted/10 p-5">
+            <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-primary">Step 3</p><h3 className="mt-1 font-semibold">Reference and invoice</h3><p className="mt-1 text-xs text-muted-foreground">Confirm the accepted amount before creating the order.</p></div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Order Reference</Label>
@@ -201,27 +211,17 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               <Input type="date" value={form.estimatedDeliveryDate} onChange={e => setForm(f => ({ ...f, estimatedDeliveryDate: e.target.value }))} />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3}
-              placeholder="e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
-            />
-            <p className="text-xs text-muted-foreground">
-              Include contents, quantity, weight/volume, origin → destination, and any handling notes.
-            </p>
-          </div>
-          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-            <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="text-xs text-muted-foreground">The accepted quote amount. A pending invoice will be emailed automatically.</p></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Service subtotal</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
-              <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} /></div>
+          <div className="rounded-xl border border-border bg-background p-4 space-y-4">
+            <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="mt-1 text-xs text-muted-foreground">Enter the quote already accepted by the customer. No online payment is taken.</p></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Service subtotal *</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
+              <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} placeholder="0.00" /></div>
             </div>
+            <div className="flex items-center justify-between border-t border-border pt-3"><span className="text-sm text-muted-foreground">Invoice total</span><span className="text-xl font-bold">ZAR {invoiceTotal.toFixed(2)}</span></div>
           </div>
-          <p className="text-xs text-muted-foreground">Tracking updates begin only after an admin confirms payment.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || !form.invoiceSubtotal}>
+          <div className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">The invoice starts as <strong>Pending Payment</strong>. Tracking updates stay locked until an admin confirms payment manually.</div>
+          </section>
+          <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px]" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || !form.invoiceSubtotal}>
             {createMutation.isPending ? "Creating and sending invoice..." : "Create Order & Send Invoice"}
           </Button>
         </form>
