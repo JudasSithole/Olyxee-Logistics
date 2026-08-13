@@ -21,6 +21,7 @@ export default function InvoiceDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
   const deleteInvoice = useMutation({ mutationFn: () => apiFetch(`/api/invoices/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success("Invoice deleted"); navigate("/invoices"); }, onError: (error: Error) => toast.error(error.message) });
+  const editInvoice=useMutation({mutationFn:()=>apiFetch(`/api/invoices/${id}`,{method:"PUT",body:{...editForm,dueDate:editForm.dueDate||null}}),onSuccess:()=>{toast.success("Invoice updated");setEditOpen(false);query.refetch();},onError:(error:Error)=>toast.error(error.message)});
   if (query.isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-52"/><Skeleton className="h-[700px] w-full"/></div>;
   if (!query.data) return <p>Invoice not found.</p>;
   const invoice = query.data;
@@ -31,7 +32,6 @@ export default function InvoiceDetailPage() {
   const serviceDetails = [order?.transportMode ? `${order.transportMode} FREIGHT` : null, order?.serviceRequired, order?.weight].filter(Boolean).join(" | ");
   const displayStatus = invoice.status === "sent" ? "pending payment" : invoice.status;
   const openEdit=()=>{setEditForm({subtotal:String(invoice.subtotal),additionalCharges:String(invoice.additionalCharges),dueDate:invoice.dueDate?String(invoice.dueDate).slice(0,10):"",notes:invoice.notes??""});setEditOpen(true);};
-  const editInvoice=useMutation({mutationFn:()=>apiFetch(`/api/invoices/${id}`,{method:"PUT",body:{...editForm,dueDate:editForm.dueDate||null}}),onSuccess:()=>{toast.success("Invoice updated");setEditOpen(false);query.refetch();},onError:(error:Error)=>toast.error(error.message)});
 
   return <div className="mx-auto max-w-4xl space-y-5">
     <style>{`@media print {
