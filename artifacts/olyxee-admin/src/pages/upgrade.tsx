@@ -1,18 +1,16 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, PackageCheck, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useBusiness } from "@/hooks/use-supabase-queries";
-import { LaunchCountdown } from "@/components/launch-countdown";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
   plans,
   featureFlags,
   LAUNCH_LABEL,
-  TRIAL_LABEL,
   type PlanId,
 } from "@/lib/launch";
 
@@ -25,6 +23,11 @@ function featureList(id: PlanId): string[] {
 }
 
 const TIERS: PlanId[] = ["free", "pro", "business"];
+const PLAN_COPY: Record<"free"|"pro"|"business", { eyebrow:string; description:string }> = {
+  free: { eyebrow:"For getting started", description:"Run a small cross-border operation with the core order and invoice workflow." },
+  pro: { eyebrow:"For growing teams", description:"Add higher order volume, customer communication, and your own brand." },
+  business: { eyebrow:"For busy operations", description:"Handle larger monthly volumes with priority help when your team needs it." },
+};
 
 export default function UpgradePage() {
   const { status, user } = useAuth();
@@ -82,37 +85,17 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Sparkles className="h-5 w-5" />
+    <div className="mx-auto max-w-6xl space-y-7 pb-12">
+      <header className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="max-w-2xl"><div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"><Sparkles className="h-3.5 w-3.5"/>Simple monthly pricing</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Choose the capacity your logistics team needs.</h1><p className="mt-3 text-base leading-relaxed text-muted-foreground">Every plan includes the complete order-to-invoice workflow, customer records, and public shipment tracking. Upgrade when your monthly volume grows.</p></div>
+          <div className="flex items-center gap-3 rounded-xl bg-muted/60 px-4 py-3"><PackageCheck className="h-5 w-5 text-primary"/><div><p className="text-sm font-semibold">No setup fees</p><p className="text-xs text-muted-foreground">Prices are monthly in ZAR</p></div></div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Plans &amp; Pricing</h1>
-          <p className="text-sm text-muted-foreground">
-            Choose the plan that fits your business.
-          </p>
-        </div>
-      </div>
-
-      <Card className="border-primary/20 bg-primary/5 p-5 text-center">
-        <p className="text-sm font-medium text-foreground">
-          Paid plans go live on {LAUNCH_LABEL}
-        </p>
-        <LaunchCountdown className="mt-2 justify-center" />
-      </Card>
+      </header>
 
       {isAuthed && currentPlan === "beta" && (
-        <Card className="border-primary/20 bg-primary/5 p-5">
-          <div className="flex items-start gap-3">
-            <Badge className="mt-0.5">BETA</Badge>
-            <p className="text-sm text-muted-foreground">
-              You&apos;re on the <span className="font-medium text-foreground">BETA plan</span>{" "}
-              with unlimited access and no limits. Paid plans go live on{" "}
-              {LAUNCH_LABEL}. As an existing business, you&apos;ll get{" "}
-              {plans.pro.name} free during {TRIAL_LABEL}.
-            </p>
-          </div>
+        <Card className="border-primary/20 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center gap-3"><Badge>BETA ACCESS</Badge><p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Your current account remains unlimited.</span> Paid subscriptions become available on {LAUNCH_LABEL}; no action is required today.</p></div>
         </Card>
       )}
 
@@ -122,7 +105,7 @@ export default function UpgradePage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-3">
         {TIERS.map((id) => {
           const p = plans[id];
           const isCurrent = currentPlan === id;
@@ -131,16 +114,16 @@ export default function UpgradePage() {
             <Card
               key={id}
               data-testid={`plan-${id}`}
-              className={`relative flex flex-col p-6 ${
-                isPro ? "border-primary shadow-md" : ""
+              className={`relative flex min-h-[500px] flex-col overflow-hidden p-6 ${
+                isPro ? "border-primary shadow-lg shadow-primary/10 ring-1 ring-primary" : "shadow-sm"
               }`}
             >
               {isPro && (
-                <Badge className="absolute -top-2.5 left-6">Most popular</Badge>
+                <div className="absolute inset-x-0 top-0 bg-primary py-1.5 text-center text-[11px] font-bold uppercase tracking-widest text-primary-foreground">Most popular</div>
               )}
-              <h2 className="text-lg font-semibold">{p.name}</h2>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold tracking-tight">
+              <div className={isPro ? "pt-5" : ""}><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].eyebrow}</p><h2 className="mt-2 text-xl font-bold">{p.name}</h2><p className="mt-2 min-h-[60px] text-sm leading-relaxed text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].description}</p></div>
+              <div className="mt-5 flex items-baseline gap-1 border-b border-border pb-5">
+                <span className="text-4xl font-bold tracking-tight">
                   {formatPrice(p.price)}
                 </span>
                 {p.price > 0 && (
@@ -148,16 +131,15 @@ export default function UpgradePage() {
                 )}
               </div>
 
-              <ul className="mt-5 space-y-2.5">
+              <p className="mt-5 text-xs font-bold uppercase tracking-wider text-foreground">What&apos;s included</p><ul className="mt-3 space-y-3">
                 {featureList(id).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                    <span className="text-muted-foreground">{f}</span>
+                    <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-primary/10"><Check className="h-3 w-3 text-primary" /></span><span className="text-muted-foreground">{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-6 flex-1" />
+              <div className="mt-7 flex-1" />
               <Button
                 className="w-full"
                 variant={isPro ? "default" : "outline"}
@@ -177,18 +159,16 @@ export default function UpgradePage() {
                     : isCurrent
                       ? "Current plan"
                       : devTestBilling
-                        ? `Test checkout`
+                        ? `Test ${p.name} checkout`
                         : `Choose ${p.name}`}
+                {pendingPlan !== id && checkoutEnabled && !isCurrent ? <ArrowRight className="ml-2 h-4 w-4"/> : null}
               </Button>
             </Card>
           );
         })}
       </div>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Prices in South African Rand (ZAR). You can change or cancel your plan
-        at any time.
-      </p>
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-5 text-xs text-muted-foreground"><span>Prices in South African Rand (ZAR)</span><span>Change or cancel at any time</span><span>No payment gateway is used for customer invoices</span></div>
     </div>
   );
 }
