@@ -504,7 +504,6 @@ function BrandIdentityPreview({
 const NAV_ITEMS = [
   { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
   { id: "invoice", label: "Invoice", icon: FileText, tint: TINTS.green },
-  { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
 ] as const;
@@ -743,7 +742,7 @@ export default function SettingsPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [guardActive]);
 
-  // Active tab. Honour a deep-link hash (#identity, #integrations, …) on first mount
+  // Active tab. Honour a deep-link hash on first mount
   // so links from elsewhere can drop the user straight onto a tab.
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window === "undefined") return NAV_ITEMS[0].id;
@@ -785,7 +784,7 @@ export default function SettingsPage() {
       <header className="mb-8 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-500">
         <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-1.5 text-[15px]">
-          Manage your business profile, branding, and developer integrations.
+          Manage your business profile, branding, invoices, and appearance.
         </p>
       </header>
 
@@ -958,11 +957,6 @@ export default function SettingsPage() {
 
         <TabsContent value="invoice" className="mt-6 focus-visible:outline-none">
           <InvoiceProfileSection />
-        </TabsContent>
-
-        {/* ─── Integrations ─────────────────────────────────────────── */}
-        <TabsContent value="integrations" className="mt-6 focus-visible:outline-none">
-          <IntegrationsSection />
         </TabsContent>
 
         {/* ─── Appearance ───────────────────────────────────────────── */}
