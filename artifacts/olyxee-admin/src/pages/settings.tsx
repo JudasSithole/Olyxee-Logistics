@@ -942,16 +942,9 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Business Type - persists server-side independently of the
-              theme save bar (same pattern as Tracking). */}
+          {/* Business Type persists server-side independently of the theme save bar. */}
           <div className="mt-8">
             <BusinessTypeSection />
-          </div>
-
-          {/* Tracking section persists server-side (separate from the theme
-              form's save bar). */}
-          <div className="mt-8">
-            <TrackingCustomizationSection />
           </div>
         </TabsContent>
 
