@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw,
-  Code2, Copy, Download, Globe, Tag, CreditCard, Phone,
+  Code2, Copy, Download, Globe, Tag, CreditCard, FileText, Phone,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -503,6 +503,7 @@ function BrandIdentityPreview({
 // below. Order here is the order shown to the user.
 const NAV_ITEMS = [
   { id: "identity", label: "Brand & Identity", icon: Building2, tint: TINTS.blue },
+  { id: "invoice", label: "Invoice", icon: FileText, tint: TINTS.green },
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
@@ -954,7 +955,10 @@ export default function SettingsPage() {
           <div className="mt-8">
             <TrackingCustomizationSection />
           </div>
-          <div className="mt-8"><InvoiceProfileSection /></div>
+        </TabsContent>
+
+        <TabsContent value="invoice" className="mt-6 focus-visible:outline-none">
+          <InvoiceProfileSection />
         </TabsContent>
 
         {/* ─── Integrations ─────────────────────────────────────────── */}
