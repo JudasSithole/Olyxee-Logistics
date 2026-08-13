@@ -13,6 +13,7 @@ const mockDb = {
     ordersTable: { findFirst: vi.fn() },
     customersTable: { findFirst: vi.fn() },
     businessesTable: { findFirst: vi.fn() },
+    invoicesTable: { findFirst: vi.fn() },
   },
 };
 
@@ -25,6 +26,7 @@ vi.mock("@workspace/db", () => ({
   smsNotificationsTable: {},
   auditLogsTable: {},
   businessesTable: {},
+  invoicesTable: { id: "id", businessId: "businessId" },
 }));
 
 vi.mock("../lib/auth", () => ({
@@ -45,6 +47,7 @@ vi.mock("../lib/id", () => ({
 vi.mock("../lib/email", () => ({
   sendStatusEmail: vi.fn(async () => ({ success: true, messageId: "m1" })),
   buildEmailBody: vi.fn(() => ({ subject: "s", body: "b" })),
+  sendInvoiceEmail: vi.fn(async () => ({ success: false, error: "test provider disabled" })),
 }));
 vi.mock("../lib/email-usage", () => ({
   getMonthlyEmailUsage: vi.fn(async () => 0),
@@ -90,7 +93,15 @@ function insertChainPlain() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockDb.query.invoicesTable.findFirst.mockResolvedValue({ id: "inv_1", status: "paid" });
 });
+
+function mockInvoiceTransaction() {
+  mockDb.transaction.mockImplementation(async (fn: any) => fn({
+    insert: vi.fn(() => insertChainPlain()),
+    update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(async () => undefined) })) })),
+  }));
+}
 
 describe("POST /orders — transport mode requirements", () => {
   it("rejects cross-border order creation without transportMode", async () => {
@@ -121,10 +132,11 @@ describe("POST /orders — transport mode requirements", () => {
     mockDb.insert
       .mockReturnValueOnce(insertChain([inserted]) as any)
       .mockReturnValue(insertChainPlain() as any);
+    mockInvoiceTransaction();
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA" });
+      .send({ customerId: "cust_1", transportMode: "SEA", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.transportMode).toBe("SEA");
   });
@@ -158,10 +170,11 @@ describe("POST /orders — transport mode requirements", () => {
     mockDb.insert
       .mockReturnValueOnce(insertChain([inserted]) as any) // order insert
       .mockReturnValue(insertChainPlain() as any); // tracking event + audit
+    mockInvoiceTransaction();
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA" });
+      .send({ customerId: "cust_1", transportMode: "SEA", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
     expect(res.body.transportMode).toBe("SEA");
@@ -184,10 +197,23 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     customerId: "cust_1",
     trackingId: "OLY-AAA-BBBB",
     currentStatus: "ORDER_CONFIRMED",
+    invoiceId: "inv_1",
     transportMode: "SEA",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+
+  it("blocks tracking updates while the invoice is awaiting payment", async () => {
+    mockDb.query.ordersTable.findFirst.mockResolvedValue(SEA_ORDER);
+    mockDb.query.invoicesTable.findFirst.mockResolvedValue({ id: "inv_1", status: "sent" });
+    const app = await buildApp();
+    const res = await request(app)
+      .post("/orders/ord_1/status")
+      .send({ status: "RECEIVED_FROM_SUPPLIER" });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/Payment must be confirmed/);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
 
   it("rejects a status outside the order's mode flow (422)", async () => {
     mockDb.query.ordersTable.findFirst.mockResolvedValue({

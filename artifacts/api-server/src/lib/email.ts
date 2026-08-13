@@ -381,3 +381,25 @@ export async function sendStatusEmail(params: SendStatusEmailParams): Promise<{
     return { success: false, error: "Failed to send email" };
   }
 }
+
+export interface SendInvoiceEmailParams {
+  customerEmail: string; customerName: string; customerAddress?: string | null;
+  invoiceNumber: string; createdAt: Date; dueDate: Date; description: string;
+  serviceDetails: string; quantity: number; subtotal: number; additionalCharges: number;
+  total: number; currency: string; businessName: string; supportEmail: string;
+  companyRegistration?: string; businessPhone?: string | null; businessAddress?: string | null;
+}
+
+export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{success:boolean;messageId?:string;error?:string}> {
+  const resend=getResend();
+  if(!resend)return {success:false,error:"Email provider not configured"};
+  const fromAddress=process.env.EMAIL_FROM_ADDRESS;
+  if(!fromAddress)return {success:false,error:"Email sender not configured"};
+  const money=(value:number)=>`${p.currency} ${value.toFixed(2)}`;
+  const date=(value:Date)=>value.toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"});
+  const address=escapeHtml(p.customerAddress||"").replace(/\n/g,"<br />");
+  const details=escapeHtml(p.serviceDetails).replace(/\n/g,"<br />");
+  const html=`<!doctype html><html><body style="margin:0;background:#f4f4f5;padding:24px;font-family:Arial,sans-serif;color:#111827"><table role="presentation" width="100%" style="max-width:760px;margin:auto;background:white;border-collapse:collapse"><tr><td style="padding:42px 48px"><table width="100%"><tr><td valign="top"><h1 style="margin:0 0 14px;font-size:28px">${escapeHtml(p.businessName)}</h1><div style="font-size:15px;line-height:1.55">${escapeHtml(p.invoiceNumber)}<br>${p.companyRegistration?`Company Reg No: ${escapeHtml(p.companyRegistration)}<br>`:""}${escapeHtml(p.supportEmail)}${p.businessPhone?`<br>${escapeHtml(p.businessPhone)}`:""}${p.businessAddress?`<br>${escapeHtml(p.businessAddress)}`:""}</div></td><td align="right" valign="top"><strong style="font-size:18px">Invoice</strong><div style="margin-top:14px;line-height:1.55">Created: ${date(p.createdAt)}<br>Due: ${date(p.dueDate)}<br>Status: pending payment<br>Client: ${escapeHtml(p.customerName)}</div></td></tr></table><hr style="border:0;border-top:1px solid #e5e7eb;margin:38px 0 22px"><h3 style="margin:0 0 8px">Bill To</h3><div style="line-height:1.55">${escapeHtml(p.customerName)}${address?`<br>${address}`:""}</div><table width="100%" style="border-collapse:collapse;margin-top:24px"><thead><tr style="background:#f1f5f9;color:#64748b"><th align="left" style="padding:11px">Item</th><th align="right">Qty</th><th align="right">Rate</th><th align="right" style="padding-right:11px">Amount</th></tr></thead><tbody><tr><td style="padding:12px 11px"><strong>${escapeHtml(p.description)}</strong><div style="color:#64748b;margin-top:7px">${details}</div></td><td align="right">${p.quantity}</td><td align="right">${money(p.subtotal)}</td><td align="right" style="padding-right:11px"><strong>${money(p.subtotal)}</strong></td></tr>${p.additionalCharges?`<tr><td style="padding:8px 11px">Additional charges</td><td></td><td></td><td align="right" style="padding-right:11px">${money(p.additionalCharges)}</td></tr>`:""}</tbody></table><table width="45%" align="right" style="margin-top:18px"><tr><td><strong style="font-size:18px">Total</strong></td><td align="right"><strong style="font-size:18px">${money(p.total)}</strong></td></tr></table><div style="clear:both;padding-top:34px"><h3>Payment details</h3><div style="line-height:1.55">Account name: FREIGHTSHIFT INTERNATIONAL LOGISTICS (PTY) LTD<br>Bank: FNB<br>Account number: 63214036732<br>Branch code: 256505<br>Account type: GOLD BUSINESS ACCOUNT<br>Reference: ${escapeHtml(p.customerName)} (${escapeHtml(p.description)})</div><h3 style="margin-top:28px">Notes</h3><p>Payment due within agreed terms. Tracking updates begin after payment is confirmed.</p></div></td></tr></table></body></html>`;
+  const text=`Invoice ${p.invoiceNumber}\nStatus: pending payment\nClient: ${p.customerName}\nItem: ${p.description}\nTotal: ${money(p.total)}\n\nPayment details\nFNB - 63214036732 - Branch 256505\nReference: ${p.customerName} (${p.description})\n\nTracking updates begin after payment is confirmed.`;
+  try{const result=await resend.emails.send({from:`${p.businessName.replace(/["\\]/g," ")} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} - payment required`,html,text,replyTo:p.supportEmail});if(result.error)return {success:false,error:result.error.message};return {success:true,messageId:result.data?.id};}catch{return {success:false,error:"Failed to send invoice email"};}
+}

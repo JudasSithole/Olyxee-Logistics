@@ -8,11 +8,12 @@ import {
   smsNotificationsTable,
   auditLogsTable,
   businessesTable,
+  invoicesTable,
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
-import { sendStatusEmail, buildEmailBody } from "../lib/email";
+import { sendStatusEmail, buildEmailBody, sendInvoiceEmail } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
 import { sendOrderSms } from "../lib/order-notifications";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
@@ -199,7 +200,13 @@ router.post("/orders", requireAuth, async (req, res) => {
     }
 
     const initialStatus = "ORDER_CONFIRMED";
-    const initialMessage = "Order confirmed and tracking started";
+    const initialMessage = "Order created - awaiting payment confirmation";
+    const subtotal = Number(parse.data.invoiceSubtotal);
+    const additionalCharges = Number(parse.data.invoiceAdditionalCharges ?? "0");
+    if (!Number.isFinite(subtotal) || !Number.isFinite(additionalCharges) || subtotal < 0 || additionalCharges < 0) {
+      res.status(400).json({ error: "Invoice amounts must be non-negative numbers" });
+      return;
+    }
 
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
@@ -258,28 +265,26 @@ router.post("/orders", requireAuth, async (req, res) => {
     }
     const o = inserted;
     const trackingId = o.trackingId;
+    const invoiceId = generateId();
+    const invoiceNo = `FSIL-INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,4).toUpperCase()}`;
+    const dueDate = new Date();
+    const total = subtotal + additionalCharges;
 
-    // Create initial tracking event.
-    await db.insert(trackingEventsTable).values({
-      id: generateId(),
-      orderId: o.id,
-      status: initialStatus,
-      message: initialMessage,
-      createdBy: userId,
+    await db.transaction(async (tx) => {
+      await tx.insert(invoicesTable).values({id:invoiceId,businessId,invoiceNumber:invoiceNo,customerId:customer.id,orderId:o.id,subtotal:String(subtotal),additionalCharges:String(additionalCharges),total:String(total),currency:"ZAR",dueDate,status:"draft",notes:"Payment due within agreed terms."});
+      await tx.update(ordersTable).set({invoiceId,updatedAt:new Date()}).where(and(eq(ordersTable.id,o.id),eq(ordersTable.businessId,businessId)));
+      await tx.insert(trackingEventsTable).values({id:generateId(),orderId:o.id,status:initialStatus,message:initialMessage,createdBy:userId});
+      await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_ORDER_AND_INVOICE",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,invoiceId,invoiceNumber:invoiceNo}});
     });
 
-    // Audit log
-    await db.insert(auditLogsTable).values({
-      id: generateId(),
-      businessId,
-      userId,
-      action: "CREATE_ORDER",
-      entityType: "order",
-      entityId: o.id,
-      metadata: { trackingId: o.trackingId },
-    });
-
-    res.status(201).json(serializeOrder(o));
+    const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:[o.transportMode?`${o.transportMode} FREIGHT`:null,o.serviceRequired,o.weight].filter(Boolean).join(" | "),quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.name,supportEmail:business.supportEmail,businessPhone:business.phone,businessAddress:business.location}) : {success:false,error:"Business not found"};
+    if(delivery.success){
+      await db.update(invoicesTable).set({status:"sent",sentAt:new Date(),updatedAt:new Date()}).where(and(eq(invoicesTable.id,invoiceId),eq(invoicesTable.businessId,businessId)));
+      await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"AUTO_SEND_INVOICE",entityType:"invoice",entityId:invoiceId,metadata:{messageId:delivery.messageId,customerEmail:customer.email}});
+    } else {
+      req.log?.error({invoiceId,error:delivery.error},"Automatic invoice email failed");
+    }
+    res.status(201).json({...serializeOrder({...o,invoiceId}),invoiceId,invoiceEmailStatus:delivery.success?"sent":"failed"});
   } catch (err) {
     req.log.error({ err }, "Failed to create order");
     res.status(500).json({ error: "Internal server error" });
@@ -394,6 +399,12 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     });
     if (!order) {
       res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const invoice = order.invoiceId ? await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,order.invoiceId),eq(invoicesTable.businessId,businessId))}) : null;
+    if (!invoice || invoice.status !== "paid") {
+      res.status(409).json({ error: "Payment must be confirmed before tracking updates can begin", invoiceStatus: invoice?.status ?? "missing" });
       return;
     }
 

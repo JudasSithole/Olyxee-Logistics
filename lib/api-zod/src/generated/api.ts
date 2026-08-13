@@ -386,6 +386,8 @@ export const CreateOrderBody = zod.object({
   "destination": zod.string().optional(),
   "weight": zod.string().optional(),
   "dimensions": zod.string().optional()
+  ,"invoiceSubtotal": zod.string().min(1),
+  "invoiceAdditionalCharges": zod.string().optional()
 })
 
 

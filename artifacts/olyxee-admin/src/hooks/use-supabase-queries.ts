@@ -557,7 +557,7 @@ export function useOrder(id: string | null | undefined) {
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: InsertOrder) => {
+    mutationFn: async (input: InsertOrder & { invoice_subtotal: string; invoice_additional_charges?: string }) => {
       const data = await apiFetch<ApiOrder>("/api/orders", {
         method: "POST",
         body: {
@@ -572,9 +572,11 @@ export function useCreateOrder() {
           destination: (input as { destination?: string }).destination ?? undefined,
           weight: (input as { weight?: string }).weight ?? undefined,
           dimensions: (input as { dimensions?: string }).dimensions ?? undefined,
+          invoiceSubtotal: (input as { invoice_subtotal?: string }).invoice_subtotal,
+          invoiceAdditionalCharges: (input as { invoice_additional_charges?: string }).invoice_additional_charges ?? "0",
         },
       });
-      return mapOrder(data);
+      return { ...mapOrder(data), invoice_email_status: (data as ApiOrder & { invoiceEmailStatus?: string }).invoiceEmailStatus };
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.orders(variables.business_id) });

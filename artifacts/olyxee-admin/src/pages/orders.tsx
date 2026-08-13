@@ -42,6 +42,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     estimatedDeliveryDate: "",
     transportMode: "",
     cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+    invoiceSubtotal: "", invoiceAdditionalCharges: "0",
   }));
   const createMutation = useCreateOrder();
   // Server-side customer search so every customer is reachable, not just the
@@ -68,6 +69,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         estimatedDeliveryDate: "",
         transportMode: "",
         cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+        invoiceSubtotal: "", invoiceAdditionalCharges: "0",
       });
       setSelectedCustomer(null);
       setCustomerSearch("");
@@ -82,10 +84,14 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       return;
     }
     createMutation.mutate(
-      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, cargo_type: form.cargoType || undefined, service_required: form.serviceRequired || undefined, origin: form.origin || undefined, destination: form.destination || undefined, weight: form.weight || undefined, dimensions: form.dimensions || undefined, transport_mode: form.transportMode },
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, cargo_type: form.cargoType || undefined, service_required: form.serviceRequired || undefined, origin: form.origin || undefined, destination: form.destination || undefined, weight: form.weight || undefined, dimensions: form.dimensions || undefined, transport_mode: form.transportMode, invoice_subtotal: form.invoiceSubtotal, invoice_additional_charges: form.invoiceAdditionalCharges },
       {
-        onSuccess: () => {
-          toast.success("Order created - tracking ID auto-generated");
+        onSuccess: (created) => {
+          if ((created as typeof created & { invoice_email_status?: string }).invoice_email_status === "sent") {
+            toast.success("Order and pending invoice created - invoice emailed to customer");
+          } else {
+            toast.warning("Order and invoice created, but email delivery failed. Open the invoice to resend it.");
+          }
           setOpen(false);
           onSuccess();
         },
@@ -207,9 +213,16 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               Include contents, quantity, weight/volume, origin → destination, and any handling notes.
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">A unique tracking ID will be auto-generated for this order.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode}>
-            {createMutation.isPending ? "Creating..." : "Create Order"}
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="text-xs text-muted-foreground">The accepted quote amount. A pending invoice will be emailed automatically.</p></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Service subtotal</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
+              <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} /></div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Tracking updates begin only after an admin confirms payment.</p>
+          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.invoiceSubtotal}>
+            {createMutation.isPending ? "Creating and sending invoice..." : "Create Order & Send Invoice"}
           </Button>
         </form>
       </DialogContent>

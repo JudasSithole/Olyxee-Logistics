@@ -85,7 +85,7 @@ export default function InvoicesPage() {
                       <div className="font-mono text-sm">{invoice.trackingId ?? "—"}</div>
                       {invoice.orderReference ? <div className="text-xs text-muted-foreground">{invoice.orderReference}</div> : null}
                     </TableCell>
-                    <TableCell><Badge className={statusStyles[invoice.status]}>{invoice.status}</Badge></TableCell>
+                    <TableCell><Badge className={statusStyles[invoice.status]}>{invoice.status === "sent" ? "Pending payment" : invoice.status}</Badge></TableCell>
                     <TableCell className="font-medium">{invoice.currency} {Number(invoice.total).toFixed(2)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(invoice.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
-import { db, invoicesTable, ordersTable, customersTable, auditLogsTable } from "@workspace/db";
+import { db, invoicesTable, ordersTable, customersTable, businessesTable, auditLogsTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { canConfirmInvoicePaid } from "../lib/invoice-workflow";
+import { sendInvoiceEmail } from "../lib/email";
 
 const router = Router();
 const InvoiceBody = z.object({
@@ -53,9 +54,30 @@ router.post("/invoices", requireAuth, async (req,res) => {
 
 router.get("/invoices/:invoiceId",requireAuth,async(req,res)=>{
   const businessId=(req as any).businessId;const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,String(req.params.invoiceId)),eq(invoicesTable.businessId,businessId))});
-  if(!invoice){res.status(404).json({error:"Invoice not found"});return;}res.json(serialize(invoice));
+  if(!invoice){res.status(404).json({error:"Invoice not found"});return;}
+  const [order,customer,business]=await Promise.all([
+    db.query.ordersTable.findFirst({where:and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId))}),
+    db.query.customersTable.findFirst({where:and(eq(customersTable.id,invoice.customerId),eq(customersTable.businessId,businessId))}),
+    db.query.businessesTable.findFirst({where:eq(businessesTable.id,businessId)}),
+  ]);
+  res.json({...serialize(invoice),order:order?serialize(order):null,customer:customer?serialize(customer):null,business:business?serialize(business):null});
 });
-router.post("/invoices/:invoiceId/send",requireAuth,async(req,res)=>updateStatus(req,res,"sent"));
+router.post("/invoices/:invoiceId/send",requireAuth,async(req,res)=>{
+  const businessId=(req as any).businessId,userId=(req as any).userId,id=String(req.params.invoiceId);
+  const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))});
+  if(!invoice){res.status(404).json({error:"Invoice not found"});return;}
+  const [order,customer,business]=await Promise.all([
+    db.query.ordersTable.findFirst({where:and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId))}),
+    db.query.customersTable.findFirst({where:and(eq(customersTable.id,invoice.customerId),eq(customersTable.businessId,businessId))}),
+    db.query.businessesTable.findFirst({where:eq(businessesTable.id,businessId)}),
+  ]);
+  if(!order||!customer||!business){res.status(409).json({error:"Invoice customer or order details are incomplete"});return;}
+  const sent=await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoice.invoiceNumber,createdAt:invoice.createdAt,dueDate:invoice.dueDate??invoice.createdAt,description:order.cargoType||order.description||"Cross-border logistics service",serviceDetails:[order.transportMode?`${order.transportMode} FREIGHT`:null,order.serviceRequired,order.weight].filter(Boolean).join(" | "),quantity:1,subtotal:Number(invoice.subtotal),additionalCharges:Number(invoice.additionalCharges),total:Number(invoice.total),currency:invoice.currency,businessName:business.name,supportEmail:business.supportEmail,businessPhone:business.phone,businessAddress:business.location});
+  if(!sent.success){res.status(502).json({error:sent.error||"Invoice email failed"});return;}
+  const now=new Date();const [updated]=await db.update(invoicesTable).set({status:"sent",sentAt:now,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
+  await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"SEND_INVOICE",entityType:"invoice",entityId:id,metadata:{orderId:invoice.orderId,messageId:sent.messageId,customerEmail:customer.email}});
+  res.json(serialize(updated));
+});
 router.post("/invoices/:invoiceId/pay",requireAuth,async(req,res)=>updateStatus(req,res,"paid"));
 async function updateStatus(req:any,res:any,status:"sent"|"paid"){
   const businessId=req.businessId,userId=req.userId,id=String(req.params.invoiceId);
