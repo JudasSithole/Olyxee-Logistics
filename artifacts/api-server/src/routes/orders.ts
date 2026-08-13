@@ -49,6 +49,14 @@ const router = Router();
 const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
 const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
 
+function invoiceDueDate(paymentTerms: string | null | undefined, issueDate = new Date()): Date {
+  const match = paymentTerms?.match(/\b(\d{1,3})\s*days?\b/i);
+  const days = match ? Math.min(Number(match[1]), 365) : 0;
+  const due = new Date(issueDate);
+  due.setUTCDate(due.getUTCDate() + days);
+  return due;
+}
+
 // Where customers go to see their order status. Businesses with their own
 // website link to their own /track page; businesses without one fall back to
 // the Olyxee-hosted tracking page so the email link always works even when
@@ -268,7 +276,7 @@ router.post("/orders", requireAuth, async (req, res) => {
     const trackingId = o.trackingId;
     const invoiceId = generateId();
     const invoiceNo = `FSIL-INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,4).toUpperCase()}`;
-    const dueDate = new Date();
+    const dueDate = invoiceDueDate(business?.invoicePaymentTerms);
     const total = subtotal + additionalCharges;
 
     await db.transaction(async (tx) => {
@@ -278,7 +286,7 @@ router.post("/orders", requireAuth, async (req, res) => {
       await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_ORDER_AND_INVOICE",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,invoiceId,invoiceNumber:invoiceNo}});
     });
 
-    const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:[o.transportMode?`${o.transportMode} FREIGHT`:null,o.serviceRequired,o.weight].filter(Boolean).join(" | "),quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote}) : {success:false,error:"Business not found"};
+    const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,customerPhone:customer.phone,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:o.serviceRequired||"",quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote,orderReference:o.orderReference,trackingId:o.trackingId,externalTrackingNumber:o.supplierTrackingNumber,origin:o.origin,destination:o.destination,transportMode:o.transportMode,weight:o.weight}) : {success:false,error:"Business not found"};
     if(delivery.success){
       await db.update(invoicesTable).set({status:"sent",sentAt:new Date(),updatedAt:new Date()}).where(and(eq(invoicesTable.id,invoiceId),eq(invoicesTable.businessId,businessId)));
       await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"AUTO_SEND_INVOICE",entityType:"invoice",entityId:invoiceId,metadata:{messageId:delivery.messageId,customerEmail:customer.email}});

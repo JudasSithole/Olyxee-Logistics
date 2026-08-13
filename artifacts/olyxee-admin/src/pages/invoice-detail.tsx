@@ -29,8 +29,10 @@ export default function InvoiceDetailPage() {
   const customer = invoice.customer;
   const business = invoice.business;
   const money = (value: string | number) => `${invoice.currency} ${Number(value).toFixed(2)}`;
-  const serviceDetails = [order?.transportMode ? `${order.transportMode} FREIGHT` : null, order?.serviceRequired, order?.weight].filter(Boolean).join(" | ");
-  const displayStatus = invoice.status === "sent" ? "pending payment" : invoice.status;
+  const displayStatus = invoice.status === "sent" ? "Pending Payment" : String(invoice.status).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const issueDate = new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
+  const dueDate = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) : "On receipt";
+  const chargeDescription = [order?.transportMode ? `${String(order.transportMode).replaceAll("_", " ")} Freight` : "Logistics service", order?.cargoType || order?.description, order?.weight].filter(Boolean).join(" – ");
   const openEdit=()=>{setEditForm({subtotal:String(invoice.subtotal),additionalCharges:String(invoice.additionalCharges),dueDate:invoice.dueDate?String(invoice.dueDate).slice(0,10):"",notes:invoice.notes??""});setEditOpen(true);};
 
   return <div className="mx-auto max-w-4xl space-y-5">
@@ -72,9 +74,9 @@ export default function InvoiceDetailPage() {
           <h2 className="text-[30px] font-bold tracking-[0.08em] text-[#10243e]">INVOICE</h2>
           <p className="mt-2 text-[11px] font-medium uppercase tracking-wider text-slate-500">Invoice number</p><p className="font-semibold">{invoice.invoiceNumber}</p>
           <div className="mt-3 space-y-0.5 text-[12px] text-slate-600">
-            <p>Created: {new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}</p>
-            <p>Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) : "On receipt"}</p>
-            <p className="mt-3 inline-block rounded bg-amber-50 px-3 py-1 font-bold uppercase tracking-wide text-amber-700">{displayStatus}</p>
+            <p>Issue Date: {issueDate}</p>
+            <p>Due Date: {dueDate}</p>
+            <p className="mt-3 inline-block rounded bg-amber-50 px-3 py-1 font-bold tracking-wide text-amber-700">{displayStatus}</p>
           </div>
         </div>
       </header>
@@ -83,20 +85,26 @@ export default function InvoiceDetailPage() {
         <div><h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Bill To</h3>
         <p className="mt-2 text-[16px] font-bold">{customer?.fullName}</p>
         {customer?.companyName ? <p>{customer.companyName}</p> : null}
-        <p className="mt-1 whitespace-pre-line text-slate-500">{customer?.address || "Address not supplied"}</p></div><div className="grid grid-cols-2 justify-self-end gap-x-8 text-sm"><div><p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Issued</p><p className="mt-2">{new Date(invoice.createdAt).toLocaleDateString("en-ZA")}</p></div><div><p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Due</p><p className="mt-2">{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA") : "On receipt"}</p></div></div>
+        <p className="mt-1 whitespace-pre-line text-slate-500">{customer?.address || "Address not supplied"}</p><p className="mt-1 text-slate-500">{customer?.email}</p>{customer?.phone ? <p className="text-slate-500">{customer.phone}</p> : null}</div>
       </section>
 
-      <section className="mt-9">
+      <section className="mt-7"><h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Shipment</h3><div className="grid grid-cols-2 overflow-hidden rounded border border-slate-200 text-[12px]">{([
+        ["Cargo", order?.cargoType || order?.description || "Not provided"], ["Transport", order?.transportMode ? `${String(order.transportMode).replaceAll("_", " ")} Freight` : "Not provided"],
+        ["Weight", order?.weight || "Not provided"], ["Order Reference", order?.orderReference || "Not provided"], ["Olyxee Tracking ID", order?.trackingId || "Not assigned"],
+        ["External Tracking Number", order?.supplierTrackingNumber || "Pending tracking number"], ["Origin", order?.origin || "Not provided"], ["Destination", order?.destination || "Not provided"],
+      ] as [string,string][]).map(([label,value])=><div key={label} className="grid grid-cols-[145px_1fr] border-b border-slate-100 px-3 py-2 odd:border-r"><span className="text-slate-500">{label}</span><span className="font-semibold capitalize">{value}</span></div>)}</div></section>
+
+      <section className="mt-7"><h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Charges</h3>
         <table className="w-full table-fixed border-collapse text-[14px]">
           <colgroup><col/><col className="w-[62px]"/><col className="w-[110px]"/><col className="w-[120px]"/></colgroup>
           <thead><tr className="bg-[#10243e] text-[11px] uppercase tracking-wider text-white"><th className="rounded-l px-3 py-3 text-left">Description</th><th className="py-3 text-right">Qty</th><th className="py-3 text-right">Rate</th><th className="rounded-r py-3 pr-3 text-right">Amount</th></tr></thead>
-          <tbody><tr className="align-top border-b border-slate-200"><td className="px-3 py-5"><strong>{order?.cargoType || order?.description || "Cross-border logistics service"}</strong>{serviceDetails ? <p className="mt-1 uppercase text-[#64748b]">{serviceDetails}</p> : null}</td><td className="py-5 text-right">1</td><td className="py-5 text-right">{money(invoice.subtotal)}</td><td className="py-5 pr-3 text-right font-bold">{money(invoice.subtotal)}</td></tr>
-          {Number(invoice.additionalCharges) > 0 ? <tr><td className="py-1">Additional charges</td><td/><td/><td className="py-1 text-right">{money(invoice.additionalCharges)}</td></tr> : null}</tbody>
+          <tbody><tr className="align-top border-b border-slate-200"><td className="px-3 py-4 font-semibold capitalize">{chargeDescription}</td><td className="py-4 text-right">1</td><td className="py-4 text-right">{money(invoice.subtotal)}</td><td className="py-4 pr-3 text-right font-bold">{money(invoice.subtotal)}</td></tr>
+          {Number(invoice.additionalCharges) > 0 ? <tr><td className="py-2">Additional charges</td><td className="text-right">1</td><td className="text-right">{money(invoice.additionalCharges)}</td><td className="py-2 text-right">{money(invoice.additionalCharges)}</td></tr> : null}</tbody>
         </table>
-        <div className="ml-auto mt-4 grid w-[300px] grid-cols-2 rounded bg-[#f4f7fb] px-4 py-4 text-[17px] font-bold text-[#10243e]"><span>Total due</span><span className="text-right">{money(invoice.total)}</span></div>
+        <div className="ml-auto mt-4 grid w-[320px] grid-cols-2 gap-y-1 rounded bg-[#f4f7fb] px-4 py-3 text-[12px] text-[#10243e]"><span>Subtotal</span><span className="text-right">{money(invoice.total)}</span><span>VAT</span><span className="text-right">Not separately charged</span><span className="mt-1 text-[17px] font-bold">Total Due</span><span className="mt-1 text-right text-[17px] font-bold">{money(invoice.total)}</span></div>
       </section>
 
-      <div className="mt-10 grid grid-cols-[1.7fr_1fr] gap-7"><section className="rounded bg-[#f4f7fb] p-5"><h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#10243e]">Payment details</h3><div className="mt-3 whitespace-pre-line text-[13px]">{business?.invoicePaymentDetails || "Contact the issuer for payment instructions."}<br/><br/>Reference: {customer?.fullName} ({order?.cargoType || "Service"})</div></section><section className="p-1"><h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#10243e]">Payment terms</h3><p className="mt-3 text-slate-600">{business?.invoicePaymentTerms || "Payment due within agreed terms."}</p><p className="mt-5 text-[11px] font-bold uppercase text-amber-700">Status updates begin after payment is confirmed.</p></section></div>
+      <div className="mt-7 grid grid-cols-[1.7fr_1fr] gap-7"><section className="rounded bg-[#f4f7fb] p-5"><h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#10243e]">Payment Details</h3><div className="mt-3 whitespace-pre-line text-[13px]">{business?.invoicePaymentDetails || "Payment details have not been configured. Contact the issuer."}<br/><br/><strong>Payment Reference: {invoice.invoiceNumber}</strong></div></section><section className="p-1"><h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#10243e]">Payment Terms</h3><p className="mt-3 text-slate-600">{business?.invoicePaymentTerms || "Payment due on receipt."}</p><p className="mt-5 text-[11px] font-bold uppercase text-amber-700">Important: Shipment status updates become available after payment has been confirmed.</p></section></div>
       {business?.invoiceFooterNote ? <p className="mt-auto pt-8 text-center text-xs text-slate-500">{business.invoiceFooterNote}</p> : <div className="mt-auto"/>}<footer className="mt-5 border-t border-slate-200 pt-4 text-center text-[11px] text-[#64748b]">{business?.invoiceLegalName || business?.name} · {business?.invoiceEmail || business?.supportEmail} · Page 1 of 1</footer>
     </article>
   </div>;
