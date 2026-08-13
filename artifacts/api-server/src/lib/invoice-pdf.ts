@@ -30,7 +30,8 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
       if (logo) doc.image(logo, 48, 54, { fit: [128, 48] });
     } catch { /* The business name remains as the safe logo fallback. */ }
   }
-  const navy = "#10243e", ink = "#142033", muted = "#64748b", line = "#dbe3ec", pale = "#f4f7fb", amber = "#b45309";
+  const navy = /^#[0-9a-f]{6}$/i.test(p.primaryColor || "") ? p.primaryColor! : "#10243e";
+  const ink = "#142033", muted = "#64748b", line = "#dbe3ec", pale = "#f4f7fb", amber = "#b45309";
   doc.rect(0, 0, 595.28, 12).fill(navy);
   doc.fillColor(ink).font("Helvetica-Bold").fontSize(20).text(p.businessName, 48, 112, { width: 300 });
   doc.font("Helvetica").fontSize(8.5).fillColor(muted).text([p.supportEmail, p.businessPhone].filter(Boolean).join("  |  "), 48, 140, { width: 300 });

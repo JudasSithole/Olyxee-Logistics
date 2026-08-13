@@ -28,6 +28,7 @@ export default function InvoiceDetailPage() {
   const order = invoice.order;
   const customer = invoice.customer;
   const business = invoice.business;
+  const brandColor = /^#[0-9a-f]{6}$/i.test(business?.primaryBrandColour || "") ? business.primaryBrandColour : "#10243e";
   const money = (value: string | number) => `${invoice.currency} ${Number(value).toFixed(2)}`;
   const displayStatus = invoice.status === "sent" ? "Pending Payment" : String(invoice.status).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const issueDate = new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
@@ -55,13 +56,13 @@ export default function InvoiceDetailPage() {
     <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[400px]"><SheetHeader><SheetTitle>Edit invoice</SheetTitle></SheetHeader><form className="mt-6 space-y-4" onSubmit={e=>{e.preventDefault();editInvoice.mutate();}}><div className="space-y-2"><Label>Subtotal</Label><Input type="number" min="0" step="0.01" value={editForm.subtotal} onChange={e=>setEditForm(f=>({...f,subtotal:e.target.value}))}/></div><div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={editForm.additionalCharges} onChange={e=>setEditForm(f=>({...f,additionalCharges:e.target.value}))}/></div><div className="space-y-2"><Label>Due date</Label><Input type="date" value={editForm.dueDate} onChange={e=>setEditForm(f=>({...f,dueDate:e.target.value}))}/></div><div className="space-y-2"><Label>Notes</Label><Input value={editForm.notes} onChange={e=>setEditForm(f=>({...f,notes:e.target.value}))}/></div><Button className="w-full" disabled={editInvoice.isPending}>{editInvoice.isPending?'Saving...':'Save invoice changes'}</Button></form></SheetContent></Sheet>
 
     <article className="invoice-document relative mx-auto flex min-h-[1120px] w-full max-w-[794px] flex-col overflow-hidden bg-white px-[60px] pb-[42px] pt-[58px] text-[14px] leading-[1.45] text-[#142033] shadow-xl print:min-h-0 print:max-w-none print:px-[18mm] print:py-[14mm] print:shadow-none">
-      <div className="absolute inset-x-0 top-0 h-3 bg-[#10243e]" />
+      <div className="absolute inset-x-0 top-0 h-3" style={{ backgroundColor: brandColor }} />
       <header className="grid grid-cols-[100px_minmax(0,1fr)_210px] items-start gap-2">
         <div className="pr-5 pt-1">
           {(business?.invoiceLogoUrl || business?.businessLogoUrl) ? <img src={business.invoiceLogoUrl || business.businessLogoUrl} alt={`${business.invoiceLegalName || business.name} logo`} className="max-h-[42px] w-full object-contain object-left" /> : null}
         </div>
         <div>
-          <h1 className="text-[23px] font-bold leading-tight tracking-[-0.02em] text-[#10243e]">{business?.invoiceLegalName || business?.name || "Business"}</h1>
+          <h1 className="text-[23px] font-bold leading-tight tracking-[-0.02em]" style={{ color: brandColor }}>{business?.invoiceLegalName || business?.name || "Business"}</h1>
           <div className="mt-3 space-y-0.5 text-[12px] text-slate-500">
             {business?.invoiceRegistrationNumber ? <p>Company Reg No: {business.invoiceRegistrationNumber}</p> : null}
             {business?.invoiceTaxNumber ? <p>Tax No: {business.invoiceTaxNumber}</p> : null}
@@ -71,7 +72,7 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
         <div className="text-right">
-          <h2 className="text-[30px] font-bold tracking-[0.08em] text-[#10243e]">INVOICE</h2>
+          <h2 className="text-[30px] font-bold tracking-[0.08em]" style={{ color: brandColor }}>INVOICE</h2>
           <p className="mt-2 text-[11px] font-medium uppercase tracking-wider text-slate-500">Invoice number</p><p className="font-semibold">{invoice.invoiceNumber}</p>
           <div className="mt-3 space-y-0.5 text-[12px] text-slate-600">
             <p>Issue Date: {issueDate}</p>
@@ -97,7 +98,7 @@ export default function InvoiceDetailPage() {
       <section className="mt-7"><h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Charges</h3>
         <table className="w-full table-fixed border-collapse text-[14px]">
           <colgroup><col/><col className="w-[62px]"/><col className="w-[110px]"/><col className="w-[120px]"/></colgroup>
-          <thead><tr className="bg-[#10243e] text-[11px] uppercase tracking-wider text-white"><th className="rounded-l px-3 py-3 text-left">Description</th><th className="py-3 text-right">Qty</th><th className="py-3 text-right">Rate</th><th className="rounded-r py-3 pr-3 text-right">Amount</th></tr></thead>
+          <thead><tr className="text-[11px] uppercase tracking-wider text-white" style={{ backgroundColor: brandColor }}><th className="rounded-l px-3 py-3 text-left">Description</th><th className="py-3 text-right">Qty</th><th className="py-3 text-right">Rate</th><th className="rounded-r py-3 pr-3 text-right">Amount</th></tr></thead>
           <tbody><tr className="align-top border-b border-slate-200"><td className="px-3 py-4 font-semibold capitalize">{chargeDescription}</td><td className="py-4 text-right">1</td><td className="py-4 text-right">{money(invoice.subtotal)}</td><td className="py-4 pr-3 text-right font-bold">{money(invoice.subtotal)}</td></tr>
           {Number(invoice.additionalCharges) > 0 ? <tr><td className="py-2">Additional charges</td><td className="text-right">1</td><td className="text-right">{money(invoice.additionalCharges)}</td><td className="py-2 text-right">{money(invoice.additionalCharges)}</td></tr> : null}</tbody>
         </table>
