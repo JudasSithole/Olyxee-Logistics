@@ -102,7 +102,6 @@ async function buildAll() {
       "playwright",
       "puppeteer",
       "puppeteer-core",
-      "pdfkit",
       "electron",
     ],
     sourcemap: "linked",

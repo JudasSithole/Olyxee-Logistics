@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import type { SendInvoiceEmailParams } from "./email";
 
 export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer> {
