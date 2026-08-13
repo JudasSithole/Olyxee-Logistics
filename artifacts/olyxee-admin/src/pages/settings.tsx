@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw,
-  Code2, Copy, Download, Globe, Tag, CreditCard, FileText, Phone,
+  Code2, Copy, Download, Globe, Tag, CreditCard, FileText,
 } from "lucide-react";
 import {
   BusinessTypeSelector,
@@ -507,7 +507,6 @@ const NAV_ITEMS = [
   { id: "integrations", label: "Integrations", icon: Code2, tint: TINTS.indigo },
   { id: "appearance", label: "Appearance", icon: SunMoon, tint: TINTS.orange },
   { id: "billing", label: "Billing", icon: CreditCard, tint: TINTS.green },
-  { id: "call-centre", label: "Call Centre", icon: Phone, tint: TINTS.teal },
 ] as const;
 
 // ─── Billing & plan ───────────────────────────────────────────────────────────
@@ -1004,12 +1003,6 @@ export default function SettingsPage() {
           <BillingSection />
         </TabsContent>
 
-        {/* ─── Call Centre ─────────────────────────────────────────── */}
-        <TabsContent value="call-centre" className="mt-6 focus-visible:outline-none">
-          <div className="max-w-3xl">
-            <CallCentreSettingsEmbed />
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* ─── Sticky save bar ───────────────────────────────────────────────

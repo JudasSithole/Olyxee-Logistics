@@ -866,7 +866,7 @@ const PLAN_BLURB: Record<PlanId, string> = {
   beta: "Everything unlimited while we're in beta.",
   free: "Get started and keep your first customers in the loop.",
   pro: "For growing businesses that need SMS, branding and evidence.",
-  business: "Full power: high volume, a communication API and an AI call agent.",
+  business: "Full power: high volume, advanced branding, and communication APIs.",
 };
 
 function planFeatures(id: PlanId): string[] {

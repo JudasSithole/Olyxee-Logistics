@@ -1,6 +1,6 @@
 import { type ElementType } from "react";
 import {
-  Sparkles, Megaphone, MessageSquare, Palette, Code2, PhoneCall,
+  Sparkles, Megaphone, MessageSquare, Palette, Code2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ const ANNOUNCEMENTS: Announcement[] = [
     date: "July 2026",
     tag: "Heads up",
     title: "SMS notifications, branding & more on the way",
-    body: "We're building SMS order updates, custom business branding on your tracking pages, a public API, and an AI call agent. Scroll down for a preview of what's coming.",
+    body: "We're building SMS order updates, custom business branding on your tracking pages, and a public API. Scroll down for a preview of what's coming.",
   },
 ];
 
@@ -59,13 +59,6 @@ const FEATURES: UpcomingFeature[] = [
     title: "Public API",
     description:
       "Create and track orders programmatically with API keys, so you can plug Olyxee Logistics into your own systems.",
-    plan: "Scale",
-  },
-  {
-    icon: PhoneCall,
-    title: "AI call agent",
-    description:
-      "An AI voice agent answers customer calls about their orders and escalates to your team when needed.",
     plan: "Scale",
   },
 ];
