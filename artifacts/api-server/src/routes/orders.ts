@@ -47,6 +47,7 @@ export function isLogisticsBusiness(industry: string | null | undefined): boolea
 
 const router = Router();
 const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
+const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
 
 // Where customers go to see their order status. Businesses with their own
 // website link to their own /track page; businesses without one fall back to
@@ -277,7 +278,7 @@ router.post("/orders", requireAuth, async (req, res) => {
       await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_ORDER_AND_INVOICE",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,invoiceId,invoiceNumber:invoiceNo}});
     });
 
-    const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:[o.transportMode?`${o.transportMode} FREIGHT`:null,o.serviceRequired,o.weight].filter(Boolean).join(" | "),quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.name,supportEmail:business.supportEmail,businessPhone:business.phone,businessAddress:business.location,logoUrl:business.businessLogoUrl}) : {success:false,error:"Business not found"};
+    const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:[o.transportMode?`${o.transportMode} FREIGHT`:null,o.serviceRequired,o.weight].filter(Boolean).join(" | "),quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote}) : {success:false,error:"Business not found"};
     if(delivery.success){
       await db.update(invoicesTable).set({status:"sent",sentAt:new Date(),updatedAt:new Date()}).where(and(eq(invoicesTable.id,invoiceId),eq(invoicesTable.businessId,businessId)));
       await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"AUTO_SEND_INVOICE",entityType:"invoice",entityId:invoiceId,metadata:{messageId:delivery.messageId,customerEmail:customer.email}});
@@ -389,6 +390,35 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
     req.log.error({ err }, "Failed to get order");
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+router.put("/orders/:orderId", requireAuth, async (req, res) => {
+  try {
+    const parsed=UpdateOrderBody.safeParse(req.body); if(!parsed.success){res.status(400).json({error:"Invalid input",details:parsed.error.issues});return;}
+    const businessId=(req as any).businessId,userId=(req as any).userId,orderId=String(req.params.orderId);
+    const existing=await db.query.ordersTable.findFirst({where:and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId))});
+    if(!existing){res.status(404).json({error:"Order not found"});return;}
+    const [updated]=await db.update(ordersTable).set({...parsed.data,updatedAt:new Date()}).where(and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId))).returning();
+    await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"UPDATE_ORDER",entityType:"order",entityId:orderId,metadata:{changes:parsed.data}});
+    res.json(serializeOrder(updated));
+  } catch(err){req.log.error({err},"Failed to update order");res.status(500).json({error:"Internal server error"});}
+});
+
+router.delete("/orders/:orderId", requireAuth, async (req, res) => {
+  try {
+    const businessId=(req as any).businessId,userId=(req as any).userId,orderId=String(req.params.orderId);
+    const order=await db.query.ordersTable.findFirst({where:and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId))});
+    if(!order){res.status(404).json({error:"Order not found"});return;}
+    await db.transaction(async tx=>{
+      await tx.delete(emailNotificationsTable).where(eq(emailNotificationsTable.orderId,orderId));
+      await tx.delete(smsNotificationsTable).where(eq(smsNotificationsTable.orderId,orderId));
+      await tx.delete(trackingEventsTable).where(eq(trackingEventsTable.orderId,orderId));
+      await tx.delete(invoicesTable).where(and(eq(invoicesTable.orderId,orderId),eq(invoicesTable.businessId,businessId)));
+      await tx.delete(ordersTable).where(and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId)));
+      await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"DELETE_ORDER",entityType:"order",entityId:orderId,metadata:{trackingId:order.trackingId,orderReference:order.orderReference,invoiceId:order.invoiceId}});
+    });
+    res.status(204).send();
+  } catch(err){req.log.error({err},"Failed to delete order");res.status(500).json({error:"Internal server error"});}
 });
 
 router.post("/orders/:orderId/status", requireAuth, async (req, res) => {

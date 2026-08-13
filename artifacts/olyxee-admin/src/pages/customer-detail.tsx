@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { useCustomer, useCustomerOrders, useUpdateCustomer } from "@/hooks/use-supabase-queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,14 @@ import { ArrowLeft, Edit, Package, Mail, Phone, Building, MapPin, UserX } from "
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 const AVATAR = `${import.meta.env.BASE_URL}avatar-placeholder.png`;
 
 export default function CustomerDetailPage() {
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const { data: customer, isLoading, refetch } = useCustomer(id ?? "");
   const { data: orders, isLoading: ordersLoading } = useCustomerOrders(id ?? "");
@@ -26,6 +28,7 @@ export default function CustomerDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", company_name: "", address: "" });
   const invoices = useQuery({ queryKey: ["customer-invoices", id], queryFn: () => apiFetch<{data:any[]}>("/api/invoices", { query: { customerId: id } }), enabled: !!id });
+  const deleteMutation = useMutation({ mutationFn: () => apiFetch(`/api/customers/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["customers"] }); toast.success("Customer deleted"); navigate("/customers"); }, onError: (error: Error) => toast.error(error.message) });
 
   const openEdit = () => {
     if (customer) {
@@ -105,7 +108,7 @@ export default function CustomerDetailPage() {
           </div>
         </div>
 
-        <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <div className="flex gap-2"><Button variant="destructive" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete ${customer.full_name}? This is permanent and requires their orders to be deleted first.`)) deleteMutation.mutate(); }}>Delete</Button><Sheet open={editOpen} onOpenChange={setEditOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" className="gap-2 flex-shrink-0" onClick={openEdit}>
               <Edit className="h-4 w-4" /> Edit
@@ -124,7 +127,7 @@ export default function CustomerDetailPage() {
               </Button>
             </form>
           </SheetContent>
-        </Sheet>
+        </Sheet></div>
       </div>
 
       {/* Info cards */}

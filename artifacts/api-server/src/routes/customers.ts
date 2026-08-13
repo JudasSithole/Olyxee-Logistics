@@ -236,6 +236,22 @@ router.put("/customers/:customerId", requireAuth, async (req, res) => {
   }
 });
 
+router.delete("/customers/:customerId", requireAuth, async (req, res) => {
+  try {
+    const businessId = (req as any).businessId, userId = (req as any).userId;
+    const customerId = String(req.params.customerId);
+    const customer = await db.query.customersTable.findFirst({ where: and(eq(customersTable.id, customerId), eq(customersTable.businessId, businessId)) });
+    if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
+    const linked = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.customerId, customerId), eq(ordersTable.businessId, businessId)));
+    if ((linked[0]?.count ?? 0) > 0) { res.status(409).json({ error: "Delete this customer's orders before deleting the customer", linkedOrders: linked[0]?.count }); return; }
+    await db.transaction(async tx => {
+      await tx.delete(customersTable).where(and(eq(customersTable.id, customerId), eq(customersTable.businessId, businessId)));
+      await tx.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "DELETE_CUSTOMER", entityType: "customer", entityId: customerId, metadata: { fullName: customer.fullName, email: customer.email } });
+    });
+    res.status(204).send();
+  } catch (err) { req.log.error({ err }, "Failed to delete customer"); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.get("/customers/:customerId/orders", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;

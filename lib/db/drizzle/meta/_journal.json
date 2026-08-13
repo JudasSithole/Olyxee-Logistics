@@ -15,6 +15,13 @@
       "when": 1786366963347,
       "tag": "0001_complete_production_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786634000000,
+      "tag": "0002_invoice_profiles",
+      "breakpoints": true
     }
   ]
 }

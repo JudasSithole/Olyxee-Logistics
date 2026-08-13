@@ -623,6 +623,15 @@ function BillingSection() {
   );
 }
 
+function InvoiceProfileSection() {
+  const { user } = useAuth(); const { data: business } = useBusiness(user?.businessId); const save = useUpdateBusiness();
+  const [profile,setProfile]=useState({legalName:"",registrationNumber:"",taxNumber:"",address:"",email:"",phone:"",logoUrl:"",paymentDetails:"",paymentTerms:"",footerNote:""});
+  useEffect(()=>{if(business)setProfile({legalName:business.invoice_legal_name||business.name||"",registrationNumber:business.invoice_registration_number||"",taxNumber:business.invoice_tax_number||"",address:business.invoice_address||business.location||"",email:business.invoice_email||business.support_email||"",phone:business.invoice_phone||business.phone||"",logoUrl:business.invoice_logo_url||business.business_logo_url||"",paymentDetails:business.invoice_payment_details||"",paymentTerms:business.invoice_payment_terms||"Payment due within agreed terms.",footerNote:business.invoice_footer_note||""});},[business]);
+  const pickLogo=async(file:File)=>{if(file.type==="image/svg+xml"){toast.error("Invoice logos must be PNG or JPEG so every PDF renders reliably.");return;}try{const logoUrl=await compressLogo(file);setProfile(p=>({...p,logoUrl}));}catch{toast.error("Could not process that logo. Use a PNG or JPEG image.");}};
+  const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!user?.businessId)return;try{await save.mutateAsync({id:user.businessId,invoice_legal_name:profile.legalName||null,invoice_registration_number:profile.registrationNumber||null,invoice_tax_number:profile.taxNumber||null,invoice_address:profile.address||null,invoice_email:profile.email||null,invoice_phone:profile.phone||null,invoice_logo_url:profile.logoUrl||null,invoice_payment_details:profile.paymentDetails||null,invoice_payment_terms:profile.paymentTerms||null,invoice_footer_note:profile.footerNote||null});toast.success("Invoice profile saved");}catch(error){toast.error(error instanceof Error?error.message:"Could not save invoice profile");}};
+  return <SectionShell icon={CreditCard} tint={TINTS.green} title="Invoice profile" description="Legal, contact, logo, and payment information included on every invoice."><form onSubmit={submit} className="divide-y divide-border"><div className="grid gap-4 p-4 sm:grid-cols-2">{([['legalName','Legal business name'],['registrationNumber','Registration number'],['taxNumber','Tax / VAT number'],['email','Invoice email'],['phone','Invoice phone']] as const).map(([key,label])=><div className="space-y-2" key={key}><Label>{label}</Label><Input type={key==='email'?'email':'text'} value={profile[key]} onChange={e=>setProfile(p=>({...p,[key]:e.target.value}))}/></div>)}<div className="space-y-2 sm:col-span-2"><Label>Invoice address</Label><Textarea value={profile.address} onChange={e=>setProfile(p=>({...p,address:e.target.value}))}/></div></div><div className="p-4 space-y-2"><Label>Invoice logo</Label><LogoUpload value={profile.logoUrl} businessName={profile.legalName} onFile={pickLogo} onRemove={()=>setProfile(p=>({...p,logoUrl:""}))}/><p className="text-xs text-muted-foreground">Stored as a compressed PNG/JPEG data image. Invalid or unavailable logos safely fall back to the legal business name.</p></div><div className="grid gap-4 p-4"><div className="space-y-2"><Label>Payment details</Label><Textarea rows={6} placeholder={'Account name:\nBank:\nAccount number:\nBranch code:\nAccount type:'} value={profile.paymentDetails} onChange={e=>setProfile(p=>({...p,paymentDetails:e.target.value}))}/></div><div className="space-y-2"><Label>Payment terms</Label><Input value={profile.paymentTerms} onChange={e=>setProfile(p=>({...p,paymentTerms:e.target.value}))}/></div><div className="space-y-2"><Label>Invoice footer note</Label><Textarea value={profile.footerNote} onChange={e=>setProfile(p=>({...p,footerNote:e.target.value}))}/></div><Button type="submit" disabled={save.isPending}>{save.isPending?"Saving...":"Save invoice profile"}</Button></div></form></SectionShell>;
+}
+
 export default function SettingsPage() {
   const theme = useTheme();
   const { user } = useAuth();
@@ -945,6 +954,7 @@ export default function SettingsPage() {
           <div className="mt-8">
             <TrackingCustomizationSection />
           </div>
+          <div className="mt-8"><InvoiceProfileSection /></div>
         </TabsContent>
 
         {/* ─── Integrations ─────────────────────────────────────────── */}

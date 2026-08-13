@@ -68,6 +68,16 @@ export const businessesTable = pgTable("businesses", {
 
   // ─── Business branding (applied only when featureFlags.businessBranding) ──
   businessLogoUrl: text("business_logo_url"),
+  invoiceLegalName: text("invoice_legal_name"),
+  invoiceRegistrationNumber: text("invoice_registration_number"),
+  invoiceTaxNumber: text("invoice_tax_number"),
+  invoiceAddress: text("invoice_address"),
+  invoiceEmail: text("invoice_email"),
+  invoicePhone: text("invoice_phone"),
+  invoiceLogoUrl: text("invoice_logo_url"),
+  invoicePaymentDetails: text("invoice_payment_details"),
+  invoicePaymentTerms: text("invoice_payment_terms"),
+  invoiceFooterNote: text("invoice_footer_note"),
   emailSenderName: text("email_sender_name"),
   primaryBrandColour: text("primary_brand_colour"),
   removeOlyxeeBranding: boolean("remove_olyxee_branding").notNull().default(false),

@@ -79,6 +79,16 @@ export const UpdateBusinessBody = zod.object({
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
   "businessLogoUrl": zod.string().nullish(),
+  "invoiceLegalName": zod.string().nullish(),
+  "invoiceRegistrationNumber": zod.string().nullish(),
+  "invoiceTaxNumber": zod.string().nullish(),
+  "invoiceAddress": zod.string().nullish(),
+  "invoiceEmail": zod.string().nullish(),
+  "invoicePhone": zod.string().nullish(),
+  "invoiceLogoUrl": zod.string().nullish(),
+  "invoicePaymentDetails": zod.string().nullish(),
+  "invoicePaymentTerms": zod.string().nullish(),
+  "invoiceFooterNote": zod.string().nullish(),
   "onboardingCompleted": zod.boolean().optional()
 })
 

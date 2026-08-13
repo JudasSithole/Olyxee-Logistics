@@ -52,6 +52,16 @@ export interface Database {
           sms_notifications_used: number;
           ai_call_minutes_used: number;
           business_logo_url: string | null;
+          invoice_legal_name: string | null;
+          invoice_registration_number: string | null;
+          invoice_tax_number: string | null;
+          invoice_address: string | null;
+          invoice_email: string | null;
+          invoice_phone: string | null;
+          invoice_logo_url: string | null;
+          invoice_payment_details: string | null;
+          invoice_payment_terms: string | null;
+          invoice_footer_note: string | null;
           email_sender_name: string | null;
           primary_brand_colour: string | null;
           remove_olyxee_branding: boolean;

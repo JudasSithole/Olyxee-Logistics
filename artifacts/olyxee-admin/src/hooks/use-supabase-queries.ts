@@ -208,6 +208,9 @@ interface ApiBusiness {
   smsNotificationsUsed?: number;
   aiCallMinutesUsed?: number;
   businessLogoUrl?: string | null;
+  invoiceLegalName?: string | null; invoiceRegistrationNumber?: string | null; invoiceTaxNumber?: string | null;
+  invoiceAddress?: string | null; invoiceEmail?: string | null; invoicePhone?: string | null; invoiceLogoUrl?: string | null;
+  invoicePaymentDetails?: string | null; invoicePaymentTerms?: string | null; invoiceFooterNote?: string | null;
   emailSenderName?: string | null;
   primaryBrandColour?: string | null;
   removeOlyxeeBranding?: boolean;
@@ -248,6 +251,16 @@ function mapBusiness(b: ApiBusiness): Business {
     sms_notifications_used: b.smsNotificationsUsed ?? 0,
     ai_call_minutes_used: b.aiCallMinutesUsed ?? 0,
     business_logo_url: b.businessLogoUrl ?? null,
+    invoice_legal_name: b.invoiceLegalName ?? null,
+    invoice_registration_number: b.invoiceRegistrationNumber ?? null,
+    invoice_tax_number: b.invoiceTaxNumber ?? null,
+    invoice_address: b.invoiceAddress ?? null,
+    invoice_email: b.invoiceEmail ?? null,
+    invoice_phone: b.invoicePhone ?? null,
+    invoice_logo_url: b.invoiceLogoUrl ?? null,
+    invoice_payment_details: b.invoicePaymentDetails ?? null,
+    invoice_payment_terms: b.invoicePaymentTerms ?? null,
+    invoice_footer_note: b.invoiceFooterNote ?? null,
     email_sender_name: b.emailSenderName ?? null,
     primary_brand_colour: b.primaryBrandColour ?? null,
     remove_olyxee_branding: b.removeOlyxeeBranding ?? false,
@@ -355,6 +368,16 @@ export function useUpdateBusiness() {
       if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
       if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
       if (updates.business_logo_url !== undefined) body.businessLogoUrl = updates.business_logo_url;
+      if (updates.invoice_legal_name !== undefined) body.invoiceLegalName = updates.invoice_legal_name;
+      if (updates.invoice_registration_number !== undefined) body.invoiceRegistrationNumber = updates.invoice_registration_number;
+      if (updates.invoice_tax_number !== undefined) body.invoiceTaxNumber = updates.invoice_tax_number;
+      if (updates.invoice_address !== undefined) body.invoiceAddress = updates.invoice_address;
+      if (updates.invoice_email !== undefined) body.invoiceEmail = updates.invoice_email;
+      if (updates.invoice_phone !== undefined) body.invoicePhone = updates.invoice_phone;
+      if (updates.invoice_logo_url !== undefined) body.invoiceLogoUrl = updates.invoice_logo_url;
+      if (updates.invoice_payment_details !== undefined) body.invoicePaymentDetails = updates.invoice_payment_details;
+      if (updates.invoice_payment_terms !== undefined) body.invoicePaymentTerms = updates.invoice_payment_terms;
+      if (updates.invoice_footer_note !== undefined) body.invoiceFooterNote = updates.invoice_footer_note;
       if (updates.onboarding_completed !== undefined) body.onboardingCompleted = updates.onboarding_completed;
 
       const data = await apiFetch<ApiBusiness>("/api/business", {

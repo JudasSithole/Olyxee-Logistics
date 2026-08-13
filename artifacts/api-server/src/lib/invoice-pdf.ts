@@ -12,49 +12,74 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   const money = (value: number) => `${p.currency} ${value.toFixed(2)}`;
   const date = (value: Date) => value.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
 
-  if (p.logoUrl && /^https?:\/\//i.test(p.logoUrl)) {
+  if (p.logoUrl) {
     try {
-      const response = await fetch(p.logoUrl, { signal: AbortSignal.timeout(5000) });
-      if (response.ok) doc.image(Buffer.from(await response.arrayBuffer()), 48, 44, { fit: [150, 62] });
+      let logo: Buffer | null = null;
+      const dataMatch = p.logoUrl.match(/^data:image\/(png|jpe?g);base64,([a-z0-9+/=]+)$/i);
+      if (dataMatch) {
+        const decoded = Buffer.from(dataMatch[2], "base64");
+        if (decoded.length <= 1_500_000) logo = decoded;
+      } else if (/^https?:\/\//i.test(p.logoUrl)) {
+        const response = await fetch(p.logoUrl, { signal: AbortSignal.timeout(5000) });
+        const type = response.headers.get("content-type") ?? "";
+        if (response.ok && /^image\/(png|jpe?g)/i.test(type)) {
+          const downloaded = Buffer.from(await response.arrayBuffer());
+          if (downloaded.length <= 1_500_000) logo = downloaded;
+        }
+      }
+      if (logo) doc.image(logo, 48, 54, { fit: [128, 48] });
     } catch { /* The business name remains as the safe logo fallback. */ }
   }
-  doc.font("Helvetica-Bold").fontSize(22).text(p.businessName, 48, 112);
-  doc.font("Helvetica").fontSize(9).fillColor("#475569")
-    .text([p.supportEmail, p.businessPhone, p.businessAddress].filter(Boolean).join(" | "), 48, 140, { width: 310 });
-  doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(20).text("INVOICE", 390, 52, { align: "right", width: 155 });
-  doc.font("Helvetica").fontSize(10)
-    .text(p.invoiceNumber, 390, 80, { align: "right", width: 155 })
-    .text(`Created: ${date(p.createdAt)}`, 390, 98, { align: "right", width: 155 })
-    .text(`Due: ${date(p.dueDate)}`, 390, 114, { align: "right", width: 155 })
-    .fillColor("#b45309").font("Helvetica-Bold").text("STATUS: PENDING PAYMENT", 350, 136, { align: "right", width: 195 });
+  const navy = "#10243e", ink = "#142033", muted = "#64748b", line = "#dbe3ec", pale = "#f4f7fb", amber = "#b45309";
+  doc.rect(0, 0, 595.28, 12).fill(navy);
+  doc.fillColor(ink).font("Helvetica-Bold").fontSize(20).text(p.businessName, 48, 112, { width: 300 });
+  doc.font("Helvetica").fontSize(8.5).fillColor(muted).text([p.supportEmail, p.businessPhone].filter(Boolean).join("  |  "), 48, 140, { width: 300 });
+  if (p.businessAddress) doc.text(p.businessAddress, 48, 155, { width: 300, height: 32, ellipsis: true });
+  const legal = [p.companyRegistration ? `REG ${p.companyRegistration}` : null, p.taxNumber ? `TAX ${p.taxNumber}` : null].filter(Boolean).join("  |  ");
+  if (legal) doc.font("Helvetica-Bold").fontSize(7.5).text(legal, 48, 181, { width: 300 });
 
-  doc.moveTo(48, 174).lineTo(547, 174).strokeColor("#cbd5e1").stroke();
-  doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(10).text("BILL TO", 48, 196);
-  doc.font("Helvetica").fontSize(11).text(p.customerName, 48, 216);
-  if (p.customerAddress) doc.fillColor("#475569").fontSize(9).text(p.customerAddress, 48, 234, { width: 300 });
+  doc.fillColor(navy).font("Helvetica-Bold").fontSize(27).text("INVOICE", 365, 51, { align: "right", width: 182, characterSpacing: 1.2 });
+  doc.font("Helvetica").fontSize(9).fillColor(muted).text("INVOICE NUMBER", 365, 91, { align: "right", width: 182 });
+  doc.font("Helvetica-Bold").fontSize(11).fillColor(ink).text(p.invoiceNumber, 365, 105, { align: "right", width: 182 });
+  doc.roundedRect(392, 130, 155, 28, 4).fill("#fff7ed");
+  doc.fillColor(amber).font("Helvetica-Bold").fontSize(8.5).text("PAYMENT PENDING", 401, 140, { align: "center", width: 137, characterSpacing: 0.6 });
 
-  const top = 290;
-  doc.rect(48, top, 499, 30).fill("#e2e8f0");
-  doc.fillColor("#475569").font("Helvetica-Bold").fontSize(9)
-    .text("ITEM", 58, top + 10).text("QTY", 350, top + 10, { width: 40, align: "right" })
-    .text("RATE", 395, top + 10, { width: 70, align: "right" }).text("AMOUNT", 470, top + 10, { width: 67, align: "right" });
-  doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(10).text(p.description, 58, top + 45, { width: 275 });
-  doc.font("Helvetica").fillColor("#64748b").fontSize(9).text(p.serviceDetails, 58, top + 62, { width: 275 });
-  doc.fillColor("#0f172a").fontSize(10).text(String(p.quantity), 350, top + 46, { width: 40, align: "right" })
-    .text(money(p.subtotal), 395, top + 46, { width: 70, align: "right" }).font("Helvetica-Bold").text(money(p.subtotal), 470, top + 46, { width: 67, align: "right" });
-  let totalY = top + 100;
+  doc.moveTo(48, 210).lineTo(547, 210).lineWidth(1).strokeColor(line).stroke();
+  doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("BILL TO", 48, 232, { characterSpacing: 1 });
+  doc.fillColor(ink).fontSize(13).text(p.customerName, 48, 249, { width: 260 });
+  if (p.customerAddress) doc.fillColor(muted).font("Helvetica").fontSize(9).text(p.customerAddress, 48, 270, { width: 260, height: 42, ellipsis: true, lineGap: 2 });
+  doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("ISSUED", 360, 232).text("DUE", 465, 232);
+  doc.fillColor(ink).font("Helvetica").fontSize(10).text(date(p.createdAt), 360, 249).text(date(p.dueDate), 465, 249);
+
+  const top = 324;
+  doc.roundedRect(48, top, 499, 34, 3).fill(navy);
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8)
+    .text("DESCRIPTION", 60, top + 13, { characterSpacing: 0.7 }).text("QTY", 350, top + 13, { width: 40, align: "right" })
+    .text("RATE", 395, top + 13, { width: 70, align: "right" }).text("AMOUNT", 470, top + 13, { width: 65, align: "right" });
+  doc.fillColor(ink).font("Helvetica-Bold").fontSize(10.5).text(p.description, 60, top + 51, { width: 270 });
+  doc.font("Helvetica").fillColor(muted).fontSize(8.5).text(p.serviceDetails, 60, top + 70, { width: 270, height: 30, ellipsis: true });
+  doc.fillColor(ink).fontSize(10).text(String(p.quantity), 350, top + 53, { width: 40, align: "right" })
+    .text(money(p.subtotal), 395, top + 53, { width: 70, align: "right" }).font("Helvetica-Bold").text(money(p.subtotal), 470, top + 53, { width: 65, align: "right" });
+  doc.moveTo(48, top + 106).lineTo(547, top + 106).strokeColor(line).stroke();
+  let totalY = top + 122;
   if (p.additionalCharges > 0) {
-    doc.font("Helvetica").text("Additional charges", 330, totalY).text(money(p.additionalCharges), 470, totalY, { width: 67, align: "right" });
-    totalY += 24;
+    doc.fillColor(muted).font("Helvetica").fontSize(9).text("Additional charges", 337, totalY).fillColor(ink).text(money(p.additionalCharges), 455, totalY, { width: 80, align: "right" });
+    totalY += 25;
   }
-  doc.moveTo(330, totalY).lineTo(547, totalY).strokeColor("#cbd5e1").stroke();
-  doc.font("Helvetica-Bold").fontSize(15).text("TOTAL", 330, totalY + 14).text(money(p.total), 430, totalY + 14, { width: 107, align: "right" });
+  doc.roundedRect(337, totalY, 210, 48, 4).fill(pale);
+  doc.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("TOTAL DUE", 351, totalY + 18).fontSize(15).text(money(p.total), 420, totalY + 15, { width: 113, align: "right" });
 
-  const payY = Math.max(500, totalY + 72);
-  doc.fontSize(11).text("PAYMENT DETAILS", 48, payY);
-  doc.font("Helvetica").fontSize(10).text("Account name: FREIGHTSHIFT INTERNATIONAL LOGISTICS (PTY) LTD\nBank: FNB\nAccount number: 63214036732\nBranch code: 256505\nAccount type: GOLD BUSINESS ACCOUNT\nReference: " + `${p.customerName} (${p.description})`, 48, payY + 22, { lineGap: 4 });
-  doc.font("Helvetica-Bold").fontSize(10).text("PAYMENT REQUIRED", 48, 700);
-  doc.font("Helvetica").fillColor("#475569").fontSize(9).text("Shipment status updates begin only after Olyxee Logistics manually confirms payment.", 48, 718);
+  const payY = Math.max(535, totalY + 80);
+  doc.roundedRect(48, payY, 315, 132, 5).fill(pale);
+  doc.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("PAYMENT DETAILS", 64, payY + 18, { characterSpacing: 0.8 });
+  doc.fillColor(ink).font("Helvetica").fontSize(8.7).text(`${p.paymentDetails || "Contact the issuer for payment instructions."}\n\nReference: ${p.customerName} (${p.description})`, 64, payY + 39, { lineGap: 3, width: 282, height: 80, ellipsis: true });
+  doc.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("PAYMENT TERMS", 391, payY + 18, { characterSpacing: 0.8 });
+  doc.fillColor(muted).font("Helvetica").fontSize(8.7).text(p.paymentTerms || "Payment due within agreed terms.", 391, payY + 39, { width: 156, lineGap: 3 });
+  doc.fillColor(amber).font("Helvetica-Bold").fontSize(8).text("STATUS UPDATES BEGIN AFTER PAYMENT IS CONFIRMED.", 391, payY + 92, { width: 156, lineGap: 2 });
+
+  if (p.footerNote) doc.fillColor(muted).font("Helvetica").fontSize(8).text(p.footerNote, 48, 744, { width: 499, align: "center", height: 18, ellipsis: true });
+  doc.moveTo(48, 772).lineTo(547, 772).strokeColor(line).stroke();
+  doc.fillColor(muted).font("Helvetica").fontSize(7.5).text(`${p.businessName}  |  ${p.supportEmail}  |  Page 1 of 1`, 48, 783, { width: 499, align: "center", lineBreak: false });
   doc.end();
   return complete;
 }

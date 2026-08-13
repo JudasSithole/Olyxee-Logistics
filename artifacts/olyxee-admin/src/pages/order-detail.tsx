@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useOrder,
   useBusiness,
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Collapsible,
@@ -39,6 +41,7 @@ import {
   User,
   Send,
   CheckCircle2,
+  Edit,
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
@@ -200,6 +203,8 @@ function StatusPicker({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrderDetailPage() {
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { data: order, isLoading, refetch } = useOrder(id);
@@ -217,6 +222,11 @@ export default function OrderDetailPage() {
   const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
   const [invoiceCharges, setInvoiceCharges] = useState("0");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [editOpen,setEditOpen]=useState(false);
+  const [editForm,setEditForm]=useState({orderReference:"",description:"",cargoType:"",serviceRequired:"",origin:"",destination:"",weight:"",dimensions:"",estimatedDeliveryDate:""});
+  const editOrder=useMutation({mutationFn:()=>apiFetch(`/api/orders/${id}`,{method:"PUT",body:editForm}),onSuccess:async()=>{await queryClient.invalidateQueries({queryKey:["order",id]});toast.success("Order updated");setEditOpen(false);refetch();},onError:(error:Error)=>toast.error(error.message)});
+  const openOrderEdit=()=>{if(!order)return;setEditForm({orderReference:order.order_reference??"",description:order.description??"",cargoType:order.cargo_type??"",serviceRequired:order.service_required??"",origin:order.origin??"",destination:order.destination??"",weight:order.weight??"",dimensions:order.dimensions??"",estimatedDeliveryDate:order.estimated_delivery_date??""});setEditOpen(true);};
+  const deleteOrder = useMutation({ mutationFn: () => apiFetch(`/api/orders/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["orders"] }); toast.success("Order and its linked invoice deleted"); navigate("/orders"); }, onError: (error: Error) => toast.error(error.message) });
   const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
   const paymentConfirmed = !order?.invoice_id || invoiceStatus === "paid";
   const shipmentUpdatesUnlocked = paymentConfirmed && (!order?.transport_mode || !!order?.supplier_tracking_number);
@@ -338,7 +348,7 @@ export default function OrderDetailPage() {
             <ArrowLeft className="h-4 w-4" /> Orders
           </Button>
         </Link>
-        <Button
+        <div className="flex gap-2"><Button variant="outline" size="sm" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit</Button><Button variant="destructive" size="sm" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}>Delete order</Button><Button
           variant="outline"
           size="sm"
           className="gap-2"
@@ -347,8 +357,10 @@ export default function OrderDetailPage() {
         >
           <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? "animate-spin" : ""}`} />
           Resend Email
-        </Button>
+        </Button></div>
       </div>
+
+      <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form></SheetContent></Sheet>
 
       {/* Order identity */}
       <div className="pb-5 border-b">

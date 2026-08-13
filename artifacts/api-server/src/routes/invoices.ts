@@ -62,6 +62,23 @@ router.get("/invoices/:invoiceId",requireAuth,async(req,res)=>{
   ]);
   res.json({...serialize(invoice),order:order?serialize(order):null,customer:customer?serialize(customer):null,business:business?serialize(business):null});
 });
+const UpdateInvoiceBody = z.object({ subtotal:z.coerce.number().nonnegative().optional(), additionalCharges:z.coerce.number().nonnegative().optional(), dueDate:z.coerce.date().nullable().optional(), notes:z.string().max(5000).nullable().optional() });
+router.put("/invoices/:invoiceId",requireAuth,async(req,res)=>{
+  const parsed=UpdateInvoiceBody.safeParse(req.body);if(!parsed.success){res.status(400).json({error:"Invalid input",details:parsed.error.issues});return;}
+  const businessId=(req as any).businessId,userId=(req as any).userId,id=String(req.params.invoiceId);
+  const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))});
+  if(!invoice){res.status(404).json({error:"Invoice not found"});return;} if(invoice.status==="paid"){res.status(409).json({error:"Paid invoices cannot be edited"});return;}
+  const subtotal=parsed.data.subtotal??Number(invoice.subtotal),additional=parsed.data.additionalCharges??Number(invoice.additionalCharges);
+  const [updated]=await db.update(invoicesTable).set({...(parsed.data.subtotal!==undefined?{subtotal:String(subtotal)}:{}),...(parsed.data.additionalCharges!==undefined?{additionalCharges:String(additional)}:{}),...(parsed.data.dueDate!==undefined?{dueDate:parsed.data.dueDate}:{}),...(parsed.data.notes!==undefined?{notes:parsed.data.notes}:{}),total:String(subtotal+additional),updatedAt:new Date()}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
+  await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"UPDATE_INVOICE",entityType:"invoice",entityId:id,metadata:{changes:parsed.data}});res.json(serialize(updated));
+});
+router.delete("/invoices/:invoiceId",requireAuth,async(req,res)=>{
+  const businessId=(req as any).businessId,userId=(req as any).userId,id=String(req.params.invoiceId);
+  const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))});
+  if(!invoice){res.status(404).json({error:"Invoice not found"});return;} if(invoice.status==="paid"){res.status(409).json({error:"Paid invoices cannot be deleted"});return;}
+  await db.transaction(async tx=>{await tx.update(ordersTable).set({invoiceId:null,updatedAt:new Date()}).where(and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId)));await tx.delete(invoicesTable).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId)));await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"DELETE_INVOICE",entityType:"invoice",entityId:id,metadata:{invoiceNumber:invoice.invoiceNumber,orderId:invoice.orderId}});});res.status(204).send();
+});
+
 router.post("/invoices/:invoiceId/send",requireAuth,async(req,res)=>{
   const businessId=(req as any).businessId,userId=(req as any).userId,id=String(req.params.invoiceId);
   const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))});
@@ -72,7 +89,7 @@ router.post("/invoices/:invoiceId/send",requireAuth,async(req,res)=>{
     db.query.businessesTable.findFirst({where:eq(businessesTable.id,businessId)}),
   ]);
   if(!order||!customer||!business){res.status(409).json({error:"Invoice customer or order details are incomplete"});return;}
-  const sent=await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoice.invoiceNumber,createdAt:invoice.createdAt,dueDate:invoice.dueDate??invoice.createdAt,description:order.cargoType||order.description||"Cross-border logistics service",serviceDetails:[order.transportMode?`${order.transportMode} FREIGHT`:null,order.serviceRequired,order.weight].filter(Boolean).join(" | "),quantity:1,subtotal:Number(invoice.subtotal),additionalCharges:Number(invoice.additionalCharges),total:Number(invoice.total),currency:invoice.currency,businessName:business.name,supportEmail:business.supportEmail,businessPhone:business.phone,businessAddress:business.location,logoUrl:business.businessLogoUrl});
+  const sent=await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,invoiceNumber:invoice.invoiceNumber,createdAt:invoice.createdAt,dueDate:invoice.dueDate??invoice.createdAt,description:order.cargoType||order.description||"Cross-border logistics service",serviceDetails:[order.transportMode?`${order.transportMode} FREIGHT`:null,order.serviceRequired,order.weight].filter(Boolean).join(" | "),quantity:1,subtotal:Number(invoice.subtotal),additionalCharges:Number(invoice.additionalCharges),total:Number(invoice.total),currency:invoice.currency,businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote});
   if(!sent.success){res.status(502).json({error:sent.error||"Invoice email failed"});return;}
   const now=new Date();const [updated]=await db.update(invoicesTable).set({status:"sent",sentAt:now,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
   await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"SEND_INVOICE",entityType:"invoice",entityId:id,metadata:{orderId:invoice.orderId,messageId:sent.messageId,customerEmail:customer.email}});

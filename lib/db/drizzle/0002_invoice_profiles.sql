@@ -1,0 +1,10 @@
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_legal_name" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_registration_number" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_tax_number" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_address" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_email" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_phone" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_logo_url" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_payment_details" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_payment_terms" text;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "invoice_footer_note" text;
