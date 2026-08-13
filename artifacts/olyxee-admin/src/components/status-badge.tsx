@@ -4,6 +4,7 @@ import { isLogisticsStatus, logisticsStatusLabel } from "@/lib/order-statuses";
 // Colours for transport-aware logistics status codes.
 const LOGISTICS_STATUS_COLORS: Record<string, string> = {
   ORDER_CONFIRMED: "bg-gray-100 text-gray-700 border-gray-200",
+  PENDING_TRACKING_NUMBER: "bg-amber-100 text-amber-800 border-amber-200",
   RECEIVED_FROM_SUPPLIER: "bg-violet-100 text-violet-800 border-violet-200",
   EXPORT_CUSTOMS_CLEARED: "bg-teal-100 text-teal-800 border-teal-200",
   LOADED_ONTO_VESSEL: "bg-blue-100 text-blue-800 border-blue-200",

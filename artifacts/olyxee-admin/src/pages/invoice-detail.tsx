@@ -25,6 +25,12 @@ export default function InvoiceDetailPage() {
   const displayStatus = invoice.status === "sent" ? "pending payment" : invoice.status;
 
   return <div className="mx-auto max-w-4xl space-y-5">
+    <style>{`@media print {
+      @page { size: A4 portrait; margin: 0; }
+      body * { visibility: hidden !important; }
+      .invoice-document, .invoice-document * { visibility: visible !important; }
+      .invoice-document { position: fixed !important; inset: 0 !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; box-sizing: border-box !important; overflow: hidden !important; }
+    }`}</style>
     <div className="print:hidden flex flex-wrap items-center justify-between gap-3">
       <Link href={`/orders/${invoice.orderId}`}><Button variant="ghost">← Order</Button></Link>
       <div className="flex gap-2">
@@ -34,12 +40,14 @@ export default function InvoiceDetailPage() {
       </div>
     </div>
 
-    <article className="min-h-[980px] bg-white p-8 text-slate-900 shadow-sm sm:p-12 print:min-h-0 print:p-0 print:shadow-none">
-      <header className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+    <article className="invoice-document mx-auto flex min-h-[1120px] w-full max-w-[794px] flex-col bg-white px-[60px] py-[46px] text-[15px] leading-[1.45] text-slate-900 shadow-sm print:min-h-0 print:max-w-none print:px-[18mm] print:py-[14mm] print:shadow-none">
+      <header className="grid grid-cols-[110px_minmax(0,1fr)_190px] items-start gap-0">
+        <div className="pr-5 pt-9">
+          {business?.businessLogoUrl ? <img src={business.businessLogoUrl} alt={`${business.name} logo`} className="max-h-[42px] w-full object-contain object-left" /> : null}
+        </div>
         <div>
-          {business?.businessLogoUrl ? <img src={business.businessLogoUrl} alt={`${business.name} logo`} className="mb-5 max-h-20 max-w-[180px] object-contain" /> : null}
-          <h1 className="text-3xl font-bold tracking-tight">{business?.name ?? "FreightShift International Logistics"}</h1>
-          <div className="mt-4 space-y-1 text-sm">
+          <h1 className="whitespace-nowrap text-[25px] font-bold leading-tight tracking-[-0.02em]">{business?.name ?? "FreightShift International Logistics"}</h1>
+          <div className="mt-3 space-y-0.5 text-[15px]">
             <p>{invoice.invoiceNumber}</p>
             <p>Company Reg No: 2025/924488/07</p>
             <p>{business?.supportEmail}</p>
@@ -47,9 +55,9 @@ export default function InvoiceDetailPage() {
             {business?.location ? <p className="whitespace-pre-line">{business.location}</p> : null}
           </div>
         </div>
-        <div className="sm:text-right">
-          <h2 className="text-xl font-bold">Invoice</h2>
-          <div className="mt-4 space-y-1 text-sm">
+        <div className="text-right">
+          <h2 className="text-[17px] font-bold">Invoice</h2>
+          <div className="mt-3 space-y-0.5 text-[15px]">
             <p>Created: {new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}</p>
             <p>Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) : "On receipt"}</p>
             <p>Status: <span className="font-semibold capitalize">{displayStatus}</span></p>
@@ -58,25 +66,26 @@ export default function InvoiceDetailPage() {
         </div>
       </header>
 
-      <section className="mt-14 border-t pt-6">
-        <h3 className="font-bold">Bill To</h3>
-        <p className="mt-1">{customer?.fullName}</p>
+      <section className="mt-[58px] border-t border-slate-200 pt-4">
+        <h3 className="text-[15px] font-bold">Bill To</h3>
+        <p>{customer?.fullName}</p>
         {customer?.companyName ? <p>{customer.companyName}</p> : null}
         <p className="whitespace-pre-line">{customer?.address || "Address not supplied"}</p>
       </section>
 
-      <section className="mt-7">
-        <table className="w-full border-collapse text-sm">
-          <thead><tr className="bg-slate-100 text-slate-500"><th className="p-3 text-left">Item</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Rate</th><th className="p-3 text-right">Amount</th></tr></thead>
-          <tbody><tr className="align-top"><td className="p-3"><strong>{order?.cargoType || order?.description || "Cross-border logistics service"}</strong>{serviceDetails ? <p className="mt-2 uppercase text-slate-500">{serviceDetails}</p> : null}</td><td className="p-3 text-right">1</td><td className="p-3 text-right">{money(invoice.subtotal)}</td><td className="p-3 text-right font-bold">{money(invoice.subtotal)}</td></tr>
-          {Number(invoice.additionalCharges) > 0 ? <tr><td className="p-3">Additional charges</td><td/><td/><td className="p-3 text-right">{money(invoice.additionalCharges)}</td></tr> : null}</tbody>
+      <section className="mt-4">
+        <table className="w-full table-fixed border-collapse text-[14px]">
+          <colgroup><col/><col className="w-[62px]"/><col className="w-[110px]"/><col className="w-[120px]"/></colgroup>
+          <thead><tr className="border-b border-slate-200 bg-[#f4f7fa] text-[#64748b]"><th className="px-0 py-2 text-left">Item</th><th className="py-2 text-right">Qty</th><th className="py-2 text-right">Rate</th><th className="py-2 text-right">Amount</th></tr></thead>
+          <tbody><tr className="align-top"><td className="px-0 py-2"><strong>{order?.cargoType || order?.description || "Cross-border logistics service"}</strong>{serviceDetails ? <p className="mt-1 uppercase text-[#64748b]">{serviceDetails}</p> : null}</td><td className="py-2 text-right">1</td><td className="py-2 text-right">{money(invoice.subtotal)}</td><td className="py-2 text-right font-bold">{money(invoice.subtotal)}</td></tr>
+          {Number(invoice.additionalCharges) > 0 ? <tr><td className="py-1">Additional charges</td><td/><td/><td className="py-1 text-right">{money(invoice.additionalCharges)}</td></tr> : null}</tbody>
         </table>
-        <div className="ml-auto mt-5 flex w-full max-w-xs justify-between text-lg font-bold"><span>Total</span><span>{money(invoice.total)}</span></div>
+        <div className="ml-auto mt-3 grid w-[300px] grid-cols-2 text-[17px] font-bold"><span>Total</span><span className="text-right">{money(invoice.total)}</span></div>
       </section>
 
-      <section className="mt-9"><h3 className="font-bold">Payment details</h3><div className="mt-2 space-y-1 text-sm"><p>Account name: FREIGHTSHIFT INTERNATIONAL LOGISTICS (PTY) LTD</p><p>Bank: FNB</p><p>Account number: 63214036732</p><p>Branch code: 256505</p><p>Account type: GOLD BUSINESS ACCOUNT</p><p>Reference: {customer?.fullName} ({order?.cargoType || "Service"})</p></div></section>
-      <section className="mt-8"><h3 className="font-bold">Notes</h3><p className="mt-2 text-sm">Payment due within agreed terms. Tracking updates begin after payment is confirmed.</p></section>
-      <footer className="mt-24 text-center text-xs text-slate-500">Page 1 of 1</footer>
+      <section className="mt-7"><h3 className="font-bold">Payment details</h3><div className="mt-1 space-y-0.5"><p>Account name: FREIGHTSHIFT INTERNATIONAL LOGISTICS (PTY) LTD</p><p>Bank: FNB</p><p>Account number: 63214036732</p><p>Branch code: 256505</p><p>Account type: GOLD BUSINESS ACCOUNT</p><p>Reference: {customer?.fullName} ({order?.cargoType || "Service"})</p></div></section>
+      <section className="mt-7"><h3 className="font-bold">Notes</h3><p className="mt-1">Payment due within agreed terms.</p></section>
+      <footer className="mt-auto pt-12 text-center text-xs text-[#64748b]">Page 1 of 1</footer>
     </article>
   </div>;
 }

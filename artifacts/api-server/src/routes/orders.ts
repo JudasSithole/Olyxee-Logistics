@@ -300,12 +300,20 @@ router.post("/orders/:orderId/supplier-tracking", requireAuth, async (req, res) 
     const order = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)) });
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     if (!order.transportMode) { res.status(409).json({ error: "Supplier tracking is only available for air or sea orders" }); return; }
+    if (order.supplierTrackingNumber) { res.status(409).json({ error: "Supplier tracking number has already been recorded" }); return; }
+    const invoice = order.invoiceId ? await db.query.invoicesTable.findFirst({ where: and(eq(invoicesTable.id, order.invoiceId), eq(invoicesTable.businessId, businessId)) }) : null;
+    if (!invoice || invoice.status !== "paid") { res.status(409).json({ error: "Payment must be confirmed before adding the supplier tracking number" }); return; }
+    if (order.currentStatus !== "PENDING_TRACKING_NUMBER") { res.status(409).json({ error: "Order is not awaiting a supplier tracking number" }); return; }
     const supplierTrackingNumber = parsed.data.supplierTrackingNumber.toUpperCase();
     const duplicate = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.businessId, businessId), eq(ordersTable.supplierTrackingNumber, supplierTrackingNumber)) });
     if (duplicate && duplicate.id !== orderId) { res.status(409).json({ error: `Supplier tracking number is already linked to order ${duplicate.orderReference ?? duplicate.id}` }); return; }
     const now = new Date();
-    const [updated] = await db.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
-    await db.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber } });
+    const updated = await db.transaction(async(tx)=>{
+      const [nextOrder] = await tx.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, currentStatus:"RECEIVED_FROM_SUPPLIER", updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
+      await tx.insert(trackingEventsTable).values({id:generateId(),orderId,status:"RECEIVED_FROM_SUPPLIER",message:"Cargo received at the China warehouse; shipment tracking is now active",location:"China warehouse",createdBy:userId});
+      await tx.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber, addedAt: now.toISOString() } });
+      return nextOrder;
+    });
     res.json(serializeOrder(updated));
   } catch (err) { req.log.error({ err }, "Failed to set supplier tracking number"); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -402,10 +410,20 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       return;
     }
 
-    const invoice = order.invoiceId ? await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,order.invoiceId),eq(invoicesTable.businessId,businessId))}) : null;
-    if (!invoice || invoice.status !== "paid") {
-      res.status(409).json({ error: "Payment must be confirmed before tracking updates can begin", invoiceStatus: invoice?.status ?? "missing" });
-      return;
+    // New orders always have a linked invoice and must pass both gates.
+    // Pre-invoice legacy orders are grandfathered so this rollout does not
+    // strand or mutate existing customer/order records that predate the new
+    // invoice and supplier-tracking workflow.
+    if (order.invoiceId) {
+      const invoice = await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,order.invoiceId),eq(invoicesTable.businessId,businessId))});
+      if (!invoice || invoice.status !== "paid") {
+        res.status(409).json({ error: "Payment must be confirmed before tracking updates can begin", invoiceStatus: invoice?.status ?? "missing" });
+        return;
+      }
+      if (!order.supplierTrackingNumber) {
+        res.status(409).json({ error: "Supplier tracking number must be added before shipment updates can begin", currentStatus: order.currentStatus });
+        return;
+      }
     }
 
     // Transport-aware validation. Orders with a transport mode may only move

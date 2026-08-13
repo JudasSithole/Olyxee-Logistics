@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
-import { db, invoicesTable, ordersTable, customersTable, businessesTable, auditLogsTable } from "@workspace/db";
+import { db, invoicesTable, ordersTable, customersTable, businessesTable, trackingEventsTable, auditLogsTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { canConfirmInvoicePaid } from "../lib/invoice-workflow";
@@ -84,7 +84,15 @@ async function updateStatus(req:any,res:any,status:"sent"|"paid"){
   const invoice=await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))});
   if(!invoice){res.status(404).json({error:"Invoice not found"});return;}
   if(invoice.status==="cancelled"||(status==="paid"&&!canConfirmInvoicePaid(invoice.status))){res.status(409).json({error:`Cannot mark ${invoice.status} invoice as ${status}`});return;}
-  const now=new Date();const [updated]=await db.update(invoicesTable).set({status,sentAt:status==="sent"?now:invoice.sentAt,paidAt:status==="paid"?now:invoice.paidAt,paymentConfirmedBy:status==="paid"?userId:invoice.paymentConfirmedBy,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
+  const now=new Date();
+  const updated=await db.transaction(async(tx)=>{
+    const [nextInvoice]=await tx.update(invoicesTable).set({status,sentAt:status==="sent"?now:invoice.sentAt,paidAt:status==="paid"?now:invoice.paidAt,paymentConfirmedBy:status==="paid"?userId:invoice.paymentConfirmedBy,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
+    if(status==="paid"){
+      await tx.update(ordersTable).set({currentStatus:"PENDING_TRACKING_NUMBER",updatedAt:now}).where(and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId)));
+      await tx.insert(trackingEventsTable).values({id:generateId(),orderId:invoice.orderId,status:"PENDING_TRACKING_NUMBER",message:"Payment confirmed - waiting for the China warehouse to receive the cargo and add its tracking number",createdBy:userId});
+    }
+    return nextInvoice;
+  });
   await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:status==="paid"?"CONFIRM_INVOICE_PAYMENT":"SEND_INVOICE",entityType:"invoice",entityId:id,metadata:{orderId:invoice.orderId,previousStatus:invoice.status,newStatus:status}});
   res.json(serialize(updated));
 }

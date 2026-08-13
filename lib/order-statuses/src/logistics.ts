@@ -23,6 +23,7 @@ export function isTransportMode(value: unknown): value is TransportMode {
 export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = {
   AIR: [
     "ORDER_CONFIRMED",
+    "PENDING_TRACKING_NUMBER",
     "RECEIVED_FROM_SUPPLIER",
     "EXPORT_CUSTOMS_CLEARED",
     "IN_TRANSIT",
@@ -32,6 +33,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
   ],
   SEA: [
     "ORDER_CONFIRMED",
+    "PENDING_TRACKING_NUMBER",
     "RECEIVED_FROM_SUPPLIER",
     "EXPORT_CUSTOMS_CLEARED",
     "LOADED_ONTO_VESSEL",
@@ -48,6 +50,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
 // Customer-facing labels for every logistics status code.
 export const LOGISTICS_STATUS_LABELS: Record<string, string> = {
   ORDER_CONFIRMED: "Order Confirmed",
+  PENDING_TRACKING_NUMBER: "Pending Tracking Number",
   RECEIVED_FROM_SUPPLIER: "Received from Supplier",
   EXPORT_CUSTOMS_CLEARED: "Export Customs Cleared",
   LOADED_ONTO_VESSEL: "Loaded onto Vessel",
@@ -126,6 +129,7 @@ export interface LogisticsStatusCopy {
 
 export const LOGISTICS_STATUS_COPY: Record<string, LogisticsStatusCopy> = {
   ORDER_CONFIRMED:              { headline: "Your order is confirmed",              intro: "We've confirmed your order and will start preparing the shipment.",           accent: "#0284c7", tone: "neutral" },
+  PENDING_TRACKING_NUMBER:      { headline: "Pending tracking number",              intro: "Payment is confirmed. We're waiting for the China warehouse to receive your cargo and assign its shipment tracking number.", accent: "#d97706", tone: "neutral" },
   RECEIVED_FROM_SUPPLIER:       { headline: "We've received your goods",            intro: "Your shipment has been received from the supplier and is being prepared.",   accent: "#7c3aed", tone: "neutral" },
   EXPORT_CUSTOMS_CLEARED:       { headline: "Export customs cleared",               intro: "Your shipment has cleared customs at the origin and is ready to travel.",    accent: "#0ea5e9", tone: "positive" },
   LOADED_ONTO_VESSEL:           { headline: "Loaded onto the vessel",               intro: "Your shipment is aboard and the vessel is preparing to depart.",             accent: "#2563eb", tone: "positive" },

@@ -198,6 +198,7 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     trackingId: "OLY-AAA-BBBB",
     currentStatus: "ORDER_CONFIRMED",
     invoiceId: "inv_1",
+    supplierTrackingNumber: "CN-TRACK-1",
     transportMode: "SEA",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -213,6 +214,30 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     expect(res.status).toBe(409);
     expect(res.body.error).toMatch(/Payment must be confirmed/);
     expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("blocks tracking updates until the supplier tracking number is recorded", async () => {
+    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "PENDING_TRACKING_NUMBER", supplierTrackingNumber: null });
+    const app = await buildApp();
+    const res = await request(app).post("/orders/ord_1/status").send({ status: "RECEIVED_FROM_SUPPLIER" });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/tracking number must be added/);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps pre-invoice legacy orders updateable after the rollout", async () => {
+    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, invoiceId: null, supplierTrackingNumber: null });
+    mockDb.query.customersTable.findFirst.mockResolvedValue(null);
+    mockDb.query.businessesTable.findFirst.mockResolvedValue({ ...LOGISTICS_BIZ, plan: "beta", monthlyEmailLimit: 500 });
+    mockDb.insert.mockReturnValue(insertChainPlain() as any);
+    const updated = { ...SEA_ORDER, invoiceId: null, currentStatus: "RECEIVED_FROM_SUPPLIER" };
+    mockDb.transaction.mockImplementation(async (fn: any) => fn({
+      insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_legacy", status: "RECEIVED_FROM_SUPPLIER", createdAt: new Date() }]) })) })),
+      update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [updated]) })) })) })),
+    }));
+    const app = await buildApp();
+    const res = await request(app).post("/orders/ord_1/status").send({ status: "RECEIVED_FROM_SUPPLIER" });
+    expect(res.status).toBe(200);
   });
 
   it("rejects a status outside the order's mode flow (422)", async () => {
@@ -257,7 +282,7 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
   });
 
   it("accepts a valid SEA transition and records a tracking event", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue(SEA_ORDER);
+    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "RECEIVED_FROM_SUPPLIER" });
     mockDb.query.customersTable.findFirst.mockResolvedValue(null);
     mockDb.query.businessesTable.findFirst.mockResolvedValue({
       ...LOGISTICS_BIZ,
@@ -265,9 +290,9 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
       monthlyEmailLimit: 500,
     });
     mockDb.insert.mockReturnValue(insertChainPlain() as any);
-    const updated = { ...SEA_ORDER, currentStatus: "RECEIVED_FROM_SUPPLIER" };
+    const updated = { ...SEA_ORDER, currentStatus: "EXPORT_CUSTOMS_CLEARED" };
     const txInsert = vi.fn(() => ({
-      values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_1", status: "RECEIVED_FROM_SUPPLIER", createdAt: new Date() }]) })),
+      values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_1", status: "EXPORT_CUSTOMS_CLEARED", createdAt: new Date() }]) })),
     }));
     const txUpdate = vi.fn(() => ({
       set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [updated]) })) })),
@@ -278,7 +303,7 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders/ord_1/status")
-      .send({ status: "RECEIVED_FROM_SUPPLIER" });
+      .send({ status: "EXPORT_CUSTOMS_CLEARED" });
     expect(res.status).toBe(200);
     expect(mockDb.transaction).toHaveBeenCalled();
   });

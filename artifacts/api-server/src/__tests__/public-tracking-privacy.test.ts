@@ -6,7 +6,7 @@ const order = {
   id: "o1", businessId: "biz-secret", customerId: "customer-secret",
   invoiceId: "invoice-secret", trackingId: "OLY-ABC-2345",
   orderReference: "ORD-1", supplierTrackingNumber: "COURIER-SECRET",
-  currentStatus: "RECEIVED_FROM_SUPPLIER", transportMode: "AIR",
+  currentStatus: "PENDING_TRACKING_NUMBER", transportMode: "AIR",
   estimatedDeliveryDate: null, createdAt: new Date(), updatedAt: new Date(),
 };
 const events = [{ id:"e1", orderId:"o1", status:"RECEIVED_FROM_SUPPLIER", message:"Cargo received", location:"China", createdBy:"staff-secret", createdAt:new Date() }];
@@ -21,5 +21,6 @@ it("keeps customer, invoice, supplier and staff data out of public tracking", as
     expect(JSON.stringify(res.body)).not.toContain(privateField);
   }
   expect(res.body.trackingId).toBe("OLY-ABC-2345");
-  expect(res.body.currentStatus).toBe("RECEIVED_FROM_SUPPLIER");
+  expect(res.body.currentStatus).toBe("PENDING_TRACKING_NUMBER");
+  expect(res.body.statusLabel).toBe("Pending Tracking Number");
 });

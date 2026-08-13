@@ -686,7 +686,10 @@ export default function OrderDetailPage() {
                 {order.supplier_tracking_number ? (
                   <p className="text-sm font-mono">{order.supplier_tracking_number}</p>
                 ) : (
-                  <div className="space-y-2"><p className="text-sm text-amber-700">Waiting for supplier or courier tracking number</p>{order.transport_mode && <div className="flex gap-2"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Supplier/courier tracking"/><Button size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Save</Button></div>}</div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-amber-700">{order.current_status === "PENDING_TRACKING_NUMBER" ? "Payment confirmed - waiting for the China warehouse to receive the cargo" : "Tracking number entry unlocks after payment confirmation"}</p>
+                    {order.transport_mode && order.current_status === "PENDING_TRACKING_NUMBER" ? <div className="flex gap-2"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Supplier tracking number"/><Button size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Cargo received - save tracking</Button></div> : null}
+                  </div>
                 )}
               </div>
               {order.invoice_id && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link></div>}

@@ -25,9 +25,10 @@ describe("transport modes", () => {
 });
 
 describe("flows", () => {
-  it("SEA flow has 11 stages including vessel stages, in order", () => {
+  it("SEA flow has 12 stages including the tracking-number gate", () => {
     expect(LOGISTICS_STATUS_FLOWS.SEA).toEqual([
       "ORDER_CONFIRMED",
+      "PENDING_TRACKING_NUMBER",
       "RECEIVED_FROM_SUPPLIER",
       "EXPORT_CUSTOMS_CLEARED",
       "LOADED_ONTO_VESSEL",
@@ -41,9 +42,10 @@ describe("flows", () => {
     ]);
   });
 
-  it("AIR flow has 7 stages with generic IN_TRANSIT and no vessel stages", () => {
+  it("AIR flow has 8 stages including the tracking-number gate", () => {
     expect(LOGISTICS_STATUS_FLOWS.AIR).toEqual([
       "ORDER_CONFIRMED",
+      "PENDING_TRACKING_NUMBER",
       "RECEIVED_FROM_SUPPLIER",
       "EXPORT_CUSTOMS_CLEARED",
       "IN_TRANSIT",
@@ -88,7 +90,8 @@ describe("mode validation", () => {
 
 describe("next status + terminal", () => {
   it("suggests the next stage in order", () => {
-    expect(nextLogisticsStatus("SEA", "ORDER_CONFIRMED")).toBe("RECEIVED_FROM_SUPPLIER");
+    expect(nextLogisticsStatus("SEA", "ORDER_CONFIRMED")).toBe("PENDING_TRACKING_NUMBER");
+    expect(nextLogisticsStatus("SEA", "PENDING_TRACKING_NUMBER")).toBe("RECEIVED_FROM_SUPPLIER");
     expect(nextLogisticsStatus("SEA", "VESSEL_ARRIVED")).toBe("IMPORT_CUSTOMS_CLEARANCE");
     expect(nextLogisticsStatus("AIR", "EXPORT_CUSTOMS_CLEARED")).toBe("IN_TRANSIT");
   });

@@ -64,6 +64,7 @@ export const STATUS_VISUALS: Record<string, StatusVisual> = {
 // the shared lib so admin UI, emails, and the public page always agree.
 const LOGISTICS_STATUS_VISUALS: Record<string, Omit<StatusVisual, "label">> = {
   ORDER_CONFIRMED:              { icon: ClipboardList, bg: "bg-sky-50",    border: "border-sky-300",    iconColor: "text-sky-600" },
+  PENDING_TRACKING_NUMBER:      { icon: Package,       bg: "bg-amber-50",  border: "border-amber-300",  iconColor: "text-amber-600" },
   RECEIVED_FROM_SUPPLIER:       { icon: Package,       bg: "bg-violet-50", border: "border-violet-300", iconColor: "text-violet-600" },
   EXPORT_CUSTOMS_CLEARED:       { icon: ShieldCheck,   bg: "bg-teal-50",   border: "border-teal-300",   iconColor: "text-teal-600" },
   LOADED_ONTO_VESSEL:           { icon: Container,     bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
