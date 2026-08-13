@@ -10,10 +10,7 @@ import {
   Building2, Mail, SunMoon, RotateCcw,
   Code2, Copy, Download, Globe, Tag, CreditCard, FileText,
 } from "lucide-react";
-import {
-  BusinessTypeSelector,
-  BUSINESS_TYPES,
-} from "@/components/business-type-selector";
+import { BUSINESS_TYPES } from "@/components/business-type-selector";
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -833,118 +830,19 @@ export default function SettingsPage() {
         {/* One compact card for all brand inputs, plus a single consolidated
             preview - far shorter and calmer than the old stacked sections. */}
         <TabsContent value="identity" className="mt-6 focus-visible:outline-none">
-          <SectionShell
-            icon={Building2}
-            tint={TINTS.blue}
-            title="Brand & Identity"
-            description="Your name, logo, and accent color - how you appear to your team and customers."
-            action={
-              dirty.has("identity") && (
-                <RestoreButton
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      businessName: initial.businessName,
-                      businessTagline: initial.businessTagline,
-                      logoUrl: initial.logoUrl,
-                      faviconUrl: initial.faviconUrl,
-                      primaryColor: initial.primaryColor,
-                    }))
-                  }
-                />
-              )
-            }
-          >
-            <SectionRow
-              label="Business name"
-              hint="Shown in the sidebar and on every customer email."
-              htmlFor="businessName"
-            >
-              <Input
-                id="businessName"
-                value={form.businessName}
-                onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
-                placeholder="Your business name"
-                className="h-11"
-                autoComplete="organization"
-              />
-            </SectionRow>
-
-            <SectionRow
-              label="Tagline"
-              hint="Optional. A short phrase shown under your name."
-              htmlFor="businessTagline"
-            >
-              <Input
-                id="businessTagline"
-                value={form.businessTagline}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, businessTagline: e.target.value.slice(0, 80) }))
-                }
-                placeholder="e.g. Fast, reliable shipping across the EU"
-                className="h-11"
-                maxLength={80}
-              />
-            </SectionRow>
-
-            {/* Logo + favicon side by side to keep the card short. */}
-            <div className="px-4 py-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Logo</Label>
-                <LogoUpload
-                  variant="logo"
-                  businessName={form.businessName}
-                  value={form.logoUrl}
-                  onFile={handleLogoPicked}
-                  onRemove={() => setForm((f) => ({ ...f, logoUrl: "" }))}
-                />
-                <p className="text-xs text-muted-foreground">PNG, SVG, or JPEG.</p>
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)]">
+            <SectionShell icon={Building2} tint={TINTS.blue} title="Brand & Identity" description="The essentials customers and staff see." action={dirty.has("identity") ? <RestoreButton onClick={() => setForm({...initial})} /> : undefined}>
+              <div className="grid gap-4 p-4 sm:grid-cols-2">
+                <div className="space-y-1.5"><Label htmlFor="businessName">Business name</Label><Input id="businessName" value={form.businessName} onChange={(e)=>setForm(f=>({...f,businessName:e.target.value}))} placeholder="Your business name" autoComplete="organization"/><p className="text-xs text-muted-foreground">Used across the app and customer emails.</p></div>
+                <div className="space-y-1.5"><Label htmlFor="businessTagline">Tagline</Label><Input id="businessTagline" value={form.businessTagline} onChange={(e)=>setForm(f=>({...f,businessTagline:e.target.value.slice(0,80)}))} placeholder="Fast, reliable cross-border logistics" maxLength={80}/><p className="text-xs text-muted-foreground">Optional, up to 80 characters.</p></div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Favicon</Label>
-                <LogoUpload
-                  variant="favicon"
-                  businessName={form.businessName}
-                  value={form.faviconUrl}
-                  onFile={handleFaviconPicked}
-                  onRemove={() => setForm((f) => ({ ...f, faviconUrl: "" }))}
-                />
-                <p className="text-xs text-muted-foreground">Square images work best.</p>
+              <div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2">
+                <div className="space-y-1.5"><Label>Logo</Label><LogoUpload variant="logo" businessName={form.businessName} value={form.logoUrl} onFile={handleLogoPicked} onRemove={()=>setForm(f=>({...f,logoUrl:""}))}/></div>
+                <div className="space-y-1.5"><Label>Favicon</Label><LogoUpload variant="favicon" businessName={form.businessName} value={form.faviconUrl} onFile={handleFaviconPicked} onRemove={()=>setForm(f=>({...f,faviconUrl:""}))}/></div>
               </div>
-            </div>
-
-            <SectionRow label="Brand color">
-              <BrandColorPicker
-                value={form.primaryColor}
-                onChange={(hex) => setForm((f) => ({ ...f, primaryColor: hex }))}
-              />
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, primaryColor: DEFAULT_PRIMARY }))}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Reset brand color
-                </button>
-              </div>
-            </SectionRow>
-          </SectionShell>
-
-          {/* Single consolidated preview replaces four stacked inline mockups. */}
-          <div className="mt-6">
-            <BrandIdentityPreview
-              businessName={form.businessName}
-              tagline={form.businessTagline}
-              logoUrl={form.logoUrl}
-              faviconUrl={form.faviconUrl}
-              primaryColor={form.primaryColor}
-            />
-          </div>
-
-          {/* Business Type persists server-side independently of the theme save bar. */}
-          <div className="mt-8">
-            <BusinessTypeSection />
+              <div className="flex flex-wrap items-end gap-3 border-t border-border p-4"><div className="space-y-1.5"><Label htmlFor="brandColor">Brand color</Label><input id="brandColor" type="color" value={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} onChange={(e)=>setForm(f=>({...f,primaryColor:e.target.value}))} className="block h-10 w-14 cursor-pointer rounded-md border border-border bg-background p-1"/></div><div className="min-w-[150px] flex-1 space-y-1.5"><Label htmlFor="brandHex">Hex value</Label><Input id="brandHex" value={form.primaryColor} onChange={(e)=>{const next=normalizeHex(e.target.value);setForm(f=>({...f,primaryColor:next||e.target.value}))}} placeholder="#2b2b2b" className="font-mono uppercase"/></div><Button type="button" variant="outline" size="sm" onClick={()=>setForm(f=>({...f,primaryColor:DEFAULT_PRIMARY}))}><RotateCcw className="mr-1.5 h-3.5 w-3.5"/>Reset</Button></div>
+            </SectionShell>
+            <div className="space-y-5 lg:sticky lg:top-5"><BrandIdentityPreview businessName={form.businessName} tagline={form.businessTagline} logoUrl={form.logoUrl} faviconUrl={form.faviconUrl} primaryColor={normalizeHex(form.primaryColor)||DEFAULT_PRIMARY}/><BusinessTypeSection /></div>
           </div>
         </TabsContent>
 
@@ -1321,16 +1219,14 @@ function BusinessTypeSection() {
         </div>
       ) : (
         <>
-          <SectionRow
-            hint={`Current: ${currentLabel}`}
-          >
-            <BusinessTypeSelector
-              value={selected}
-              onChange={setSelected}
-              compact
-            />
-          </SectionRow>
-
+          <div className="space-y-2 p-4">
+            <Label htmlFor="businessType">Industry</Label>
+            <select id="businessType" value={selected} onChange={(e)=>setSelected(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
+              <option value="" disabled>Select an industry</option>
+              {BUSINESS_TYPES.map((type)=><option key={type.value} value={type.value}>{type.label}</option>)}
+            </select>
+            <p className="text-xs text-muted-foreground">Current: {currentLabel}</p>
+          </div>
           <div className="px-4 py-3 flex items-center justify-end border-t border-border/60">
             <Button
               size="sm"
