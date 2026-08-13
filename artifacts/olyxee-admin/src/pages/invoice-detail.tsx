@@ -91,8 +91,8 @@ export default function InvoiceDetailPage() {
 
       <section className="mt-7"><h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Shipment</h3><div className="grid grid-cols-2 overflow-hidden rounded border border-slate-200 text-[12px]">{([
         ["Cargo", order?.cargoType || order?.description || "Not provided"], ["Transport", order?.transportMode ? `${String(order.transportMode).replaceAll("_", " ")} Freight` : "Not provided"],
-        ["Weight", order?.weight || "Not provided"], ["Order Reference", order?.orderReference || "Not provided"], ["Olyxee Tracking ID", order?.trackingId || "Not assigned"],
-        ["External Tracking Number", order?.supplierTrackingNumber || "Pending tracking number"], ["Origin", order?.origin || "Not provided"], ["Destination", order?.destination || "Not provided"],
+        ["Weight", order?.weight || "Not provided"], ["Order Reference", order?.orderReference || "Not provided"],
+        ["Origin", order?.origin || "Not provided"], ["Destination", order?.destination || "Not provided"],
       ] as [string,string][]).map(([label,value])=><div key={label} className="grid grid-cols-[145px_1fr] border-b border-slate-100 px-3 py-2 odd:border-r"><span className="text-slate-500">{label}</span><span className="font-semibold capitalize">{value}</span></div>)}</div></section>
 
       <section className="mt-7"><h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Charges</h3>

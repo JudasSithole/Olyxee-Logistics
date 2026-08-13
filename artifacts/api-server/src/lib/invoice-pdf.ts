@@ -57,8 +57,8 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("SHIPMENT", 48, 338, { characterSpacing: 1 });
   const shipment = [
     ["Cargo", p.description], ["Transport", p.transportMode ? `${p.transportMode} Freight` : "Not provided"], ["Weight", p.weight || "Not provided"],
-    ["Order Reference", p.orderReference || "Not provided"], ["Olyxee Tracking ID", p.trackingId || "Not assigned"],
-    ["External Tracking Number", p.externalTrackingNumber || "Pending tracking number"], ["Origin", p.origin || "Not provided"], ["Destination", p.destination || "Not provided"],
+    ["Order Reference", p.orderReference || "Not provided"], ["Origin", p.origin || "Not provided"],
+    ["Destination", p.destination || "Not provided"],
   ];
   shipment.forEach(([label, value], index) => { const col=index%2,row=Math.floor(index/2),x=48+col*250,y=355+row*20; doc.fillColor(muted).font("Helvetica").fontSize(7.5).text(label, x, y, {width:90}); doc.fillColor(ink).font("Helvetica-Bold").text(value, x+92, y, {width:150,height:12,ellipsis:true}); });
 
