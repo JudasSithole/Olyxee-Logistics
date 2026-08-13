@@ -18,7 +18,6 @@ export const OrderStatusUpdateStatus = {
   Delivered: 'Delivered',
   Failed_delivery: 'Failed delivery',
   Cancelled: 'Cancelled',
-  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   ORDER_CONFIRMED: 'ORDER_CONFIRMED',
   RECEIVED_FROM_SUPPLIER: 'RECEIVED_FROM_SUPPLIER',
   EXPORT_CUSTOMS_CLEARED: 'EXPORT_CUSTOMS_CLEARED',

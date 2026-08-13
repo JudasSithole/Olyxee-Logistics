@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import {
   Package, Truck, CheckCircle, Mail, AlertTriangle,
   ChevronLeft, ChevronRight, CalendarDays, ArrowRight,
-  Phone, PhoneIncoming, Receipt, BadgeCheck, PackageSearch,
+  Phone, PhoneIncoming,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -366,42 +366,6 @@ export default function DashboardPage() {
             href="/orders?status=Delivered"
           />
           <KpiCard
-            label="Awaiting payment"
-            value={summary.ordersAwaitingPayment}
-            valueClassName={summary.ordersAwaitingPayment > 0 ? "text-amber-600" : undefined}
-            icon={<Receipt className="h-4 w-4 text-amber-500" />}
-            href="/orders?status=AWAITING_PAYMENT"
-          />
-          <KpiCard
-            label="Paid, not activated"
-            value={summary.paidAwaitingActivation}
-            valueClassName={summary.paidAwaitingActivation > 0 ? "text-blue-600" : undefined}
-            icon={<BadgeCheck className="h-4 w-4 text-blue-500" />}
-            href="/orders?status=AWAITING_PAYMENT"
-          />
-          <KpiCard
-            label="Unmatched cargo"
-            value={summary.unmatchedCargo}
-            valueClassName={summary.unmatchedCargo > 0 ? "text-amber-600" : undefined}
-            icon={<PackageSearch className="h-4 w-4 text-amber-500" />}
-            href="/unmatched-cargo"
-          />
-          <KpiCard
-            label="Cargo before payment"
-            value={summary.cargoBeforePayment}
-            valueClassName={summary.cargoBeforePayment > 0 ? "text-red-600" : undefined}
-            icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
-            href="/orders?status=AWAITING_PAYMENT"
-          />
-          {summary.failedInvoiceDeliveries > 0 && (
-            <KpiCard
-              label="Invoice emails failed"
-              value={summary.failedInvoiceDeliveries}
-              valueClassName="text-red-600"
-              icon={<Mail className="h-4 w-4 text-red-500" />}
-            />
-          )}
-          <KpiCard
             label="Emails today"
             value={summary.emailsSentToday}
             icon={<Mail className="h-4 w-4 text-muted-foreground" />}
@@ -421,6 +385,10 @@ export default function DashboardPage() {
             icon={<Phone className="h-4 w-4 text-muted-foreground" />}
             href="/calls"
           />
+          <KpiCard label="Unpaid invoices" value={summary.unpaidInvoices} icon={<AlertTriangle className="h-4 w-4 text-amber-500" />} href="/orders" />
+          <KpiCard label="Awaiting supplier tracking" value={summary.ordersAwaitingSupplierTracking} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
+          <KpiCard label="Air orders" value={summary.airOrders} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
+          <KpiCard label="Sea orders" value={summary.seaOrders} icon={<Truck className="h-4 w-4 text-muted-foreground" />} href="/orders" />
         </div>
       ) : null}
 

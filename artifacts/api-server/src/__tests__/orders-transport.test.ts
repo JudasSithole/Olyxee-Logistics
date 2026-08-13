@@ -13,8 +13,6 @@ const mockDb = {
     ordersTable: { findFirst: vi.fn() },
     customersTable: { findFirst: vi.fn() },
     businessesTable: { findFirst: vi.fn() },
-    invoicesTable: { findFirst: vi.fn() },
-    warehouseReceiptsTable: { findFirst: vi.fn() },
   },
 };
 
@@ -27,14 +25,6 @@ vi.mock("@workspace/db", () => ({
   smsNotificationsTable: {},
   auditLogsTable: {},
   businessesTable: {},
-  invoicesTable: {},
-  warehouseReceiptsTable: {},
-}));
-
-vi.mock("../lib/invoice-email", () => ({
-  sendInvoiceEmail: vi.fn(async () => ({ success: true, messageId: "inv-m1" })),
-  buildInvoiceEmailBody: vi.fn(() => ({ subject: "s", body: "b" })),
-  formatMoneyMinor: (m: number, c: string) => `${c} ${(m / 100).toFixed(2)}`,
 }));
 
 vi.mock("../lib/auth", () => ({
@@ -103,24 +93,40 @@ beforeEach(() => {
 });
 
 describe("POST /orders — transport mode requirements", () => {
-  it("rejects logistics order creation without transportMode", async () => {
+  it("rejects cross-border order creation without transportMode", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
     const app = await buildApp();
     const res = await request(app).post("/orders").send({ customerId: "cust_1" });
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/transportMode is required/);
+    expect(res.body.error).toBe("Invalid input");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: ["transportMode"] })]),
+    );
   });
 
-  it("rejects transportMode for non-logistics businesses", async () => {
+  it("accepts a cross-border mode regardless of legacy industry metadata", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(RETAIL_BIZ);
+    const inserted = {
+      id: "ord_retail_metadata",
+      businessId: "biz_test",
+      customerId: "cust_1",
+      trackingId: "OLY-AAA-BBBB",
+      currentStatus: "ORDER_CONFIRMED",
+      transportMode: "SEA",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockDb.insert
+      .mockReturnValueOnce(insertChain([inserted]) as any)
+      .mockReturnValue(insertChainPlain() as any);
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
       .send({ customerId: "cust_1", transportMode: "SEA" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/only supported for logistics/);
+    expect(res.status).toBe(201);
+    expect(res.body.transportMode).toBe("SEA");
   });
 
   it("rejects invalid transportMode values at the schema layer", async () => {
@@ -133,233 +139,41 @@ describe("POST /orders — transport mode requirements", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects logistics order creation without financials", async () => {
+  it("creates a SEA logistics order starting at ORDER_CONFIRMED", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
-    const app = await buildApp();
-    const res = await request(app)
-      .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/subtotalMinor/);
-  });
-
-  it("creates a SEA logistics order starting at AWAITING_PAYMENT with an invoice", async () => {
-    mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
-    mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
-    const insertedOrder = {
+    const inserted = {
       id: "ord_1",
       businessId: "biz_test",
       customerId: "cust_1",
       trackingId: "OLY-AAA-BBBB",
       orderReference: null,
       description: null,
-      currentStatus: "AWAITING_PAYMENT",
+      currentStatus: "ORDER_CONFIRMED",
       transportMode: "SEA",
       estimatedDeliveryDate: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const insertedInvoice = {
-      id: "inv_1",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      orderId: "ord_1",
-      invoiceNumber: "INV-260812-ABCD",
-      subtotalMinor: 100000,
-      additionalChargesMinor: 5000,
-      totalMinor: 105000,
-      currency: "ZAR",
-      status: "DRAFT",
-      sentAt: null,
-      paidAt: null,
-      dueDate: null,
-      notes: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const txInsert = vi
-      .fn()
-      .mockReturnValueOnce(insertChain([insertedOrder]) as any) // order
-      .mockReturnValueOnce(insertChain([insertedInvoice]) as any) // invoice
+    mockDb.insert
+      .mockReturnValueOnce(insertChain([inserted]) as any) // order insert
       .mockReturnValue(insertChainPlain() as any); // tracking event + audit
-    mockDb.transaction.mockImplementation(async (fn: any) => fn({ insert: txInsert }));
-    // Post-commit invoice send outcome record.
-    mockDb.update.mockReturnValue({
-      set: vi.fn(() => ({
-        where: vi.fn(() => ({
-          returning: vi.fn(async () => [{ ...insertedInvoice, status: "SENT", sentAt: new Date() }]),
-        })),
-      })),
-    } as any);
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({
-        customerId: "cust_1",
-        transportMode: "SEA",
-        subtotalMinor: 100000,
-        additionalChargesMinor: 5000,
-        currency: "ZAR",
-      });
+      .send({ customerId: "cust_1", transportMode: "SEA" });
     expect(res.status).toBe(201);
-    expect(res.body.order.currentStatus).toBe("AWAITING_PAYMENT");
-    expect(res.body.order.transportMode).toBe("SEA");
-    expect(res.body.invoice.status).toBe("SENT");
-    expect(res.body.invoice.totalMinor).toBe(105000);
-    expect(res.body.invoiceEmailStatus).toBe("sent");
+    expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
+    expect(res.body.transportMode).toBe("SEA");
   });
 
-  it("replays idempotent creation instead of duplicating (200)", async () => {
-    mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
-    mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
-    const existing = {
-      id: "ord_1",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      trackingId: "OLY-AAA-BBBB",
-      currentStatus: "AWAITING_PAYMENT",
-      transportMode: "SEA",
-      creationIdempotencyKey: "key-1",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    mockDb.query.ordersTable.findFirst.mockResolvedValue(existing);
-    mockDb.query.invoicesTable.findFirst.mockResolvedValue(null);
-    const app = await buildApp();
-    const res = await request(app)
-      .post("/orders")
-      .send({
-        customerId: "cust_1",
-        transportMode: "SEA",
-        subtotalMinor: 100000,
-        currency: "ZAR",
-        idempotencyKey: "key-1",
-      });
-    expect(res.status).toBe(200);
-    expect(res.body.order.id).toBe("ord_1");
-    expect(mockDb.transaction).not.toHaveBeenCalled();
-  });
-
-  it("creates a non-logistics order with the generic flow, unaffected", async () => {
+  it("requires transport mode even for legacy non-logistics business records", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(RETAIL_BIZ);
-    const inserted = {
-      id: "ord_2",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      trackingId: "OLY-AAA-BBBB",
-      currentStatus: "Order received",
-      transportMode: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const txInsert = vi
-      .fn()
-      .mockReturnValueOnce(insertChain([inserted]) as any)
-      .mockReturnValue(insertChainPlain() as any);
-    mockDb.transaction.mockImplementation(async (fn: any) => fn({ insert: txInsert }));
     const app = await buildApp();
     const res = await request(app).post("/orders").send({ customerId: "cust_1" });
-    expect(res.status).toBe(201);
-    expect(res.body.order.currentStatus).toBe("Order received");
-    expect(res.body.order.transportMode).toBeNull();
-    expect(res.body.invoice).toBeNull();
-  });
-});
-
-describe("POST /orders/:orderId/status — payment gate", () => {
-  it("409s status updates while AWAITING_PAYMENT", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue({
-      id: "ord_1",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      trackingId: "OLY-AAA-BBBB",
-      currentStatus: "AWAITING_PAYMENT",
-      transportMode: "SEA",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const app = await buildApp();
-    const res = await request(app)
-      .post("/orders/ord_1/status")
-      .send({ status: "ORDER_CONFIRMED" });
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/awaiting payment/i);
-  });
-
-  it("422s attempts to set AWAITING_PAYMENT manually", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue({
-      id: "ord_1",
-      businessId: "biz_test",
-      customerId: "cust_1",
-      trackingId: "OLY-AAA-BBBB",
-      currentStatus: "ORDER_CONFIRMED",
-      transportMode: "SEA",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const app = await buildApp();
-    const res = await request(app)
-      .post("/orders/ord_1/status")
-      .send({ status: "AWAITING_PAYMENT" });
-    expect(res.status).toBe(422);
-  });
-});
-
-describe("POST /orders/:orderId/activate", () => {
-  const AWAITING = {
-    id: "ord_1",
-    businessId: "biz_test",
-    customerId: "cust_1",
-    trackingId: "OLY-AAA-BBBB",
-    currentStatus: "AWAITING_PAYMENT",
-    transportMode: "AIR",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  it("409s when the invoice is not PAID", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue(AWAITING);
-    mockDb.query.invoicesTable.findFirst.mockResolvedValue({ id: "inv_1", status: "SENT" });
-    const app = await buildApp();
-    const res = await request(app).post("/orders/ord_1/activate").send({});
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/paid/i);
-  });
-
-  it("activates to the first active status when invoice PAID", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue(AWAITING);
-    mockDb.query.invoicesTable.findFirst.mockResolvedValue({ id: "inv_1", status: "PAID" });
-    const activated = { ...AWAITING, currentStatus: "ORDER_CONFIRMED" };
-    const txUpdate = vi.fn(() => ({
-      set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [activated]) })) })),
-    }));
-    const txInsert = vi.fn(() => ({ values: vi.fn(async () => undefined) }));
-    mockDb.transaction.mockImplementation(async (fn: any) => fn({ update: txUpdate, insert: txInsert }));
-    const app = await buildApp();
-    const res = await request(app).post("/orders/ord_1/activate").send({});
-    expect(res.status).toBe(200);
-    expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
-  });
-
-  it("is idempotent: already-active orders return unchanged (200)", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue({
-      ...AWAITING,
-      currentStatus: "IN_TRANSIT",
-    });
-    const app = await buildApp();
-    const res = await request(app).post("/orders/ord_1/activate").send({});
-    expect(res.status).toBe(200);
-    expect(res.body.currentStatus).toBe("IN_TRANSIT");
-    expect(mockDb.transaction).not.toHaveBeenCalled();
-  });
-
-  it("404s for an unknown order", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue(undefined);
-    const app = await buildApp();
-    const res = await request(app).post("/orders/missing/activate").send({});
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid input");
   });
 });
 

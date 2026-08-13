@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useOrders, useCustomers, useCreateOrder, useCreateCustomer, useBusiness, formatMoneyMinor } from "@/hooks/use-supabase-queries";
+import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,106 +33,16 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
-const EMPTY_FORM = {
-  customerId: "",
-  orderReference: "",
-  description: "",
-  estimatedDeliveryDate: "",
-  transportMode: "",
-  // Logistics MVP fields
-  cargoType: "",
-  serviceRequired: "",
-  origin: "",
-  destination: "",
-  weightKg: "",
-  dimensions: "",
-  subtotal: "",
-  additionalCharges: "",
-  currency: "ZAR",
-  dueDate: "",
-  invoiceNotes: "",
-};
-
-/** Parse a money string like "1234.56" into integer minor units, or null if invalid. */
-function parseMoneyToMinor(v: string): number | null {
-  const trimmed = v.trim();
-  if (!trimmed) return null;
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
-  return Math.round(parseFloat(trimmed) * 100);
-}
-
-function InlineCustomerDialog({ businessId, onCreated }: { businessId: string; onCreated: (c: { id: string; label: string }) => void }) {
+function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", companyName: "" });
-  const createCustomer = useCreateCustomer();
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    createCustomer.mutate(
-      {
-        business_id: businessId,
-        full_name: form.fullName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim() || null,
-        company_name: form.companyName.trim() || null,
-      } as Parameters<typeof createCustomer.mutate>[0],
-      {
-        onSuccess: (c) => {
-          toast.success("Customer created");
-          onCreated({ id: c.id, label: `${c.full_name} - ${c.email}` });
-          setOpen(false);
-          setForm({ fullName: "", email: "", phone: "", companyName: "" });
-        },
-        onError: (err: unknown) =>
-          toast.error(err instanceof Error ? err.message : "Failed to create customer"),
-      },
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="gap-1 text-xs h-9">
-          <Plus className="h-3.5 w-3.5" /> New
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle>New Customer</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="mt-2 space-y-3">
-          <div className="space-y-1.5">
-            <Label>Full name *</Label>
-            <Input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Email *</Label>
-            <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Company</Label>
-              <Input value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={createCustomer.isPending || !form.fullName.trim() || !form.email.trim()}>
-            {createCustomer.isPending ? "Creating..." : "Create Customer"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: () => void; businessId: string; isLogistics: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, orderReference: generateOrderReference() }));
-  const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [form, setForm] = useState(() => ({
+    customerId: "",
+    orderReference: generateOrderReference(),
+    description: "",
+    estimatedDeliveryDate: "",
+    transportMode: "",
+    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+  }));
   const createMutation = useCreateOrder();
   // Server-side customer search so every customer is reachable, not just the
   // most recent page. The picker debounces typing before hitting the API.
@@ -151,83 +61,35 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
 
   React.useEffect(() => {
     if (open) {
-      setForm({ ...EMPTY_FORM, orderReference: generateOrderReference() });
+      setForm({
+        customerId: "",
+        orderReference: generateOrderReference(),
+        description: "",
+        estimatedDeliveryDate: "",
+        transportMode: "",
+        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+      });
       setSelectedCustomer(null);
       setCustomerSearch("");
       setDebouncedSearch("");
-      // A fresh idempotency key per dialog open: retries of the same submit
-      // replay, but a new dialog creates a new order.
-      setIdempotencyKey(crypto.randomUUID());
     }
   }, [open]);
 
-  const subtotalMinor = parseMoneyToMinor(form.subtotal);
-  const chargesMinor = form.additionalCharges.trim() ? parseMoneyToMinor(form.additionalCharges) : 0;
-  const totalMinor = subtotalMinor !== null && chargesMinor !== null ? subtotalMinor + chargesMinor : null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogistics) {
-      if (!form.transportMode) {
-        toast.error("Please select a transport mode");
-        return;
-      }
-      if (subtotalMinor === null) {
-        toast.error("Please enter a valid subtotal (e.g. 1250.00)");
-        return;
-      }
-      if (chargesMinor === null) {
-        toast.error("Additional charges must be a valid amount");
-        return;
-      }
-      if (!/^[A-Za-z]{3}$/.test(form.currency.trim())) {
-        toast.error("Currency must be a 3-letter code (e.g. ZAR, USD)");
-        return;
-      }
+    if (!form.transportMode) {
+      toast.error("Please select a transport mode");
+      return;
     }
     createMutation.mutate(
+      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, cargo_type: form.cargoType || undefined, service_required: form.serviceRequired || undefined, origin: form.origin || undefined, destination: form.destination || undefined, weight: form.weight || undefined, dimensions: form.dimensions || undefined, transport_mode: form.transportMode },
       {
-        business_id: businessId,
-        customer_id: form.customerId,
-        order_reference: form.orderReference || undefined,
-        description: form.description || undefined,
-        estimated_completion: form.estimatedDeliveryDate || undefined,
-        ...(isLogistics && form.transportMode
-          ? {
-              transport_mode: form.transportMode,
-              subtotalMinor: subtotalMinor!,
-              additionalChargesMinor: chargesMinor ?? 0,
-              currency: form.currency.trim().toUpperCase(),
-              cargoType: form.cargoType.trim() || undefined,
-              serviceRequired: form.serviceRequired.trim() || undefined,
-              origin: form.origin.trim() || undefined,
-              destination: form.destination.trim() || undefined,
-              weightKg: form.weightKg.trim() || undefined,
-              dimensions: form.dimensions.trim() || undefined,
-              dueDate: form.dueDate || undefined,
-              invoiceNotes: form.invoiceNotes.trim() || undefined,
-              idempotencyKey,
-            }
-          : {}),
-      },
-      {
-        onSuccess: (data) => {
-          if (isLogistics && data.invoice) {
-            const emailNote =
-              data.invoiceEmailStatus === "sent"
-                ? "invoice emailed to customer"
-                : data.invoiceEmailStatus === "failed"
-                ? "invoice email failed - resend from the order page"
-                : "invoice created";
-            toast.success(`Order created (${data.invoice.invoiceNumber}) - ${emailNote}`);
-          } else {
-            toast.success("Order created - tracking ID auto-generated");
-          }
+        onSuccess: () => {
+          toast.success("Order created - tracking ID auto-generated");
           setOpen(false);
           onSuccess();
         },
-        onError: (err: unknown) =>
-          toast.error(err instanceof Error ? err.message : "Failed to create order"),
+        onError: () => toast.error("Failed to create order"),
       }
     );
   };
@@ -237,22 +99,13 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" /> New Order</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>New Order</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Customer *</Label>
-              <InlineCustomerDialog
-                businessId={businessId}
-                onCreated={(c) => {
-                  setForm(f => ({ ...f, customerId: c.id }));
-                  setSelectedCustomer(c);
-                }}
-              />
-            </div>
+            <Label>Customer *</Label>
             <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -302,7 +155,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               </PopoverContent>
             </Popover>
           </div>
-          {isLogistics && (
+          {(
             <div className="space-y-2">
               <Label>Transport Mode *</Label>
               <Select value={form.transportMode} onValueChange={v => setForm(f => ({ ...f, transportMode: v }))}>
@@ -316,75 +169,7 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
             </div>
           )}
-          {isLogistics && (
-            <>
-              <div className="border-t pt-4 space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financials (invoice is created with the order)</p>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Subtotal *</Label>
-                    <Input inputMode="decimal" placeholder="1250.00" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Extra charges</Label>
-                    <Input inputMode="decimal" placeholder="0.00" value={form.additionalCharges} onChange={e => setForm(f => ({ ...f, additionalCharges: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Currency *</Label>
-                    <Input maxLength={3} placeholder="ZAR" value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value.toUpperCase() }))} className="font-mono uppercase" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm border bg-muted/30 px-3 py-2">
-                  <span className="text-muted-foreground">Invoice total</span>
-                  <span className="font-semibold font-mono">
-                    {totalMinor !== null ? formatMoneyMinor(totalMinor, form.currency.trim().toUpperCase() || null) : "—"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Payment due date</Label>
-                    <Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Invoice notes</Label>
-                    <Input placeholder="e.g. EFT ref OLX-123" value={form.invoiceNotes} onChange={e => setForm(f => ({ ...f, invoiceNotes: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-              <div className="border-t pt-4 space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cargo details (optional)</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Cargo type</Label>
-                    <Input placeholder="e.g. Electronics" value={form.cargoType} onChange={e => setForm(f => ({ ...f, cargoType: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Service required</Label>
-                    <Input placeholder="e.g. Door-to-door" value={form.serviceRequired} onChange={e => setForm(f => ({ ...f, serviceRequired: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Origin</Label>
-                    <Input placeholder="e.g. Guangzhou" value={form.origin} onChange={e => setForm(f => ({ ...f, origin: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Destination</Label>
-                    <Input placeholder="e.g. Johannesburg" value={form.destination} onChange={e => setForm(f => ({ ...f, destination: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Weight (kg)</Label>
-                    <Input inputMode="decimal" placeholder="480" value={form.weightKg} onChange={e => setForm(f => ({ ...f, weightKg: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Dimensions</Label>
-                    <Input placeholder="e.g. 120x80x100 cm" value={form.dimensions} onChange={e => setForm(f => ({ ...f, dimensions: e.target.value }))} />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  The supplier's tracking number is added later, once the supplier ships to the China warehouse.
-                </p>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Origin</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))}/></div><div className="space-y-2"><Label>Destination</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))}/></div><div className="space-y-2"><Label>Cargo type</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))}/></div><div className="space-y-2"><Label>Service required</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))}/></div><div className="space-y-2"><Label>Weight</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))}/></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))}/></div></div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -416,18 +201,14 @@ function CreateOrderDialog({ onSuccess, businessId, isLogistics }: { onSuccess: 
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={3}
-              placeholder={isLogistics
-                ? "e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
-                : "e.g. 3x oak dining chairs, natural finish — gift wrap requested"}
+              placeholder="e.g. 2 pallets electronics, 480 kg, 1.2 CBM — Shanghai to Durban, fragile"
             />
             <p className="text-xs text-muted-foreground">
-              {isLogistics
-                ? "Include contents, quantity, weight/volume, origin → destination, and any handling notes."
-                : "Include the items, quantities, and any special instructions."}
+              Include contents, quantity, weight/volume, origin → destination, and any handling notes.
             </p>
           </div>
           <p className="text-xs text-muted-foreground">A unique tracking ID will be auto-generated for this order.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || (isLogistics && !form.transportMode)}>
+          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode}>
             {createMutation.isPending ? "Creating..." : "Create Order"}
           </Button>
         </form>
@@ -446,8 +227,6 @@ function getInitialStatusFromUrl(): string {
 export default function OrdersPage() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
-  const { data: business } = useBusiness(user?.businessId);
-  const isLogistics = !!business?.business_type?.toLowerCase().includes("logistics");
   const [search, setSearch] = useState("");
   const [querySearch, setQuerySearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFromUrl);
@@ -473,7 +252,7 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total orders</p>
         </div>
-        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} isLogistics={isLogistics} />
+        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
       </div>
 
       <Card>

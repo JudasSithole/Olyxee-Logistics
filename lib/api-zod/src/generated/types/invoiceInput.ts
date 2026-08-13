@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface WarehouseMatchInput {
+export interface InvoiceInput {
   orderId: string;
+  subtotal: string;
+  additionalCharges?: string;
+  currency?: string;
+  dueDate?: Date;
+  notes?: string;
 }

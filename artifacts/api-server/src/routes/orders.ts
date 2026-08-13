@@ -8,8 +8,6 @@ import {
   smsNotificationsTable,
   auditLogsTable,
   businessesTable,
-  invoicesTable,
-  warehouseReceiptsTable,
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
@@ -38,11 +36,7 @@ import {
   isLogisticsTerminal,
   logisticsFlow,
   logisticsStatusLabel,
-  AWAITING_PAYMENT_STATUS,
-  firstActiveLogisticsStatus,
 } from "@workspace/order-statuses";
-import { sendInvoiceEmail } from "../lib/invoice-email";
-import { generateInvoiceNumber, serializeInvoice } from "./invoices";
 
 // A business is "logistics" when its industry (aka business type in the UI)
 // mentions logistics — the UI stores the label "Logistics Company".
@@ -51,6 +45,7 @@ export function isLogisticsBusiness(industry: string | null | undefined): boolea
 }
 
 const router = Router();
+const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
 
 // Where customers go to see their order status. Businesses with their own
 // website link to their own /track page; businesses without one fall back to
@@ -189,82 +184,22 @@ router.post("/orders", requireAuth, async (req, res) => {
       where: eq(businessesTable.id, businessId),
     });
 
-    // Transport-aware flows: LOGISTICS businesses must state how the order
-    // ships (AIR | SEA) so the right status flow applies. Non-logistics
-    // businesses must NOT send a transport mode — it would silently switch
-    // their orders onto the logistics flow.
-    const logistics = isLogisticsBusiness(business?.industry);
-    const transportMode = parse.data.transportMode ?? null;
-    if (logistics && !transportMode) {
+    // The console covers cross-border shipments only. Selecting AIR or SEA
+    // is mandatory so the order enters the correct tracking workflow.
+    const transportMode = parse.data.transportMode;
+    if (!transportMode) {
       res.status(400).json({
-        error: "transportMode is required for logistics businesses (AIR or SEA)",
+        error: "transportMode is required (AIR or SEA)",
       });
       return;
     }
-    if (!logistics && transportMode) {
-      res.status(400).json({
-        error: "transportMode is only supported for logistics businesses",
-      });
-      return;
-    }
-    if (transportMode && !isTransportMode(transportMode)) {
+    if (!isTransportMode(transportMode)) {
       res.status(400).json({ error: "Invalid transportMode" });
       return;
     }
 
-    // Logistics orders start AWAITING_PAYMENT: order + invoice are created
-    // together and shipping only begins after staff confirm payment and
-    // activate the order. Non-logistics orders keep the legacy flow.
-    const initialStatus = transportMode ? AWAITING_PAYMENT_STATUS : "Order received";
-    const initialMessage = transportMode
-      ? "Order created; awaiting payment confirmation before shipping begins"
-      : "Order has been received";
-
-    // Financial validation for logistics orders (integer minor units).
-    const subtotalMinor = parse.data.subtotalMinor ?? null;
-    const additionalChargesMinor = parse.data.additionalChargesMinor ?? 0;
-    const currency = (parse.data.currency ?? "").toUpperCase() || null;
-    if (logistics) {
-      if (subtotalMinor === null || !Number.isInteger(subtotalMinor) || subtotalMinor < 0) {
-        res.status(400).json({
-          error: "subtotalMinor (integer minor units, >= 0) is required for logistics orders",
-        });
-        return;
-      }
-      if (!Number.isInteger(additionalChargesMinor) || additionalChargesMinor < 0) {
-        res.status(400).json({ error: "additionalChargesMinor must be a non-negative integer" });
-        return;
-      }
-      if (!currency || !/^[A-Z]{3}$/.test(currency)) {
-        res.status(400).json({ error: "currency (3-letter ISO code) is required for logistics orders" });
-        return;
-      }
-    }
-    const totalMinor =
-      subtotalMinor !== null ? subtotalMinor + additionalChargesMinor : null;
-
-    // Idempotent creation: a retried request with the same key returns the
-    // original order (and its invoice) instead of creating a duplicate.
-    const idempotencyKey = parse.data.idempotencyKey?.trim() || null;
-    if (idempotencyKey) {
-      const existing = await db.query.ordersTable.findFirst({
-        where: and(
-          eq(ordersTable.businessId, businessId),
-          eq(ordersTable.creationIdempotencyKey, idempotencyKey),
-        ),
-      });
-      if (existing) {
-        const existingInvoice = await db.query.invoicesTable.findFirst({
-          where: eq(invoicesTable.orderId, existing.id),
-        });
-        res.status(200).json({
-          order: serializeOrder(existing),
-          invoice: existingInvoice ? serializeInvoice(existingInvoice) : null,
-          invoiceEmailStatus: null,
-        });
-        return;
-      }
-    }
+    const initialStatus = "ORDER_CONFIRMED";
+    const initialMessage = "Order confirmed and tracking started";
 
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
@@ -277,181 +212,97 @@ router.post("/orders", requireAuth, async (req, res) => {
       business?.name,
       business?.slug,
     );
-    // Order + invoice + initial tracking event + audit are ONE transaction so
-    // a partial failure can never leave an order without its invoice. The
-    // whole transaction retries on 23505 (tracking-ID or invoice-number
-    // collision); an idempotency-key collision means a concurrent duplicate
-    // request won — return that order instead.
     const MAX_TRACKING_ATTEMPTS = 8;
     let inserted: typeof ordersTable.$inferSelect | undefined;
-    let insertedInvoice: typeof invoicesTable.$inferSelect | null = null;
     let lastErr: unknown;
     for (let attempt = 0; attempt < MAX_TRACKING_ATTEMPTS; attempt++) {
       const candidate = generateTrackingId(prefix);
-      const invoiceNumber = generateInvoiceNumber();
       try {
-        const result = await db.transaction(async (tx) => {
-          const rows = await tx
-            .insert(ordersTable)
-            .values({
-              id: generateId(),
-              businessId,
-              customerId: parse.data.customerId,
-              trackingId: candidate,
-              orderReference: parse.data.orderReference ?? null,
-              description: parse.data.description ?? null,
-              currentStatus: initialStatus,
-              transportMode,
-              estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
-              cargoType: parse.data.cargoType ?? null,
-              serviceRequired: parse.data.serviceRequired ?? null,
-              origin: parse.data.origin ?? null,
-              destination: parse.data.destination ?? null,
-              weightKg: parse.data.weightKg ?? null,
-              dimensions: parse.data.dimensions ?? null,
-              subtotalMinor,
-              additionalChargesMinor: subtotalMinor !== null ? additionalChargesMinor : null,
-              totalMinor,
-              currency,
-              creationIdempotencyKey: idempotencyKey,
-            })
-            .returning();
-          const order = rows[0];
-
-          let invoice: typeof invoicesTable.$inferSelect | null = null;
-          if (logistics) {
-            const invRows = await tx
-              .insert(invoicesTable)
-              .values({
-                id: generateId(),
-                businessId,
-                customerId: parse.data.customerId,
-                orderId: order.id,
-                createdBy: userId,
-                invoiceNumber,
-                subtotalMinor: subtotalMinor!,
-                additionalChargesMinor,
-                totalMinor: totalMinor!,
-                currency: currency!,
-                status: "DRAFT",
-                dueDate: parse.data.dueDate ?? null,
-                notes: parse.data.invoiceNotes ?? null,
-              })
-              .returning();
-            invoice = invRows[0];
-          }
-
-          await tx.insert(trackingEventsTable).values({
-            id: generateId(),
-            orderId: order.id,
-            status: initialStatus,
-            message: initialMessage,
-            createdBy: userId,
-          });
-
-          await tx.insert(auditLogsTable).values({
+        const rows = await db
+          .insert(ordersTable)
+          .values({
             id: generateId(),
             businessId,
-            userId,
-            action: "CREATE_ORDER",
-            entityType: "order",
-            entityId: order.id,
-            metadata: {
-              trackingId: order.trackingId,
-              ...(invoice ? { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber } : {}),
-            },
-          });
-
-          return { order, invoice };
-        });
-        inserted = result.order;
-        insertedInvoice = result.invoice;
+            customerId: parse.data.customerId,
+            trackingId: candidate,
+            orderReference: parse.data.orderReference ?? null,
+            description: parse.data.description ?? null,
+            currentStatus: initialStatus,
+            transportMode,
+            cargoType: parse.data.cargoType ?? null,
+            serviceRequired: parse.data.serviceRequired ?? null,
+            origin: parse.data.origin ?? null,
+            destination: parse.data.destination ?? null,
+            weight: parse.data.weight ?? null,
+            dimensions: parse.data.dimensions ?? null,
+            estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
+          })
+          .returning();
+        inserted = rows[0];
         break;
       } catch (err) {
         lastErr = err;
         // Postgres unique_violation. Any other error is real and should bubble.
         const code = (err as { code?: string } | undefined)?.code;
         if (code !== "23505") throw err;
-        // A concurrent request with the same idempotency key won the race:
-        // return its order rather than retrying into the same conflict.
-        if (idempotencyKey) {
-          const existing = await db.query.ordersTable.findFirst({
-            where: and(
-              eq(ordersTable.businessId, businessId),
-              eq(ordersTable.creationIdempotencyKey, idempotencyKey),
-            ),
-          });
-          if (existing) {
-            const existingInvoice = await db.query.invoicesTable.findFirst({
-              where: eq(invoicesTable.orderId, existing.id),
-            });
-            res.status(200).json({
-              order: serializeOrder(existing),
-              invoice: existingInvoice ? serializeInvoice(existingInvoice) : null,
-              invoiceEmailStatus: null,
-            });
-            return;
-          }
-        }
         req.log.warn(
           { attempt, candidate },
-          "Unique collision on order create, retrying",
+          "Tracking ID collision on insert, retrying",
         );
       }
     }
     if (!inserted) {
-      req.log.error({ err: lastErr }, "Exhausted order create attempts");
+      req.log.error({ err: lastErr }, "Exhausted tracking ID attempts");
       res.status(500).json({ error: "Could not allocate tracking ID" });
       return;
     }
     const o = inserted;
+    const trackingId = o.trackingId;
 
-    // Send the invoice email AFTER the transaction committed: a failed email
-    // must never roll back the order/invoice. The outcome is recorded on the
-    // invoice so staff can see failures and retry from the UI.
-    let invoiceEmailStatus: "sent" | "failed" | "skipped" | null = null;
-    if (insertedInvoice && customer) {
-      const sendResult = await sendInvoiceEmail({
-        customerEmail: customer.email,
-        customerName: customer.fullName,
-        businessName: business?.name ?? "Olyxee",
-        supportEmail: business?.supportEmail ?? "",
-        invoiceNumber: insertedInvoice.invoiceNumber,
-        trackingId: o.trackingId,
-        orderReference: o.orderReference,
-        subtotalMinor: insertedInvoice.subtotalMinor,
-        additionalChargesMinor: insertedInvoice.additionalChargesMinor,
-        totalMinor: insertedInvoice.totalMinor,
-        currency: insertedInvoice.currency,
-        dueDate: insertedInvoice.dueDate,
-        notes: insertedInvoice.notes,
-      });
-      invoiceEmailStatus = sendResult.success ? "sent" : "failed";
-      try {
-        const updated = await db
-          .update(invoicesTable)
-          .set(
-            sendResult.success
-              ? { status: "SENT", sentAt: new Date(), lastSendStatus: "sent", lastSendError: null, updatedAt: new Date() }
-              : { lastSendStatus: "failed", lastSendError: sendResult.error ?? "Send failed", updatedAt: new Date() },
-          )
-          .where(eq(invoicesTable.id, insertedInvoice.id))
-          .returning();
-        if (updated[0]) insertedInvoice = updated[0];
-      } catch (recordErr) {
-        req.log.error({ err: recordErr }, "Failed to record invoice send outcome");
-      }
-    }
-
-    res.status(201).json({
-      order: serializeOrder(o),
-      invoice: insertedInvoice ? serializeInvoice(insertedInvoice) : null,
-      invoiceEmailStatus,
+    // Create initial tracking event.
+    await db.insert(trackingEventsTable).values({
+      id: generateId(),
+      orderId: o.id,
+      status: initialStatus,
+      message: initialMessage,
+      createdBy: userId,
     });
+
+    // Audit log
+    await db.insert(auditLogsTable).values({
+      id: generateId(),
+      businessId,
+      userId,
+      action: "CREATE_ORDER",
+      entityType: "order",
+      entityId: o.id,
+      metadata: { trackingId: o.trackingId },
+    });
+
+    res.status(201).json(serializeOrder(o));
   } catch (err) {
     req.log.error({ err }, "Failed to create order");
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+router.post("/orders/:orderId/supplier-tracking", requireAuth, async (req, res) => {
+  try {
+    const parsed = SupplierTrackingBody.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: "Invalid input", details: parsed.error.issues }); return; }
+    const businessId = (req as any).businessId, userId = (req as any).userId;
+    const orderId = String(req.params.orderId);
+    const order = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)) });
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    if (!order.transportMode) { res.status(409).json({ error: "Supplier tracking is only available for air or sea orders" }); return; }
+    const supplierTrackingNumber = parsed.data.supplierTrackingNumber.toUpperCase();
+    const duplicate = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.businessId, businessId), eq(ordersTable.supplierTrackingNumber, supplierTrackingNumber)) });
+    if (duplicate && duplicate.id !== orderId) { res.status(409).json({ error: `Supplier tracking number is already linked to order ${duplicate.orderReference ?? duplicate.id}` }); return; }
+    const now = new Date();
+    const [updated] = await db.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
+    await db.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber } });
+    res.json(serializeOrder(updated));
+  } catch (err) { req.log.error({ err }, "Failed to set supplier tracking number"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // GET /orders/stuck - must be declared BEFORE /orders/:orderId so Express
@@ -464,61 +315,6 @@ router.get("/orders/stuck", requireAuth, async (req, res) => {
     res.json({ data: stuck, total: stuck.length });
   } catch (err) {
     req.log.error({ err }, "Failed to list stuck orders");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /orders/match-search — candidate orders for warehouse cargo matching.
-// Declared BEFORE /orders/:orderId so "match-search" isn't read as an ID.
-router.get("/orders/match-search", requireAuth, async (req, res) => {
-  try {
-    const businessId = (req as any).businessId;
-    const q = String(req.query.q ?? "").trim();
-    if (!q) {
-      res.status(400).json({ error: "Query parameter q is required" });
-      return;
-    }
-    const like = `%${q}%`;
-    const rows = await db
-      .select()
-      .from(ordersTable)
-      .leftJoin(
-        customersTable,
-        and(
-          eq(ordersTable.customerId, customersTable.id),
-          eq(customersTable.businessId, businessId),
-        ),
-      )
-      .where(
-        and(
-          eq(ordersTable.businessId, businessId),
-          or(
-            ilike(ordersTable.trackingId, like),
-            ilike(ordersTable.orderReference, like),
-            ilike(ordersTable.supplierTrackingNumber, like),
-            ilike(customersTable.fullName, like),
-            ilike(customersTable.companyName, like),
-            ilike(customersTable.phone, like),
-            ilike(customersTable.email, like),
-          ),
-        ),
-      )
-      .orderBy(desc(ordersTable.updatedAt))
-      .limit(20);
-
-    res.json(
-      rows.map(({ orders: o, customers: c }) => ({
-        id: o.id,
-        trackingId: o.trackingId,
-        orderReference: o.orderReference,
-        currentStatus: o.currentStatus,
-        transportMode: o.transportMode,
-        supplierTrackingNumber: o.supplierTrackingNumber,
-        customer: c ? serializeCustomer(c) : null,
-      })),
-    );
-  } catch (err) {
-    req.log.error({ err }, "Failed to search orders for matching");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -537,7 +333,7 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
       return;
     }
 
-    const [customer, business, trackingEvents, emailNotifications, invoice, receipts] = await Promise.all([
+    const [customer, business, trackingEvents, emailNotifications] = await Promise.all([
       db.query.customersTable.findFirst({
         where: and(
           eq(customersTable.id, order.customerId),
@@ -555,22 +351,6 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
         .from(emailNotificationsTable)
         .where(eq(emailNotificationsTable.orderId, orderId))
         .orderBy(desc(emailNotificationsTable.createdAt)),
-      db.query.invoicesTable.findFirst({
-        where: and(
-          eq(invoicesTable.orderId, orderId),
-          eq(invoicesTable.businessId, businessId),
-        ),
-      }),
-      db
-        .select()
-        .from(warehouseReceiptsTable)
-        .where(
-          and(
-            eq(warehouseReceiptsTable.orderId, orderId),
-            eq(warehouseReceiptsTable.businessId, businessId),
-          ),
-        )
-        .orderBy(desc(warehouseReceiptsTable.createdAt)),
     ]);
 
     const trackingLink = business
@@ -581,14 +361,6 @@ router.get("/orders/:orderId", requireAuth, async (req, res) => {
       ...serializeOrder(order),
       trackingLink,
       customer: customer ? serializeCustomer(customer) : null,
-      invoice: invoice ? serializeInvoice(invoice) : null,
-      warehouseReceipts: receipts.map((r) => ({
-        ...r,
-        receivedAt: r.receivedAt.toISOString(),
-        matchedAt: r.matchedAt ? r.matchedAt.toISOString() : null,
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-      })),
       trackingEvents: trackingEvents.map((e) => ({
         ...e,
         createdAt: e.createdAt.toISOString(),
@@ -631,21 +403,6 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     // logistics orders) keep the generic flow and must not receive logistics
     // status codes.
     if (order.transportMode) {
-      // Payment gate: an order awaiting payment cannot enter the shipping
-      // workflow. Staff must mark the invoice paid and activate the order.
-      if (order.currentStatus === AWAITING_PAYMENT_STATUS) {
-        res.status(409).json({
-          error:
-            "Order is awaiting payment. Confirm the invoice as paid and activate the order before updating shipping status.",
-        });
-        return;
-      }
-      if (status === AWAITING_PAYMENT_STATUS) {
-        res.status(422).json({
-          error: "AWAITING_PAYMENT cannot be set manually; it is only assigned at order creation",
-        });
-        return;
-      }
       if (isLogisticsTerminal(order.currentStatus)) {
         res.status(409).json({
           error: "Order is already delivered; no further status changes allowed",
@@ -885,92 +642,6 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to update order status");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// POST /orders/:orderId/activate — move a paid order from AWAITING_PAYMENT
-// into the shipping workflow. Backend-enforced: only allowed when the order's
-// invoice is PAID. Idempotent: an already-active order returns 200 unchanged.
-router.post("/orders/:orderId/activate", requireAuth, async (req, res) => {
-  try {
-    const businessId = (req as any).businessId;
-    const userId = (req as any).userId;
-    const orderId = req.params.orderId as string;
-
-    const order = await db.query.ordersTable.findFirst({
-      where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)),
-    });
-    if (!order) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
-    if (order.currentStatus !== AWAITING_PAYMENT_STATUS) {
-      // Idempotent replay: already activated (or a legacy order).
-      res.json(serializeOrder(order));
-      return;
-    }
-    if (!order.transportMode) {
-      res.status(422).json({ error: "Order has no transport mode" });
-      return;
-    }
-    const invoice = await db.query.invoicesTable.findFirst({
-      where: and(eq(invoicesTable.orderId, orderId), eq(invoicesTable.businessId, businessId)),
-    });
-    if (!invoice || invoice.status !== "PAID") {
-      res.status(409).json({
-        error: "Invoice must be marked as paid before the order can be activated",
-      });
-      return;
-    }
-
-    const nextStatus = firstActiveLogisticsStatus(order.transportMode) ?? "ORDER_CONFIRMED";
-    const updated = await db.transaction(async (tx) => {
-      // Guard the transition inside the write so two concurrent activations
-      // can't both fire (the second sees 0 rows and replays idempotently).
-      const rows = await tx
-        .update(ordersTable)
-        .set({ currentStatus: nextStatus, updatedAt: new Date() })
-        .where(
-          and(
-            eq(ordersTable.id, orderId),
-            eq(ordersTable.businessId, businessId),
-            eq(ordersTable.currentStatus, AWAITING_PAYMENT_STATUS),
-          ),
-        )
-        .returning();
-      if (!rows[0]) return null;
-
-      await tx.insert(trackingEventsTable).values({
-        id: generateId(),
-        orderId,
-        status: nextStatus,
-        message: "Payment confirmed; order activated and shipping workflow started",
-        createdBy: userId,
-      });
-      await tx.insert(auditLogsTable).values({
-        id: generateId(),
-        businessId,
-        userId,
-        action: "ACTIVATE_ORDER",
-        entityType: "order",
-        entityId: orderId,
-        metadata: { previousStatus: AWAITING_PAYMENT_STATUS, newStatus: nextStatus, invoiceId: invoice.id },
-      });
-      return rows[0];
-    });
-
-    if (!updated) {
-      // Lost the race with a concurrent activation — return the current row.
-      const fresh = await db.query.ordersTable.findFirst({
-        where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)),
-      });
-      res.json(serializeOrder(fresh ?? order));
-      return;
-    }
-    res.json(serializeOrder(updated));
-  } catch (err) {
-    req.log.error({ err }, "Failed to activate order");
     res.status(500).json({ error: "Internal server error" });
   }
 });

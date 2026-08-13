@@ -15,20 +15,16 @@ export interface Order {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
-  estimatedDeliveryDate?: string;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: Date | null;
   cargoType?: string | null;
   serviceRequired?: string | null;
   origin?: string | null;
   destination?: string | null;
-  weightKg?: string | null;
+  weight?: string | null;
   dimensions?: string | null;
-  subtotalMinor?: number | null;
-  additionalChargesMinor?: number | null;
-  totalMinor?: number | null;
-  currency?: string | null;
-  supplierTrackingNumber?: string | null;
-  supplierTrackingNumberAddedAt?: string | null;
-  chinaWarehouseReceivedAt?: string | null;
+  estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;
 }

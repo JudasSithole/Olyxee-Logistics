@@ -9,5 +9,4 @@
 - [Reaching prod Supabase from Replit](supabase-prod-access.md) — direct db.<ref> host is unreachable here; use aws-1-eu-west-2 pooler:5432, user postgres.<ref>.
 - [Launch-prep foundations](launch-prep-foundations.md) — disabled features gate via @workspace/plans featureFlags; route gates must be path-scoped; billing is env-gated TEST-only; validate paid amount + swallow only 23505.
 - [Logistics transport flows](logistics-transport-flows.md) — AIR/SEA flows live in lib/order-statuses/logistics.ts; every order-mutating endpoint must enforce mode rules; labels never leak enum codes.
-- [Logistics MVP workflow](logistics-mvp-gaps.md) — no quotes, no payment gateway; invoice + manual AWAITING_PAYMENT gate + late nullable supplier tracking number are the agreed design.
 - [Plan catalog](plan-catalog.md) — plan IDs (free/pro/business) are frozen (DB enum + codegen); display names differ (Growth/Scale); edit name/price/features in @workspace/plans, never hardcode plan names in JSX.

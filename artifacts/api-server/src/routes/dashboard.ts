@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable, warehouseReceiptsTable } from "@workspace/db";
+import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable } from "@workspace/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -9,7 +9,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
 
-    const [orders, emailsToday, escalatedToday, callsToday, invoices, unmatchedReceipts] = await Promise.all([
+    const [orders, emailsToday, escalatedToday, callsToday, invoices] = await Promise.all([
       db.select().from(ordersTable).where(eq(ordersTable.businessId, businessId)),
       db
         .select()
@@ -45,15 +45,6 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
           ),
         ),
       db.select().from(invoicesTable).where(eq(invoicesTable.businessId, businessId)),
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(warehouseReceiptsTable)
-        .where(
-          and(
-            eq(warehouseReceiptsTable.businessId, businessId),
-            eq(warehouseReceiptsTable.status, "UNMATCHED"),
-          ),
-        ),
     ]);
 
     const activeStatuses = [
@@ -74,27 +65,11 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       emailsSentToday: emailsToday.length,
       escalatedCallsToday: escalatedToday[0]?.count ?? 0,
       callsToday: callsToday[0]?.count ?? 0,
-      // Logistics MVP workflow metrics.
-      ordersAwaitingPayment: orders.filter((o) => o.currentStatus === "AWAITING_PAYMENT").length,
-      // Invoice PAID but the order hasn't been activated yet.
-      paidAwaitingActivation: invoices.filter(
-        (inv) =>
-          inv.status === "PAID" &&
-          orders.some((o) => o.id === inv.orderId && o.currentStatus === "AWAITING_PAYMENT"),
-      ).length,
-      failedInvoiceDeliveries: invoices.filter((inv) => inv.lastSendStatus === "failed").length,
-      // Active (paid/confirmed) orders still waiting for cargo at the China warehouse.
-      awaitingWarehouseReceipt: orders.filter(
-        (o) => o.currentStatus === "ORDER_CONFIRMED" && !o.supplierTrackingNumber,
-      ).length,
-      unmatchedCargo: unmatchedReceipts[0]?.count ?? 0,
-      // Cargo arrived before payment was confirmed.
-      cargoBeforePayment: orders.filter(
-        (o) => o.currentStatus === "AWAITING_PAYMENT" && !!o.chinaWarehouseReceivedAt,
-      ).length,
-      airShipments: orders.filter((o) => o.transportMode === "AIR").length,
-      seaShipments: orders.filter((o) => o.transportMode === "SEA").length,
-      stuckShipments: 0,
+      unpaidInvoices: invoices.filter((i) => i.status === "sent" || i.status === "overdue").length,
+      ordersAwaitingSupplierTracking: orders.filter((o) => !!o.transportMode && !o.supplierTrackingNumber).length,
+      airOrders: orders.filter((o) => o.transportMode === "AIR").length,
+      seaOrders: orders.filter((o) => o.transportMode === "SEA").length,
+      delayedOrStuckShipments: orders.filter((o) => o.currentStatus === "Delayed" || o.currentStatus === "DELAYED").length,
     };
 
     res.json(summary);

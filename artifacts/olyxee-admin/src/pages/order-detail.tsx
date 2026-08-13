@@ -6,12 +6,6 @@ import {
   useUpdateOrderStatus,
   useSendNotification,
   useNotificationLogs,
-  useSendInvoice,
-  useMarkInvoicePaid,
-  useActivateOrder,
-  formatMoneyMinor,
-  type ApiInvoice,
-  type ApiWarehouseReceipt,
 } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,14 +39,11 @@ import {
   User,
   Send,
   CheckCircle2,
-  Receipt,
-  Warehouse,
-  BadgeCheck,
-  AlertTriangle,
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { apiFetch } from "@/lib/api";
 import {
   statusChoices,
   isTerminal,
@@ -206,208 +197,6 @@ function StatusPicker({
   );
 }
 
-// ─── Invoice & payment card ───────────────────────────────────────────────────
-
-const INVOICE_STATUS_STYLES: Record<string, string> = {
-  DRAFT: "text-muted-foreground border-border bg-muted",
-  SENT: "text-blue-700 border-blue-200 bg-blue-50",
-  PAID: "text-green-700 border-green-200 bg-green-50",
-  CANCELLED: "text-red-700 border-red-200 bg-red-50",
-};
-
-function InvoicePaymentCard({
-  invoice,
-  orderId,
-  awaitingPayment,
-  onChanged,
-}: {
-  invoice: ApiInvoice;
-  orderId: string;
-  awaitingPayment: boolean;
-  onChanged: () => void;
-}) {
-  const sendMutation = useSendInvoice();
-  const markPaidMutation = useMarkInvoicePaid();
-  const activateMutation = useActivateOrder();
-  const { user } = useAuth();
-
-  const isPaid = invoice.status === "PAID";
-
-  return (
-    <Card className="border-2 border-foreground/10">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Receipt className="h-4 w-4" /> Invoice & Payment
-          </CardTitle>
-          <span className={`text-xs font-semibold px-2 py-0.5 border ${INVOICE_STATUS_STYLES[invoice.status] ?? ""}`}>
-            {invoice.status}
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase font-medium">Invoice</p>
-            <Link href={`/invoices/${invoice.id}`} className="font-mono font-semibold text-primary hover:underline">
-              {invoice.invoiceNumber}
-            </Link>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground uppercase font-medium">Total</p>
-            <p className="font-semibold font-mono">{formatMoneyMinor(invoice.totalMinor, invoice.currency)}</p>
-          </div>
-          {invoice.dueDate && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">Due</p>
-              <p>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</p>
-            </div>
-          )}
-          {invoice.paidAt && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">Paid</p>
-              <p>{format(new Date(invoice.paidAt), "MMM d, yyyy · HH:mm")}</p>
-            </div>
-          )}
-        </div>
-
-        {invoice.lastSendStatus === "failed" && !isPaid && (
-          <div className="flex items-start gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-            <span>The invoice email failed to deliver. Resend it below.</span>
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/invoices/${invoice.id}`}>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" /> View invoice
-            </Button>
-          </Link>
-          {!isPaid && invoice.status !== "CANCELLED" && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                disabled={sendMutation.isPending}
-                onClick={() =>
-                  sendMutation.mutate(
-                    { invoiceId: invoice.id, orderId },
-                    {
-                      onSuccess: (d) => {
-                        d.success ? toast.success("Invoice emailed to customer") : toast.error(d.message || "Invoice email failed");
-                        onChanged();
-                      },
-                      onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to send invoice"),
-                    },
-                  )
-                }
-              >
-                <Send className="h-3.5 w-3.5" />
-                {invoice.status === "SENT" ? "Resend invoice" : "Send invoice"}
-              </Button>
-              <Button
-                size="sm"
-                className="gap-1.5"
-                disabled={markPaidMutation.isPending}
-                onClick={() =>
-                  markPaidMutation.mutate(
-                    { invoiceId: invoice.id, orderId },
-                    {
-                      onSuccess: () => {
-                        toast.success("Invoice marked as paid");
-                        onChanged();
-                      },
-                      onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to mark paid"),
-                    },
-                  )
-                }
-              >
-                <BadgeCheck className="h-3.5 w-3.5" /> Mark as paid
-              </Button>
-            </>
-          )}
-          {isPaid && awaitingPayment && (
-            <Button
-              size="sm"
-              className="gap-1.5"
-              disabled={activateMutation.isPending}
-              onClick={() =>
-                activateMutation.mutate(
-                  { orderId, businessId: user?.businessId },
-                  {
-                    onSuccess: () => {
-                      toast.success("Order activated - shipping workflow started");
-                      onChanged();
-                    },
-                    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to activate order"),
-                  },
-                )
-              }
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {activateMutation.isPending ? "Activating..." : "Activate order"}
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Warehouse card ───────────────────────────────────────────────────────────
-
-function WarehouseCard({
-  order,
-  receipts,
-}: {
-  order: { supplier_tracking_number?: string | null; china_warehouse_received_at?: string | null };
-  receipts: ApiWarehouseReceipt[];
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <Warehouse className="h-3.5 w-3.5" />
-          China Warehouse
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 text-xs">
-        <div>
-          <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier tracking no.</p>
-          {order.supplier_tracking_number ? (
-            <p className="text-sm font-mono font-semibold">{order.supplier_tracking_number}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">Waiting for cargo - set when the warehouse receipt is matched.</p>
-          )}
-        </div>
-        {order.china_warehouse_received_at && (
-          <div>
-            <p className="text-muted-foreground uppercase font-medium mb-0.5">Received at warehouse</p>
-            <p className="text-sm">{format(new Date(order.china_warehouse_received_at), "MMM d, yyyy · HH:mm")}</p>
-          </div>
-        )}
-        {receipts.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-muted-foreground uppercase font-medium">Receipts</p>
-            {receipts.map((r) => (
-              <div key={r.id} className="border bg-muted/20 px-2.5 py-1.5">
-                <p className="font-mono font-medium text-sm">{r.supplierTrackingNumber}</p>
-                <p className="text-muted-foreground">
-                  {format(new Date(r.receivedAt), "MMM d, yyyy")}
-                  {r.packageCount ? ` · ${r.packageCount} pkg` : ""}
-                  {r.weightKg ? ` · ${r.weightKg} kg` : ""}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrderDetailPage() {
@@ -423,6 +212,29 @@ export default function OrderDetailPage() {
     status: "",
     location: "",
   });
+  const [supplierTracking, setSupplierTracking] = useState("");
+  const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
+  const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
+  const [invoiceCharges, setInvoiceCharges] = useState("0");
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const saveSupplierTracking = async () => {
+    if (!id || !supplierTracking.trim()) return;
+    setSavingSupplierTracking(true);
+    try {
+      await apiFetch(`/api/orders/${id}/supplier-tracking`, { method: "POST", body: { supplierTrackingNumber: supplierTracking } });
+      toast.success("Supplier tracking number saved"); setSupplierTracking(""); refetch();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save supplier tracking number"); }
+    finally { setSavingSupplierTracking(false); }
+  };
+  const createInvoice = async () => {
+    if (!id || !invoiceSubtotal.trim()) return;
+    setCreatingInvoice(true);
+    try {
+      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR" } });
+      toast.success("Draft invoice generated"); refetch(); window.location.href = `${import.meta.env.BASE_URL}invoices/${invoice.id}`;
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to generate invoice"); }
+    finally { setCreatingInvoice(false); }
+  };
 
   const handleStatusUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -512,9 +324,6 @@ export default function OrderDetailPage() {
   }
 
   const lastEvent = (order.tracking_events as any[])?.[0];
-  const invoice = (order as unknown as { invoice: ApiInvoice | null }).invoice;
-  const receipts = ((order as unknown as { warehouse_receipts?: ApiWarehouseReceipt[] }).warehouse_receipts ?? []);
-  const awaitingPayment = order.current_status === "AWAITING_PAYMENT";
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -583,16 +392,6 @@ export default function OrderDetailPage() {
         {/* Left - main actions */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Invoice & payment */}
-          {invoice && (
-            <InvoicePaymentCard
-              invoice={invoice}
-              orderId={id!}
-              awaitingPayment={awaitingPayment}
-              onChanged={() => refetch()}
-            />
-          )}
-
           {/* Operations Control */}
           <Card className="border-2 border-foreground/10">
             <CardHeader className="pb-4">
@@ -602,17 +401,7 @@ export default function OrderDetailPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {awaitingPayment ? (
-                <div className="border border-amber-200 bg-amber-50 px-4 py-8 text-center space-y-1">
-                  <Receipt className="h-8 w-8 mx-auto text-amber-500/60 mb-2" />
-                  <p className="text-sm font-medium text-amber-900">Awaiting payment</p>
-                  <p className="text-xs text-amber-800">
-                    {invoice?.status === "PAID"
-                      ? "Invoice is paid - activate the order above to start the shipping workflow."
-                      : "Status updates are locked until the invoice is paid and the order is activated."}
-                  </p>
-                </div>
-              ) : (order.transport_mode
+              {(order.transport_mode
                 ? isLogisticsTerminal(order.current_status)
                 : isTerminal(order.current_status)) ? (
                 <div className="border bg-muted/40 px-4 py-8 text-center space-y-1">
@@ -857,14 +646,6 @@ export default function OrderDetailPage() {
             </Card>
           )}
 
-          {/* Warehouse (logistics orders only) */}
-          {order.transport_mode && (
-            <WarehouseCard
-              order={order as unknown as { supplier_tracking_number?: string | null; china_warehouse_received_at?: string | null }}
-              receipts={receipts}
-            />
-          )}
-
           {/* Order details */}
           <Card>
             <CardHeader className="pb-3">
@@ -874,28 +655,6 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
-              {(order as any).origin || (order as any).destination ? (
-                <div>
-                  <p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p>
-                  <p className="text-sm">{(order as any).origin ?? "?"} → {(order as any).destination ?? "?"}</p>
-                </div>
-              ) : null}
-              {(order as any).cargo_type && (
-                <div>
-                  <p className="text-muted-foreground uppercase font-medium mb-0.5">Cargo</p>
-                  <p className="text-sm">
-                    {(order as any).cargo_type}
-                    {(order as any).weight_kg ? ` · ${(order as any).weight_kg} kg` : ""}
-                    {(order as any).dimensions ? ` · ${(order as any).dimensions}` : ""}
-                  </p>
-                </div>
-              )}
-              {(order as any).service_required && (
-                <div>
-                  <p className="text-muted-foreground uppercase font-medium mb-0.5">Service</p>
-                  <p className="text-sm">{(order as any).service_required}</p>
-                </div>
-              )}
               {order.description && (
                 <div>
                   <p className="text-muted-foreground uppercase font-medium mb-0.5">Description</p>
@@ -918,6 +677,21 @@ export default function OrderDetailPage() {
                   <p className="text-sm font-mono">{order.order_reference}</p>
                 </div>
               )}
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Public tracking ID</p>
+                <p className="text-sm font-mono">{order.tracking_id}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier tracking number</p>
+                {order.supplier_tracking_number ? (
+                  <p className="text-sm font-mono">{order.supplier_tracking_number}</p>
+                ) : (
+                  <div className="space-y-2"><p className="text-sm text-amber-700">Waiting for supplier or courier tracking number</p>{order.transport_mode && <div className="flex gap-2"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Supplier/courier tracking"/><Button size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Save</Button></div>}</div>
+                )}
+              </div>
+              {order.invoice_id && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link></div>}
+              {!order.invoice_id && <div className="space-y-2 border-t pt-3"><p className="text-muted-foreground uppercase font-medium">Generate invoice</p><Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>Generate draft invoice</Button></div>}
+              {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>
           </Card>
         </div>

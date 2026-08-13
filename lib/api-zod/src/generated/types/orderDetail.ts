@@ -7,9 +7,7 @@
  */
 import type { Customer } from './customer';
 import type { EmailNotification } from './emailNotification';
-import type { Invoice } from './invoice';
 import type { TrackingEvent } from './trackingEvent';
-import type { WarehouseReceipt } from './warehouseReceipt';
 
 export interface OrderDetail {
   id: string;
@@ -20,26 +18,20 @@ export interface OrderDetail {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
-  estimatedDeliveryDate?: string;
-  trackingLink: string;
-  createdAt: string;
-  updatedAt: string;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: Date | null;
   cargoType?: string | null;
   serviceRequired?: string | null;
   origin?: string | null;
   destination?: string | null;
-  weightKg?: string | null;
+  weight?: string | null;
   dimensions?: string | null;
-  subtotalMinor?: number | null;
-  additionalChargesMinor?: number | null;
-  totalMinor?: number | null;
-  currency?: string | null;
-  supplierTrackingNumber?: string | null;
-  supplierTrackingNumberAddedAt?: string | null;
-  chinaWarehouseReceivedAt?: string | null;
+  estimatedDeliveryDate?: string;
+  trackingLink: string;
+  createdAt: string;
+  updatedAt: string;
   customer: Customer;
-  invoice?: Invoice | null;
-  warehouseReceipts?: WarehouseReceipt[];
   trackingEvents: TrackingEvent[];
   emailNotifications: EmailNotification[];
 }

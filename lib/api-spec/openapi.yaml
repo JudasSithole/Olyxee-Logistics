@@ -24,6 +24,8 @@ tags:
     description: Dashboard summary data
   - name: audit
     description: Audit log
+  - name: invoices
+    description: Manual invoice lifecycle management
 paths:
   /healthz:
     get:
@@ -37,6 +39,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: API and database readiness check
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: A required dependency is unavailable
 
   /business:
     get:
@@ -355,17 +372,11 @@ paths:
               $ref: "#/components/schemas/OrderInput"
       responses:
         "201":
-          description: Order created (with its invoice for logistics businesses)
+          description: Order created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OrderInvoiceResult"
-        "200":
-          description: Idempotent replay — the order for this idempotency key already exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OrderInvoiceResult"
+                $ref: "#/components/schemas/Order"
 
   /orders/{orderId}:
     get:
@@ -437,205 +448,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EmailResendResult"
-
-  /orders/{orderId}/activate:
-    post:
-      operationId: activateOrder
-      tags: [orders]
-      summary: Activate a paid order (AWAITING_PAYMENT -> first active status)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Order activated (idempotent — already-active orders return the current order)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-        "404":
-          description: Order not found
-        "409":
-          description: Invoice not paid yet
-
-  /orders/match-search:
-    get:
-      operationId: searchOrdersForMatching
-      tags: [warehouse]
-      summary: Search orders for warehouse cargo matching
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Matches order reference, tracking ID, customer name, company, phone, or email.
-      responses:
-        "200":
-          description: Candidate orders
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OrderMatchCandidate"
-
-  /invoices/{invoiceId}:
-    get:
-      operationId: getInvoice
-      tags: [invoices]
-      summary: Get an invoice with its customer and order
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: invoiceId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Invoice detail
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InvoiceDetail"
-        "404":
-          description: Invoice not found
-
-  /invoices/{invoiceId}/send:
-    post:
-      operationId: sendInvoice
-      tags: [invoices]
-      summary: Send (or retry sending) the invoice email to the customer
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: invoiceId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Send attempted; success flag and updated invoice returned
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InvoiceSendResult"
-        "404":
-          description: Invoice not found
-
-  /invoices/{invoiceId}/mark-paid:
-    post:
-      operationId: markInvoicePaid
-      tags: [invoices]
-      summary: Manually confirm the invoice was paid (records staff + timestamp; idempotent)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: invoiceId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Invoice marked paid (or already paid)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Invoice"
-        "404":
-          description: Invoice not found
-        "409":
-          description: Invoice is cancelled
-
-  /warehouse-receipts:
-    get:
-      operationId: listWarehouseReceipts
-      tags: [warehouse]
-      summary: List warehouse receipts for the current business
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [UNMATCHED, MATCHED]
-        - name: orderId
-          in: query
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Warehouse receipts
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WarehouseReceipt"
-    post:
-      operationId: createWarehouseReceipt
-      tags: [warehouse]
-      summary: Record cargo received at the China warehouse (optionally matched immediately)
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/WarehouseReceiptInput"
-      responses:
-        "201":
-          description: Receipt recorded
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WarehouseMatchResult"
-        "409":
-          description: Supplier tracking number already assigned in this business
-
-  /warehouse-receipts/{receiptId}/match:
-    post:
-      operationId: matchWarehouseReceipt
-      tags: [warehouse]
-      summary: Link an unmatched receipt to an order
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: receiptId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/WarehouseMatchInput"
-      responses:
-        "200":
-          description: Receipt matched to the order
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WarehouseMatchResult"
-        "404":
-          description: Receipt or order not found
-        "409":
-          description: Receipt already matched or duplicate supplier tracking number
 
   /orders/{orderId}/tracking-events:
     get:
@@ -884,8 +696,70 @@ paths:
         "401":
           description: Invalid signature
 
+  /orders/{orderId}/supplier-tracking:
+    post:
+      operationId: setSupplierTrackingNumber
+      tags: [orders]
+      summary: Add or replace the supplier or courier tracking number on a cross-border order
+      parameters: [{ in: path, name: orderId, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupplierTrackingInput" }
+      responses:
+        "200": { description: Supplier tracking number recorded }
+        "409": { description: Tracking number belongs to another order in the tenant }
+
+  /invoices:
+    get:
+      operationId: listInvoices
+      tags: [invoices]
+      responses: { "200": { description: Paginated invoices } }
+    post:
+      operationId: createInvoice
+      tags: [invoices]
+      summary: Generate a draft invoice for an existing cross-border order
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/InvoiceInput" } } }
+      responses: { "201": { description: Invoice created } }
+  /invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      tags: [invoices]
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice details } }
+  /invoices/{invoiceId}/send:
+    post:
+      operationId: sendInvoice
+      tags: [invoices]
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice marked sent } }
+  /invoices/{invoiceId}/pay:
+    post:
+      operationId: markInvoicePaid
+      tags: [invoices]
+      summary: Manually confirm invoice payment
+      parameters: [{ in: path, name: invoiceId, required: true, schema: { type: string } }]
+      responses: { "200": { description: Invoice marked paid } }
 components:
   schemas:
+    SupplierTrackingInput:
+      type: object
+      required: [supplierTrackingNumber]
+      properties:
+        supplierTrackingNumber: { type: string }
+    InvoiceInput:
+      type: object
+      required: [orderId, subtotal]
+      properties:
+        orderId: { type: string }
+        subtotal: { type: string }
+        additionalCharges: { type: string, default: "0" }
+        currency: { type: string, default: ZAR }
+        dueDate: { type: string, format: date-time }
+        notes: { type: string }
     HealthStatus:
       type: object
       properties:
@@ -1044,24 +918,11 @@ components:
           type: integer
         callsToday:
           type: integer
-        ordersAwaitingPayment:
-          type: integer
-        paidAwaitingActivation:
-          type: integer
-        failedInvoiceDeliveries:
-          type: integer
-        awaitingWarehouseReceipt:
-          type: integer
-        unmatchedCargo:
-          type: integer
-        cargoBeforePayment:
-          type: integer
-        airShipments:
-          type: integer
-        seaShipments:
-          type: integer
-        stuckShipments:
-          type: integer
+        unpaidInvoices: { type: integer }
+        ordersAwaitingSupplierTracking: { type: integer }
+        airOrders: { type: integer }
+        seaOrders: { type: integer }
+        delayedOrStuckShipments: { type: integer }
       required:
         - totalOrders
         - activeDeliveries
@@ -1115,8 +976,6 @@ components:
           nullable: true
         lastUpdated:
           type: string
-        businessName:
-          type: string
         events:
           type: array
           items:
@@ -1140,7 +999,6 @@ components:
         - status
         - statusLabel
         - lastUpdated
-        - businessName
         - events
 
     StatusCount:
@@ -1250,47 +1108,17 @@ components:
         transportMode:
           type: string
           nullable: true
+        invoiceId: { type: string, nullable: true }
+        supplierTrackingNumber: { type: string, nullable: true }
+        supplierTrackingNumberAddedAt: { type: string, format: date-time, nullable: true }
+        cargoType: { type: string, nullable: true }
+        serviceRequired: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        destination: { type: string, nullable: true }
+        weight: { type: string, nullable: true }
+        dimensions: { type: string, nullable: true }
         estimatedDeliveryDate:
           type: string
-        cargoType:
-          type: string
-          nullable: true
-        serviceRequired:
-          type: string
-          nullable: true
-        origin:
-          type: string
-          nullable: true
-        destination:
-          type: string
-          nullable: true
-        weightKg:
-          type: string
-          nullable: true
-        dimensions:
-          type: string
-          nullable: true
-        subtotalMinor:
-          type: integer
-          nullable: true
-        additionalChargesMinor:
-          type: integer
-          nullable: true
-        totalMinor:
-          type: integer
-          nullable: true
-        currency:
-          type: string
-          nullable: true
-        supplierTrackingNumber:
-          type: string
-          nullable: true
-        supplierTrackingNumberAddedAt:
-          type: string
-          nullable: true
-        chinaWarehouseReceivedAt:
-          type: string
-          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -1354,6 +1182,15 @@ components:
         transportMode:
           type: string
           nullable: true
+        invoiceId: { type: string, nullable: true }
+        supplierTrackingNumber: { type: string, nullable: true }
+        supplierTrackingNumberAddedAt: { type: string, format: date-time, nullable: true }
+        cargoType: { type: string, nullable: true }
+        serviceRequired: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        destination: { type: string, nullable: true }
+        weight: { type: string, nullable: true }
+        dimensions: { type: string, nullable: true }
         estimatedDeliveryDate:
           type: string
         trackingLink:
@@ -1362,54 +1199,8 @@ components:
           type: string
         updatedAt:
           type: string
-        cargoType:
-          type: string
-          nullable: true
-        serviceRequired:
-          type: string
-          nullable: true
-        origin:
-          type: string
-          nullable: true
-        destination:
-          type: string
-          nullable: true
-        weightKg:
-          type: string
-          nullable: true
-        dimensions:
-          type: string
-          nullable: true
-        subtotalMinor:
-          type: integer
-          nullable: true
-        additionalChargesMinor:
-          type: integer
-          nullable: true
-        totalMinor:
-          type: integer
-          nullable: true
-        currency:
-          type: string
-          nullable: true
-        supplierTrackingNumber:
-          type: string
-          nullable: true
-        supplierTrackingNumberAddedAt:
-          type: string
-          nullable: true
-        chinaWarehouseReceivedAt:
-          type: string
-          nullable: true
         customer:
           $ref: "#/components/schemas/Customer"
-        invoice:
-          $ref: "#/components/schemas/Invoice"
-          nullable: true
-        warehouseReceipts:
-          type: array
-          items:
-            $ref: "#/components/schemas/WarehouseReceipt"
         trackingEvents:
           type: array
           items:
@@ -1447,278 +1238,16 @@ components:
           enum:
             - AIR
             - SEA
-          description: Required for LOGISTICS businesses; rejected otherwise.
-        cargoType:
-          type: string
-        serviceRequired:
-          type: string
-        origin:
-          type: string
-        destination:
-          type: string
-        weightKg:
-          type: string
-        dimensions:
-          type: string
-        subtotalMinor:
-          type: integer
-          minimum: 0
-          description: Agreed price in integer minor units (e.g. cents). Required for logistics orders.
-        additionalChargesMinor:
-          type: integer
-          minimum: 0
-          default: 0
-        currency:
-          type: string
-          minLength: 3
-          maxLength: 3
-          description: ISO 4217 code, e.g. ZAR, USD. Required for logistics orders.
-        dueDate:
-          type: string
-          description: Optional invoice due date (YYYY-MM-DD).
-        invoiceNotes:
-          type: string
-        idempotencyKey:
-          type: string
-          maxLength: 100
-          description: Client-generated key; retries with the same key return the original order instead of creating a duplicate.
+          description: Required cross-border transport workflow.
+        cargoType: { type: string }
+        serviceRequired: { type: string }
+        origin: { type: string }
+        destination: { type: string }
+        weight: { type: string }
+        dimensions: { type: string }
       required:
         - customerId
-
-    OrderInvoiceResult:
-      type: object
-      description: Result of creating a logistics order together with its invoice.
-      properties:
-        order:
-          $ref: "#/components/schemas/Order"
-        invoice:
-          $ref: "#/components/schemas/Invoice"
-          nullable: true
-        invoiceEmailStatus:
-          type: string
-          enum: [sent, failed, skipped]
-          nullable: true
-      required:
-        - order
-
-    Invoice:
-      type: object
-      properties:
-        id:
-          type: string
-        businessId:
-          type: string
-        customerId:
-          type: string
-        orderId:
-          type: string
-        createdBy:
-          type: string
-          nullable: true
-        invoiceNumber:
-          type: string
-        subtotalMinor:
-          type: integer
-        additionalChargesMinor:
-          type: integer
-        totalMinor:
-          type: integer
-        currency:
-          type: string
-        status:
-          type: string
-          enum: [DRAFT, SENT, PAID, CANCELLED]
-        sentAt:
-          type: string
-          nullable: true
-        lastSendStatus:
-          type: string
-          nullable: true
-        lastSendError:
-          type: string
-          nullable: true
-        paidAt:
-          type: string
-          nullable: true
-        paidConfirmedBy:
-          type: string
-          nullable: true
-        dueDate:
-          type: string
-          nullable: true
-        notes:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required:
-        - id
-        - businessId
-        - customerId
-        - orderId
-        - invoiceNumber
-        - subtotalMinor
-        - additionalChargesMinor
-        - totalMinor
-        - currency
-        - status
-        - createdAt
-        - updatedAt
-
-    InvoiceDetail:
-      allOf:
-        - $ref: "#/components/schemas/Invoice"
-        - type: object
-          properties:
-            customer:
-              $ref: "#/components/schemas/Customer"
-            order:
-              $ref: "#/components/schemas/Order"
-
-    InvoiceSendResult:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        invoice:
-          $ref: "#/components/schemas/Invoice"
-      required:
-        - success
-        - message
-        - invoice
-
-    WarehouseReceipt:
-      type: object
-      properties:
-        id:
-          type: string
-        businessId:
-          type: string
-        supplierTrackingNumber:
-          type: string
-        orderId:
-          type: string
-          nullable: true
-        status:
-          type: string
-          enum: [UNMATCHED, MATCHED]
-        receivedAt:
-          type: string
-        packageCount:
-          type: integer
-          nullable: true
-        weightKg:
-          type: string
-          nullable: true
-        notes:
-          type: string
-          nullable: true
-        photoUrl:
-          type: string
-          nullable: true
-        createdBy:
-          type: string
-          nullable: true
-        matchedBy:
-          type: string
-          nullable: true
-        matchedAt:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required:
-        - id
-        - businessId
-        - supplierTrackingNumber
-        - status
-        - receivedAt
-        - createdAt
-        - updatedAt
-
-    WarehouseReceiptInput:
-      type: object
-      properties:
-        supplierTrackingNumber:
-          type: string
-          minLength: 1
-          maxLength: 120
-        orderId:
-          type: string
-          description: Optional; when given, the receipt is matched to this order immediately.
-        receivedAt:
-          type: string
-          description: When the cargo arrived at the China warehouse (ISO timestamp). Defaults to now.
-        packageCount:
-          type: integer
-          minimum: 1
-        weightKg:
-          type: string
-        notes:
-          type: string
-        photoUrl:
-          type: string
-      required:
-        - supplierTrackingNumber
-
-    WarehouseMatchInput:
-      type: object
-      properties:
-        orderId:
-          type: string
-      required:
-        - orderId
-
-    WarehouseMatchResult:
-      type: object
-      properties:
-        receipt:
-          $ref: "#/components/schemas/WarehouseReceipt"
-        order:
-          $ref: "#/components/schemas/Order"
-        statusAdvanced:
-          type: boolean
-          description: True when the order moved to RECEIVED_FROM_SUPPLIER as part of the match.
-        paymentBlocked:
-          type: boolean
-          description: True when cargo was linked but the order is still awaiting payment.
-      required:
-        - receipt
-        - order
-        - statusAdvanced
-        - paymentBlocked
-
-    OrderMatchCandidate:
-      type: object
-      properties:
-        id:
-          type: string
-        trackingId:
-          type: string
-        orderReference:
-          type: string
-          nullable: true
-        currentStatus:
-          type: string
-        transportMode:
-          type: string
-          nullable: true
-        supplierTrackingNumber:
-          type: string
-          nullable: true
-        customer:
-          $ref: "#/components/schemas/Customer"
-          nullable: true
-      required:
-        - id
-        - trackingId
-        - currentStatus
+        - transportMode
 
     OrderStatusUpdate:
       type: object
@@ -1734,7 +1263,6 @@ components:
             - Delivered
             - Failed delivery
             - Cancelled
-            - AWAITING_PAYMENT
             - ORDER_CONFIRMED
             - RECEIVED_FROM_SUPPLIER
             - EXPORT_CUSTOMS_CLEARED

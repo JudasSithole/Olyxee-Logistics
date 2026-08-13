@@ -7,7 +7,7 @@
  */
 
 /**
- * Required for LOGISTICS businesses; rejected otherwise.
+ * Required cross-border transport workflow.
  */
 export type OrderInputTransportMode = typeof OrderInputTransportMode[keyof typeof OrderInputTransportMode];
 

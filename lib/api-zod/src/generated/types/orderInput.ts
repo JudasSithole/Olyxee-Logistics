@@ -12,33 +12,12 @@ export interface OrderInput {
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
-  /** Required for LOGISTICS businesses; rejected otherwise. */
-  transportMode?: OrderInputTransportMode;
+  /** Required cross-border transport workflow. */
+  transportMode: OrderInputTransportMode;
   cargoType?: string;
   serviceRequired?: string;
   origin?: string;
   destination?: string;
-  weightKg?: string;
+  weight?: string;
   dimensions?: string;
-  /**
-     * Agreed price in integer minor units (e.g. cents). Required for logistics orders.
-     * @minimum 0
-     */
-  subtotalMinor?: number;
-  /** @minimum 0 */
-  additionalChargesMinor?: number;
-  /**
-     * ISO 4217 code, e.g. ZAR, USD. Required for logistics orders.
-     * @minLength 3
-     * @maxLength 3
-     */
-  currency?: string;
-  /** Optional invoice due date (YYYY-MM-DD). */
-  dueDate?: string;
-  invoiceNotes?: string;
-  /**
-     * Client-generated key; retries with the same key return the original order instead of creating a duplicate.
-     * @maxLength 100
-     */
-  idempotencyKey?: string;
 }

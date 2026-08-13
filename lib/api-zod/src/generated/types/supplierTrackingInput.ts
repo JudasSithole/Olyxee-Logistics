@@ -5,10 +5,7 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
-import type { Invoice } from './invoice';
 
-export interface InvoiceSendResult {
-  success: boolean;
-  message: string;
-  invoice: Invoice;
+export interface SupplierTrackingInput {
+  supplierTrackingNumber: string;
 }

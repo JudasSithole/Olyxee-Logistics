@@ -5,6 +5,19 @@
  * Olyxee Enterprise Logistics Admin API
  * OpenAPI spec version: 0.1.0
  */
+export interface SupplierTrackingInput {
+  supplierTrackingNumber: string;
+}
+
+export interface InvoiceInput {
+  orderId: string;
+  subtotal: string;
+  additionalCharges?: string;
+  currency?: string;
+  dueDate?: string;
+  notes?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -95,15 +108,11 @@ export interface DashboardSummary {
   emailsSentToday: number;
   escalatedCallsToday: number;
   callsToday: number;
-  ordersAwaitingPayment?: number;
-  paidAwaitingActivation?: number;
-  failedInvoiceDeliveries?: number;
-  awaitingWarehouseReceipt?: number;
-  unmatchedCargo?: number;
-  cargoBeforePayment?: number;
-  airShipments?: number;
-  seaShipments?: number;
-  stuckShipments?: number;
+  unpaidInvoices?: number;
+  ordersAwaitingSupplierTracking?: number;
+  airOrders?: number;
+  seaOrders?: number;
+  delayedOrStuckShipments?: number;
 }
 
 export interface PublicTrackingEvent {
@@ -138,7 +147,6 @@ export interface PublicTracking {
   transportModeLabel?: string | null;
   estimatedDeliveryDate?: string | null;
   lastUpdated: string;
-  businessName: string;
   events: PublicTrackingEvent[];
   /** Transport-aware checklist for logistics orders (completed/current/upcoming). */
   flow?: PublicTrackingFlowItem[];
@@ -192,20 +200,16 @@ export interface Order {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
-  estimatedDeliveryDate?: string;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
   cargoType?: string | null;
   serviceRequired?: string | null;
   origin?: string | null;
   destination?: string | null;
-  weightKg?: string | null;
+  weight?: string | null;
   dimensions?: string | null;
-  subtotalMinor?: number | null;
-  additionalChargesMinor?: number | null;
-  totalMinor?: number | null;
-  currency?: string | null;
-  supplierTrackingNumber?: string | null;
-  supplierTrackingNumberAddedAt?: string | null;
-  chinaWarehouseReceivedAt?: string | null;
+  estimatedDeliveryDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -220,65 +224,6 @@ export interface OrderWithCustomer {
   createdAt: string;
   updatedAt: string;
   customer: Customer;
-}
-
-export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
-
-
-export const InvoiceStatus = {
-  DRAFT: 'DRAFT',
-  SENT: 'SENT',
-  PAID: 'PAID',
-  CANCELLED: 'CANCELLED',
-} as const;
-
-export interface Invoice {
-  id: string;
-  businessId: string;
-  customerId: string;
-  orderId: string;
-  createdBy?: string | null;
-  invoiceNumber: string;
-  subtotalMinor: number;
-  additionalChargesMinor: number;
-  totalMinor: number;
-  currency: string;
-  status: InvoiceStatus;
-  sentAt?: string | null;
-  lastSendStatus?: string | null;
-  lastSendError?: string | null;
-  paidAt?: string | null;
-  paidConfirmedBy?: string | null;
-  dueDate?: string | null;
-  notes?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type WarehouseReceiptStatus = typeof WarehouseReceiptStatus[keyof typeof WarehouseReceiptStatus];
-
-
-export const WarehouseReceiptStatus = {
-  UNMATCHED: 'UNMATCHED',
-  MATCHED: 'MATCHED',
-} as const;
-
-export interface WarehouseReceipt {
-  id: string;
-  businessId: string;
-  supplierTrackingNumber: string;
-  orderId?: string | null;
-  status: WarehouseReceiptStatus;
-  receivedAt: string;
-  packageCount?: number | null;
-  weightKg?: string | null;
-  notes?: string | null;
-  photoUrl?: string | null;
-  createdBy?: string | null;
-  matchedBy?: string | null;
-  matchedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface TrackingEvent {
@@ -321,32 +266,26 @@ export interface OrderDetail {
   description?: string;
   currentStatus: string;
   transportMode?: string | null;
-  estimatedDeliveryDate?: string;
-  trackingLink: string;
-  createdAt: string;
-  updatedAt: string;
+  invoiceId?: string | null;
+  supplierTrackingNumber?: string | null;
+  supplierTrackingNumberAddedAt?: string | null;
   cargoType?: string | null;
   serviceRequired?: string | null;
   origin?: string | null;
   destination?: string | null;
-  weightKg?: string | null;
+  weight?: string | null;
   dimensions?: string | null;
-  subtotalMinor?: number | null;
-  additionalChargesMinor?: number | null;
-  totalMinor?: number | null;
-  currency?: string | null;
-  supplierTrackingNumber?: string | null;
-  supplierTrackingNumberAddedAt?: string | null;
-  chinaWarehouseReceivedAt?: string | null;
+  estimatedDeliveryDate?: string;
+  trackingLink: string;
+  createdAt: string;
+  updatedAt: string;
   customer: Customer;
-  invoice?: Invoice | null;
-  warehouseReceipts?: WarehouseReceipt[];
   trackingEvents: TrackingEvent[];
   emailNotifications: EmailNotification[];
 }
 
 /**
- * Required for LOGISTICS businesses; rejected otherwise.
+ * Required cross-border transport workflow.
  */
 export type OrderInputTransportMode = typeof OrderInputTransportMode[keyof typeof OrderInputTransportMode];
 
@@ -361,104 +300,14 @@ export interface OrderInput {
   orderReference?: string;
   description?: string;
   estimatedDeliveryDate?: string;
-  /** Required for LOGISTICS businesses; rejected otherwise. */
-  transportMode?: OrderInputTransportMode;
+  /** Required cross-border transport workflow. */
+  transportMode: OrderInputTransportMode;
   cargoType?: string;
   serviceRequired?: string;
   origin?: string;
   destination?: string;
-  weightKg?: string;
+  weight?: string;
   dimensions?: string;
-  /**
-     * Agreed price in integer minor units (e.g. cents). Required for logistics orders.
-     * @minimum 0
-     */
-  subtotalMinor?: number;
-  /** @minimum 0 */
-  additionalChargesMinor?: number;
-  /**
-     * ISO 4217 code, e.g. ZAR, USD. Required for logistics orders.
-     * @minLength 3
-     * @maxLength 3
-     */
-  currency?: string;
-  /** Optional invoice due date (YYYY-MM-DD). */
-  dueDate?: string;
-  invoiceNotes?: string;
-  /**
-     * Client-generated key; retries with the same key return the original order instead of creating a duplicate.
-     * @maxLength 100
-     */
-  idempotencyKey?: string;
-}
-
-export type OrderInvoiceResultInvoiceEmailStatus = typeof OrderInvoiceResultInvoiceEmailStatus[keyof typeof OrderInvoiceResultInvoiceEmailStatus] | null;
-
-
-export const OrderInvoiceResultInvoiceEmailStatus = {
-  sent: 'sent',
-  failed: 'failed',
-  skipped: 'skipped',
-} as const;
-
-/**
- * Result of creating a logistics order together with its invoice.
- */
-export interface OrderInvoiceResult {
-  order: Order;
-  invoice?: Invoice | null;
-  invoiceEmailStatus?: OrderInvoiceResultInvoiceEmailStatus;
-}
-
-export type InvoiceDetail = Invoice & {
-  customer?: Customer;
-  order?: Order;
-};
-
-export interface InvoiceSendResult {
-  success: boolean;
-  message: string;
-  invoice: Invoice;
-}
-
-export interface WarehouseReceiptInput {
-  /**
-     * @minLength 1
-     * @maxLength 120
-     */
-  supplierTrackingNumber: string;
-  /** Optional; when given, the receipt is matched to this order immediately. */
-  orderId?: string;
-  /** When the cargo arrived at the China warehouse (ISO timestamp). Defaults to now. */
-  receivedAt?: string;
-  /** @minimum 1 */
-  packageCount?: number;
-  weightKg?: string;
-  notes?: string;
-  photoUrl?: string;
-}
-
-export interface WarehouseMatchInput {
-  orderId: string;
-}
-
-export interface WarehouseMatchResult {
-  receipt: WarehouseReceipt;
-  order: Order;
-  /** True when the order moved to RECEIVED_FROM_SUPPLIER as part of the match. */
-  statusAdvanced: boolean;
-  /** True when cargo was linked but the order is still awaiting payment. */
-  paymentBlocked: boolean;
-}
-
-export interface OrderMatchCandidate {
-  id: string;
-  trackingId: string;
-  orderReference?: string | null;
-  currentStatus: string;
-  transportMode?: string | null;
-  supplierTrackingNumber?: string | null;
-  customer?: Customer | null;
 }
 
 export type OrderStatusUpdateStatus = typeof OrderStatusUpdateStatus[keyof typeof OrderStatusUpdateStatus];
@@ -473,7 +322,6 @@ export const OrderStatusUpdateStatus = {
   Delivered: 'Delivered',
   Failed_delivery: 'Failed delivery',
   Cancelled: 'Cancelled',
-  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   ORDER_CONFIRMED: 'ORDER_CONFIRMED',
   RECEIVED_FROM_SUPPLIER: 'RECEIVED_FROM_SUPPLIER',
   EXPORT_CUSTOMS_CLEARED: 'EXPORT_CUSTOMS_CLEARED',
@@ -703,26 +551,6 @@ customerId?: string;
 page?: number;
 limit?: number;
 };
-
-export type SearchOrdersForMatchingParams = {
-/**
- * Matches order reference, tracking ID, customer name, company, phone, or email.
- */
-q: string;
-};
-
-export type ListWarehouseReceiptsParams = {
-status?: ListWarehouseReceiptsStatus;
-orderId?: string;
-};
-
-export type ListWarehouseReceiptsStatus = typeof ListWarehouseReceiptsStatus[keyof typeof ListWarehouseReceiptsStatus];
-
-
-export const ListWarehouseReceiptsStatus = {
-  UNMATCHED: 'UNMATCHED',
-  MATCHED: 'MATCHED',
-} as const;
 
 export type ListAuditLogsParams = {
 entityType?: string;

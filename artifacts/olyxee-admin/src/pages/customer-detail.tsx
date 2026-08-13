@@ -13,6 +13,8 @@ import { ArrowLeft, Edit, Package, Mail, Phone, Building, MapPin, UserX } from "
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 const AVATAR = `${import.meta.env.BASE_URL}avatar-placeholder.png`;
 
@@ -23,6 +25,7 @@ export default function CustomerDetailPage() {
   const updateMutation = useUpdateCustomer();
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", company_name: "", address: "" });
+  const invoices = useQuery({ queryKey: ["customer-invoices", id], queryFn: () => apiFetch<{data:any[]}>("/api/invoices", { query: { customerId: id } }), enabled: !!id });
 
   const openEdit = () => {
     if (customer) {
@@ -166,6 +169,10 @@ export default function CustomerDetailPage() {
             <span className="text-muted-foreground">total orders</span>
           </CardContent>
         </Card>
+      </div>
+
+      <div>
+        <Card><CardHeader><CardTitle className="text-base">Invoices</CardTitle></CardHeader><CardContent className="space-y-2">{invoices.data?.data.length ? invoices.data.data.map(i => <div key={i.id} className="flex justify-between border-b py-2 text-sm"><Link className="underline" href={`/invoices/${i.id}`}>{i.invoiceNumber}</Link><span className="capitalize">{i.status}</span></div>) : <p className="text-sm text-muted-foreground">No invoices.</p>}</CardContent></Card>
       </div>
 
       {/* Orders table */}
