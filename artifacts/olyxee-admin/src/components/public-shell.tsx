@@ -1,6 +1,5 @@
 import { FC, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 
 const TABS = [
   { href: "/pricing", label: "Pricing" },
@@ -17,11 +16,7 @@ export const PublicShell: FC<{ children: ReactNode }> = ({ children }) => {
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center" data-testid="link-home">
-            <img
-              src={orderLoopLogo}
-              alt="Order Loop"
-              className="h-8 w-auto object-contain sm:h-9"
-            />
+            <span className="text-lg font-bold tracking-tight">Olyxee Logistics</span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1">
             {TABS.map((t) => (

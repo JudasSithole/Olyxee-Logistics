@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Bot, Route, Sparkles, BarChart3, Mail, Phone, Check, User, ChevronDown, MapPin, Loader2 } from "lucide-react";
 import defaultIcon from "@assets/Courier_Loop_Orange_Icon_1779935120486.png";
 import navLogo from "@assets/1_1780016152275.png";
-import orderLoopLogo from "@assets/Order-Loop_trans_1781656242217.png";
 import heroPhoto from "@assets/image_1780017592401.png";
 import heroCollect from "@assets/image_1783705927988.png";
 import notifyTracking from "@assets/image_1783706089743.png";
@@ -416,7 +415,7 @@ const UPCOMING: UpcomingItem[] = [
     tag: "Q4 · 2026",
     icon: Route,
     title: "Route optimizer",
-    body: "Drag a day's worth of orders onto the map and Order Loop builds the fastest multi-stop route for every team member - accounting for traffic, time windows, and vehicle load.",
+    body: "Drag a day's worth of orders onto the map and Olyxee Logistics builds the fastest multi-stop route for every team member - accounting for traffic, time windows, and vehicle load.",
     bullets: ["Multi-stop sequencing", "Live traffic & ETA recalc", "Driver mobile handoff"],
     accent: "from-sky-400 to-indigo-500",
   },
@@ -525,11 +524,7 @@ const Landing: FC = () => {
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-white/80 border-b border-neutral-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img
-              src={orderLoopLogo}
-              alt="Order Loop"
-              className="h-8 sm:h-10 w-auto object-contain"
-            />
+            <span className="text-lg font-bold tracking-tight sm:text-xl">Olyxee Logistics</span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1">
             <Link href="/pricing" className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
@@ -961,14 +956,10 @@ export const SiteFooter: FC = () => (
         {/* Brand */}
         <div className="col-span-2 md:col-span-5">
           <Link href="/" className="inline-flex items-center">
-            <img
-              src={orderLoopLogo}
-              alt="Order Loop"
-              className="h-9 w-auto object-contain"
-            />
+            <span className="text-xl font-bold tracking-tight">Olyxee Logistics</span>
           </Link>
           <p className="mt-5 text-sm text-neutral-600 leading-relaxed max-w-sm">
-            Order Loop is the order-tracking and customer-notification layer
+            Olyxee Logistics is the order-tracking and customer-notification layer
             for businesses and operations teams - from confirmed to delivered, in one loop.
           </p>
           <Link
@@ -1073,7 +1064,7 @@ export const SiteFooter: FC = () => (
       {/* Divider + bottom row */}
       <div className="mt-14 pt-6 border-t border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400">
-          © {new Date().getFullYear()} ORDER LOOP · ALL RIGHTS RESERVED
+          © {new Date().getFullYear()} OLYXEE LOGISTICS · ALL RIGHTS RESERVED
         </p>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-x-6 gap-y-2">
           <a

@@ -217,6 +217,9 @@ export default function OrderDetailPage() {
   const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
   const [invoiceCharges, setInvoiceCharges] = useState("0");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
+  const paymentConfirmed = !order?.invoice_id || invoiceStatus === "paid";
+  const shipmentUpdatesUnlocked = paymentConfirmed && (!order?.transport_mode || !!order?.supplier_tracking_number);
   const saveSupplierTracking = async () => {
     if (!id || !supplierTracking.trim()) return;
     setSavingSupplierTracking(true);
@@ -401,7 +404,20 @@ export default function OrderDetailPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {(order.transport_mode
+              {!paymentConfirmed ? (
+                <div className="border-2 border-amber-300 bg-amber-50 px-4 py-5 space-y-3">
+                  <div>
+                    <p className="font-semibold text-amber-950">Invoice has not been paid</p>
+                    <p className="mt-1 text-sm text-amber-800">Confirm payment from the linked invoice before shipment status updates can begin.</p>
+                  </div>
+                  {order.invoice_id ? <Link href={`/invoices/${order.invoice_id}`}><Button>View invoice and confirm payment</Button></Link> : null}
+                </div>
+              ) : !shipmentUpdatesUnlocked ? (
+                <div className="border bg-muted/40 px-4 py-6 text-center">
+                  <p className="text-sm font-semibold">Payment confirmed</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Shipment updates unlock after the China warehouse records the internal supplier tracking number.</p>
+                </div>
+              ) : (order.transport_mode
                 ? isLogisticsTerminal(order.current_status)
                 : isTerminal(order.current_status)) ? (
                 <div className="border bg-muted/40 px-4 py-8 text-center space-y-1">
@@ -692,7 +708,7 @@ export default function OrderDetailPage() {
                   </div>
                 )}
               </div>
-              {order.invoice_id && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link></div>}
+              {order.invoice_id && <div className="space-y-1"><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid - manually confirmed" : "Unpaid - confirmation required"}</p></div>}
               {!order.invoice_id && <div className="space-y-2 border-t pt-3"><p className="text-muted-foreground uppercase font-medium">Generate invoice</p><Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>Generate draft invoice</Button></div>}
               {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>

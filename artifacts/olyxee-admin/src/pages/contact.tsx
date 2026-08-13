@@ -21,7 +21,7 @@ const ContactPage: FC = () => {
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-white/80 border-b border-neutral-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img src={navLogo} alt="Courier Loop" className="h-7 sm:h-9 w-auto object-contain" />
+            <img src={navLogo} alt="Olyxee Logistics" className="h-7 sm:h-9 w-auto object-contain" />
           </Link>
           <Link href="/login" className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
             Sign in
@@ -37,7 +37,7 @@ const ContactPage: FC = () => {
               Let's talk <em className="text-orange-500 italic">logistics.</em>
             </h1>
             <p className="text-lg text-neutral-600 leading-relaxed max-w-md mb-10">
-              Whether you're shipping ten orders a day or ten thousand, we'd love to hear how your team works and where Courier Loop can help.
+              Whether you're shipping ten orders a day or ten thousand, we'd love to hear how your team works and where Olyxee Logistics can help.
             </p>
 
             <div className="space-y-5">

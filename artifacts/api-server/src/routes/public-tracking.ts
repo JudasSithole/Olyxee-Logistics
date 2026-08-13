@@ -95,10 +95,16 @@ router.get("/public/track/:trackingId", async (req, res) => {
     // render the ✓ / ● / ○ timeline. Legacy orders (transportMode null) keep
     // the original generic payload untouched.
     const mode = order.transportMode;
-    const flowStatuses = mode ? logisticsFlow(mode) : null;
+    // PENDING_TRACKING_NUMBER is an internal China-warehouse handoff. It is
+    // never exposed to customers in the current status, flow, or event list.
+    const internalFlow = mode ? logisticsFlow(mode) : null;
+    const flowStatuses = internalFlow?.filter((status) => status !== "PENDING_TRACKING_NUMBER") ?? null;
+    const publicCurrentStatus = order.currentStatus === "PENDING_TRACKING_NUMBER"
+      ? "ORDER_CONFIRMED"
+      : order.currentStatus;
     let flow: { status: string; label: string; state: string }[] | undefined;
     if (flowStatuses) {
-      const idx = flowStatuses.indexOf(order.currentStatus);
+      const idx = flowStatuses.indexOf(publicCurrentStatus);
       flow = flowStatuses.map((s, i) => ({
         status: s,
         label: logisticsStatusLabel(s),
@@ -108,10 +114,10 @@ router.get("/public/track/:trackingId", async (req, res) => {
     }
 
     const currentStatus = flowStatuses
-      ? order.currentStatus
+      ? publicCurrentStatus
       : publicStatusFor(order.currentStatus);
     const currentStatusLabel = flowStatuses
-      ? logisticsStatusLabel(order.currentStatus)
+      ? logisticsStatusLabel(publicCurrentStatus)
       : order.currentStatus && order.currentStatus.trim().length > 0
         ? order.currentStatus
         : STATUS_DISPLAY[publicStatusFor(order.currentStatus)] ?? "Pending";
@@ -136,7 +142,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
       ...(flow ? { flow } : {}),
       estimatedDeliveryDate: order.estimatedDeliveryDate ?? null,
       lastUpdated: order.updatedAt.toISOString(),
-      events: events.map((e) => {
+      events: events.filter((e) => e.status !== "PENDING_TRACKING_NUMBER").map((e) => {
         const status = flowStatuses ? e.status : publicStatusFor(e.status);
         const label = flowStatuses
           ? logisticsStatusLabel(e.status)

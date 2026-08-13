@@ -405,7 +405,9 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   const safeLogo=/^(https?:\/\/|data:image\/(png|jpeg|jpg|webp);base64,)/i.test(p.logoUrl||"")?p.logoUrl||"":"";
   const emailHtml=safeLogo?html.replace('<td valign="top">',`<td valign="top"><img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:70px;margin:0 0 16px;object-fit:contain">`):html;
   try{
-    const result=await resend.emails.send({from:`${p.businessName.replace(/["\\]/g," ")} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} - payment required`,html:emailHtml,text,replyTo:p.supportEmail});
+    const { buildInvoicePdf } = await import("./invoice-pdf");
+    const pdf = await buildInvoicePdf(p);
+    const result=await resend.emails.send({from:`${p.businessName.replace(/["\\]/g," ")} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} - payment required`,html:emailHtml,text,replyTo:p.supportEmail,attachments:[{filename:`${p.invoiceNumber}.pdf`,content:pdf}]});
     if(result.error)return {success:false,error:result.error.message};
     return {success:true,messageId:result.data?.id};
   }catch{return {success:false,error:"Failed to send invoice email"};}

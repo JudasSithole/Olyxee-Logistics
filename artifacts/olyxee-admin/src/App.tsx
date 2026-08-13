@@ -213,7 +213,7 @@ function AppRoutes() {
 
 // Tells the theme whether tenant branding (favicon + tab title) should be
 // active. It only switches on once the user is authenticated, so logged-out
-// visitors always see our Courier Loop favicon.
+// visitors always see our Olyxee Logistics favicon.
 function BrandingSync() {
   const { status } = useAuth();
   const { setBrandingActive } = useTheme();
