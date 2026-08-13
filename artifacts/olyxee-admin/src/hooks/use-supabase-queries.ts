@@ -353,6 +353,7 @@ export function useUpdateBusiness() {
       if (updates.email_signature !== undefined) body.emailSignature = updates.email_signature;
       if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
       if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
+      if (updates.business_logo_url !== undefined) body.businessLogoUrl = updates.business_logo_url;
       if (updates.onboarding_completed !== undefined) body.onboardingCompleted = updates.onboarding_completed;
 
       const data = await apiFetch<ApiBusiness>("/api/business", {

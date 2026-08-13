@@ -78,6 +78,7 @@ export const UpdateBusinessBody = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "businessLogoUrl": zod.string().nullish(),
   "onboardingCompleted": zod.boolean().optional()
 })
 
@@ -380,11 +381,11 @@ export const CreateOrderBody = zod.object({
   "description": zod.string().optional(),
   "estimatedDeliveryDate": zod.string().optional(),
   "transportMode": zod.enum(['AIR', 'SEA']).describe('Required cross-border transport workflow.'),
-  "cargoType": zod.string().optional(),
-  "serviceRequired": zod.string().optional(),
+  "cargoType": zod.string().min(1),
+  "serviceRequired": zod.string().min(1),
   "origin": zod.string().optional(),
   "destination": zod.string().optional(),
-  "weight": zod.string().optional(),
+  "weight": zod.string().min(1),
   "dimensions": zod.string().optional()
   ,"invoiceSubtotal": zod.string().min(1),
   "invoiceAdditionalCharges": zod.string().optional()

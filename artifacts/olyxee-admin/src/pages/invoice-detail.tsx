@@ -37,6 +37,7 @@ export default function InvoiceDetailPage() {
     <article className="min-h-[980px] bg-white p-8 text-slate-900 shadow-sm sm:p-12 print:min-h-0 print:p-0 print:shadow-none">
       <header className="grid grid-cols-1 gap-8 sm:grid-cols-2">
         <div>
+          {business?.businessLogoUrl ? <img src={business.businessLogoUrl} alt={`${business.name} logo`} className="mb-5 max-h-20 max-w-[180px] object-contain" /> : null}
           <h1 className="text-3xl font-bold tracking-tight">{business?.name ?? "FreightShift International Logistics"}</h1>
           <div className="mt-4 space-y-1 text-sm">
             <p>{invoice.invoiceNumber}</p>

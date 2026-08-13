@@ -175,7 +175,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Origin</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))}/></div><div className="space-y-2"><Label>Destination</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))}/></div><div className="space-y-2"><Label>Cargo type</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))}/></div><div className="space-y-2"><Label>Service required</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))}/></div><div className="space-y-2"><Label>Weight</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))}/></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))}/></div></div>
+          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Origin</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))}/></div><div className="space-y-2"><Label>Destination</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))}/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))}/></div></div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -221,7 +221,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             </div>
           </div>
           <p className="text-xs text-muted-foreground">Tracking updates begin only after an admin confirms payment.</p>
-          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.invoiceSubtotal}>
+          <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || !form.invoiceSubtotal}>
             {createMutation.isPending ? "Creating and sending invoice..." : "Create Order & Send Invoice"}
           </Button>
         </form>

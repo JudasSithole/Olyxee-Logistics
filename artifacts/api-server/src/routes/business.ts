@@ -188,6 +188,8 @@ router.put("/business", requireAuth, async (req, res) => {
               return list.length > 0 ? list.join(",") : null;
             })()
           : existing.allowedOrigins,
+        businessLogoUrl: "businessLogoUrl" in parse.data
+          ? parse.data.businessLogoUrl ?? null : existing.businessLogoUrl,
         onboardingCompleted:
           parse.data.onboardingCompleted ?? existing.onboardingCompleted,
       };

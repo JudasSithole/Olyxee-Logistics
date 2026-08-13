@@ -625,6 +625,9 @@ function BillingSection() {
 
 export default function SettingsPage() {
   const theme = useTheme();
+  const { user } = useAuth();
+  const { data: settingsBusiness } = useBusiness(user?.businessId);
+  const saveBusiness = useUpdateBusiness();
 
   // Local form state for the theme/branding bits. Email wording lives in its
   // own component because it persists to the server, not localStorage.
@@ -632,12 +635,12 @@ export default function SettingsPage() {
     () => ({
       businessName: theme.businessName,
       businessTagline: theme.businessTagline,
-      logoUrl: theme.logoUrl,
+      logoUrl: settingsBusiness?.business_logo_url ?? theme.logoUrl,
       faviconUrl: theme.faviconUrl,
       primaryColor: theme.primaryColor,
     }),
     // Re-baseline only when the saved theme values change (e.g. after a save).
-    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor],
+    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor, settingsBusiness?.business_logo_url],
   );
 
   const [form, setForm] = useState(initial);
@@ -675,7 +678,15 @@ export default function SettingsPage() {
     (form.faviconUrl !== initial.faviconUrl ? 1 : 0) +
     (form.primaryColor !== initial.primaryColor ? 1 : 0);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
+    if (user?.businessId) {
+      try {
+        await saveBusiness.mutateAsync({ id: user.businessId, business_logo_url: form.logoUrl || null });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to save logo");
+        return;
+      }
+    }
     theme.saveSettings({
       businessName: form.businessName,
       businessTagline: form.businessTagline,
@@ -683,8 +694,8 @@ export default function SettingsPage() {
       faviconUrl: form.faviconUrl,
       primaryColor: form.primaryColor,
     });
-    toast.success("Settings saved");
-  }, [theme, form]);
+    toast.success("Settings saved - logo will be used on invoices");
+  }, [theme, form, user?.businessId, saveBusiness]);
 
   const handleDiscard = useCallback(() => {
     setForm(initial);

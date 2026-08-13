@@ -136,7 +136,7 @@ describe("POST /orders — transport mode requirements", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA", invoiceSubtotal: "600" });
+      .send({ customerId: "cust_1", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.transportMode).toBe("SEA");
   });
@@ -174,7 +174,7 @@ describe("POST /orders — transport mode requirements", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA", invoiceSubtotal: "600" });
+      .send({ customerId: "cust_1", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
     expect(res.body.transportMode).toBe("SEA");
