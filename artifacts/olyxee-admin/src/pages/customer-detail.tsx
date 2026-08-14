@@ -9,14 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
-import { ArrowLeft, Edit, Package, Mail, Phone, Building, MapPin, UserX } from "lucide-react";
+import { ArrowLeft, ArrowRight, Edit, Package, Mail, Phone, Building, MapPin, ReceiptText, Trash2, UserX } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-
-const AVATAR = `${import.meta.env.BASE_URL}avatar-placeholder.png`;
 
 export default function CustomerDetailPage() {
   const [, navigate] = useLocation();
@@ -81,8 +79,12 @@ export default function CustomerDetailPage() {
     );
   }
 
+  const initials = customer.full_name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "C";
+  const invoiceList = invoices.data?.data ?? [];
+  const unpaidInvoices = invoiceList.filter(invoice => invoice.status !== "paid").length;
+
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-6xl pb-8">
       {/* Back */}
       <Link href="/customers">
         <Button variant="ghost" size="sm" className="gap-2 -ml-2 text-muted-foreground">
@@ -91,14 +93,13 @@ export default function CustomerDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start gap-5 justify-between">
-        <div className="flex items-center gap-5">
+      <div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-center gap-4 sm:gap-5">
           {/* Avatar */}
-          <div className="h-20 w-20 flex-shrink-0 border bg-muted overflow-hidden">
-            <img src={AVATAR} alt={customer.full_name} className="h-full w-full object-cover opacity-60" />
-          </div>
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-bold text-primary sm:h-20 sm:w-20">{initials}</div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{customer.full_name}</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Customer profile</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{customer.full_name}</h1>
             {customer.company_name && (
               <p className="text-muted-foreground text-sm mt-0.5">{customer.company_name}</p>
             )}
@@ -108,10 +109,10 @@ export default function CustomerDetailPage() {
           </div>
         </div>
 
-        <div className="flex gap-2"><Button variant="destructive" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete ${customer.full_name}? This is permanent and requires their orders to be deleted first.`)) deleteMutation.mutate(); }}>Delete</Button><Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <div className="flex gap-2"><Sheet open={editOpen} onOpenChange={setEditOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="gap-2 flex-shrink-0" onClick={openEdit}>
-              <Edit className="h-4 w-4" /> Edit
+            <Button variant="outline" className="gap-2 flex-shrink-0 rounded-xl" onClick={openEdit}>
+              <Edit className="h-4 w-4" /> Edit profile
             </Button>
           </SheetTrigger>
           <SheetContent className="w-[400px]">
@@ -127,14 +128,14 @@ export default function CustomerDetailPage() {
               </Button>
             </form>
           </SheetContent>
-        </Sheet></div>
+        </Sheet><Button variant="ghost" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete ${customer.full_name}? This is permanent and requires their orders to be deleted first.`)) deleteMutation.mutate(); }}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
       </div>
 
       {/* Info cards */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="rounded-3xl border-border/70 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Contact</CardTitle>
+            <CardTitle className="text-base">Contact and billing</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
@@ -162,24 +163,24 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl border-border/70 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Summary</CardTitle>
+            <CardTitle className="text-base">Account summary</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center gap-3 text-sm pt-1">
-            <Package className="h-4 w-4 text-muted-foreground" />
-            <span className="text-2xl font-bold">{orders?.length ?? 0}</span>
-            <span className="text-muted-foreground">total orders</span>
+          <CardContent className="grid grid-cols-3 gap-2 pt-1">
+            <div className="rounded-2xl bg-muted/40 p-3"><Package className="h-4 w-4 text-muted-foreground" /><p className="mt-2 text-2xl font-bold">{orders?.length ?? 0}</p><p className="text-xs text-muted-foreground">Orders</p></div>
+            <div className="rounded-2xl bg-muted/40 p-3"><ReceiptText className="h-4 w-4 text-muted-foreground" /><p className="mt-2 text-2xl font-bold">{invoiceList.length}</p><p className="text-xs text-muted-foreground">Invoices</p></div>
+            <div className="rounded-2xl bg-amber-500/10 p-3"><ReceiptText className="h-4 w-4 text-amber-700" /><p className="mt-2 text-2xl font-bold">{unpaidInvoices}</p><p className="text-xs text-muted-foreground">Unpaid</p></div>
           </CardContent>
         </Card>
       </div>
 
       <div>
-        <Card><CardHeader><CardTitle className="text-base">Invoices</CardTitle></CardHeader><CardContent className="space-y-2">{invoices.data?.data.length ? invoices.data.data.map(i => <div key={i.id} className="flex justify-between border-b py-2 text-sm"><Link className="underline" href={`/invoices/${i.id}`}>{i.invoiceNumber}</Link><span className="capitalize">{i.status}</span></div>) : <p className="text-sm text-muted-foreground">No invoices.</p>}</CardContent></Card>
+        <Card className="rounded-3xl border-border/70 shadow-sm"><CardHeader><CardTitle className="text-base">Invoices</CardTitle><p className="text-xs text-muted-foreground">Billing history for this customer</p></CardHeader><CardContent className="space-y-2">{invoiceList.length ? invoiceList.map(i => <Link key={i.id} href={`/invoices/${i.id}`} className="flex items-center justify-between rounded-xl border p-3 text-sm transition-colors hover:bg-muted/30"><span className="font-mono font-semibold">{i.invoiceNumber}</span><span className="flex items-center gap-2"><span className="capitalize text-muted-foreground">{i.status}</span><ArrowRight className="h-4 w-4" /></span></Link>) : <p className="py-4 text-center text-sm text-muted-foreground">No invoices yet.</p>}</CardContent></Card>
       </div>
 
       {/* Orders table */}
-      <Card>
+      <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Orders</CardTitle>
         </CardHeader>

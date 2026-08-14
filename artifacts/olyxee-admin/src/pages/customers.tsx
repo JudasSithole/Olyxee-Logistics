@@ -9,20 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Users, X } from "lucide-react";
-import { EmptyState } from "@/components/page-loader";
+import { ArrowRight, Building2, Phone, Plus, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-const AVATAR = `${import.meta.env.BASE_URL}avatar-placeholder.png`;
-
 function CustomerAvatar({ name, size = "sm" }: { name: string; size?: "sm" | "lg" }) {
   const dim = size === "lg" ? "h-16 w-16" : "h-8 w-8";
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "C";
   return (
-    <div className={`${dim} flex-shrink-0 overflow-hidden bg-muted border`}>
-      <img src={AVATAR} alt={name} className="h-full w-full object-cover opacity-60" />
-    </div>
+    <div aria-label={name} className={`${dim} flex flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary`}>{initials}</div>
   );
 }
 
@@ -52,35 +47,37 @@ function CreateCustomerDialog({ onSuccess, businessId }: { onSuccess: () => void
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" /> New Customer</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[460px]">
-        <DialogHeader>
-          <DialogTitle>New Customer</DialogTitle>
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[560px]">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-xl">Add a customer</DialogTitle>
+          <p className="text-sm leading-6 text-muted-foreground">These details are reused on orders, invoices, and delivery emails.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+            <div className="col-span-2"><p className="font-semibold">Primary contact</p><p className="mt-1 text-xs text-muted-foreground">Who should receive invoices and updates?</p></div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="fullName">Full Name *</Label>
-              <Input id="fullName" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required />
+              <Label htmlFor="fullName">Full name *</Label>
+              <Input id="fullName" autoFocus placeholder="e.g. Lethabo Scofield" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required />
             </div>
             <div className="space-y-2 col-span-2">
               <Label htmlFor="email">Email *</Label>
-              <Input id="email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+              <Input id="email" type="email" placeholder="name@company.co.za" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+              <Label htmlFor="phone">Phone number</Label>
+              <Input id="phone" type="tel" placeholder="071 234 5678" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="companyName">Company</Label>
-              <Input id="companyName" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} />
+              <Label htmlFor="companyName">Company name</Label>
+              <Input id="companyName" placeholder="Optional" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+              <Label htmlFor="address">Billing or delivery address</Label>
+              <Input id="address" placeholder="Street, suburb, city, postal code" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
             </div>
           </div>
-          <Button type="submit" className="w-full mt-2" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creating..." : "Create Customer"}
+          <Button type="submit" size="lg" className="h-12 w-full rounded-xl" disabled={createMutation.isPending}>
+            {createMutation.isPending ? "Adding customer..." : "Add customer"}
           </Button>
         </form>
       </DialogContent>
@@ -92,22 +89,12 @@ function CreateCustomerDialog({ onSuccess, businessId }: { onSuccess: () => void
 //   "any"  → don't send the param
 //   "yes"  → hasX=true
 //   "no"   → hasX=false
-type TriFilter = "any" | "yes" | "no";
-type SortValue = "newest" | "oldest" | "name";
-
-function triToParam(v: TriFilter): boolean | undefined {
-  return v === "yes" ? true : v === "no" ? false : undefined;
-}
-
 export default function CustomersPage() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [querySearch, setQuerySearch] = useState("");
-  const [hasCompany, setHasCompany] = useState<TriFilter>("any");
-  const [hasPhone, setHasPhone] = useState<TriFilter>("any");
-  const [sort, setSort] = useState<SortValue>("newest");
 
   const { data, isLoading, refetch } = useCustomers(user?.businessId, {
     search: querySearch || undefined,
@@ -115,98 +102,34 @@ export default function CustomersPage() {
     page,
   });
 
-  // Any time a filter that's part of the query changes, jump back to page 1
-  // so the user isn't stranded on a now-empty page N.
-  const updateFilter = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
-    setPage(1);
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setQuerySearch(search);
     setPage(1);
   };
 
-  const filtersActive =
-    hasCompany !== "any" || hasPhone !== "any" || sort !== "newest" || !!querySearch;
-
-  const handleClearAll = () => {
-    setSearch("");
-    setQuerySearch("");
-    setHasCompany("any");
-    setHasPhone("any");
-    setSort("newest");
-    setPage(1);
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="space-y-6 pb-8">
+      <div className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total customers</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Customer directory</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Customers</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Keep billing and delivery contacts ready for every new order.</p>
         </div>
         <CreateCustomerDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
       </div>
 
-      <Card>
-        <CardHeader className="pb-3 space-y-3">
+      <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
+        <CardHeader className="space-y-3 border-b border-border/60 bg-muted/20 p-4 sm:p-5">
+          <div><h2 className="text-lg font-semibold">All customers</h2><p className="mt-0.5 text-sm text-muted-foreground">{data?.total ?? 0} {data?.total === 1 ? "customer" : "customers"}</p></div>
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Search by name, email, or company..." value={search} onChange={e => setSearch(e.target.value)} />
+              <Input className="h-11 rounded-xl bg-background pl-9" placeholder="Search name, email, or company" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <Button type="submit" variant="secondary">Search</Button>
+            <Button type="submit" className="h-11 rounded-xl" variant="secondary">Search</Button>
           </form>
 
-          {/* Filter row - applies immediately on change (no separate Apply button). */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={hasCompany} onValueChange={updateFilter(setHasCompany) as (v: string) => void}>
-              <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="Company" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any company</SelectItem>
-                <SelectItem value="yes">Has company</SelectItem>
-                <SelectItem value="no">No company</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={hasPhone} onValueChange={updateFilter(setHasPhone) as (v: string) => void}>
-              <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="Phone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any phone</SelectItem>
-                <SelectItem value="yes">Has phone</SelectItem>
-                <SelectItem value="no">No phone</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sort} onValueChange={updateFilter(setSort) as (v: string) => void}>
-              <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest first</SelectItem>
-                <SelectItem value="oldest">Oldest first</SelectItem>
-                <SelectItem value="name">Name (A–Z)</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {filtersActive && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1 text-muted-foreground"
-                onClick={handleClearAll}
-              >
-                <X className="h-3.5 w-3.5" /> Clear
-              </Button>
-            )}
-          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -220,22 +143,18 @@ export default function CustomersPage() {
               ))}
             </div>
           ) : !data?.customers.length ? (
-            <EmptyState
-              icon={<Users className="h-12 w-12" />}
-              title="No customers found"
-              description="Create your first customer to get started."
-            />
+            <div className="px-5 py-16 text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Users className="h-8 w-8" /></div><h3 className="mt-5 text-lg font-semibold">{querySearch ? "No matching customers" : "Add your first customer"}</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{querySearch ? "Try another name, email address, or company." : "Customer information will be reused when you create orders and generate invoices."}</p></div>
           ) : (
             <>
-              <Table>
+              <div className="hidden md:block"><Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10"></TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead className="w-10 pl-5"></TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead>Phone</TableHead>
                     <TableHead>Since</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -245,22 +164,21 @@ export default function CustomersPage() {
                       className="cursor-pointer hover:bg-muted/40 group"
                       onClick={() => navigate(`/customers/${customer.id}`)}
                     >
-                      <TableCell>
+                      <TableCell className="pl-5">
                         <CustomerAvatar name={customer.full_name} />
                       </TableCell>
-                      <TableCell className="font-semibold">
-                        {customer.full_name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.company_name ?? "-"}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.phone ?? "-"}</TableCell>
+                      <TableCell><p className="font-semibold">{customer.full_name}</p><p className="mt-1 text-xs text-muted-foreground">{customer.email}</p></TableCell>
+                      <TableCell><p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" />{customer.phone ?? "No phone"}</p></TableCell>
+                      <TableCell className="text-muted-foreground">{customer.company_name ? <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{customer.company_name}</span> : "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(customer.created_at), "MMM d, yyyy")}
                       </TableCell>
+                      <TableCell><ArrowRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
+              <div className="divide-y divide-border/60 md:hidden">{data.customers.map(customer => <Link key={customer.id} href={`/customers/${customer.id}`} className="flex items-center gap-3 p-4"><CustomerAvatar name={customer.full_name} /><div className="min-w-0 flex-1"><p className="truncate font-semibold">{customer.full_name}</p><p className="mt-1 truncate text-xs text-muted-foreground">{customer.company_name || customer.email}</p></div><ArrowRight className="h-4 w-4 text-muted-foreground" /></Link>)}</div>
 
               {data.total > 20 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t">
