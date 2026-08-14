@@ -6,11 +6,14 @@ import {
   trackingEventsTable,
   emailNotificationsTable,
   smsNotificationsTable,
+  notificationEventsTable,
+  notificationDeliveriesTable,
+  callRecordsTable,
   auditLogsTable,
   businessesTable,
   invoicesTable,
 } from "@workspace/db";
-import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
+import { eq, and, ilike, or, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody, sendInvoiceEmail } from "../lib/email";
@@ -418,6 +421,16 @@ router.delete("/orders/:orderId", requireAuth, async (req, res) => {
     const order=await db.query.ordersTable.findFirst({where:and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId))});
     if(!order){res.status(404).json({error:"Order not found"});return;}
     await db.transaction(async tx=>{
+      const notificationEvents = await tx
+        .select({ id: notificationEventsTable.id })
+        .from(notificationEventsTable)
+        .where(eq(notificationEventsTable.orderId, orderId));
+      const notificationEventIds = notificationEvents.map((event) => event.id);
+      if (notificationEventIds.length > 0) {
+        await tx.delete(notificationDeliveriesTable).where(inArray(notificationDeliveriesTable.eventId, notificationEventIds));
+      }
+      await tx.delete(notificationEventsTable).where(eq(notificationEventsTable.orderId,orderId));
+      await tx.delete(callRecordsTable).where(eq(callRecordsTable.orderId,orderId));
       await tx.delete(emailNotificationsTable).where(eq(emailNotificationsTable.orderId,orderId));
       await tx.delete(smsNotificationsTable).where(eq(smsNotificationsTable.orderId,orderId));
       await tx.delete(trackingEventsTable).where(eq(trackingEventsTable.orderId,orderId));
