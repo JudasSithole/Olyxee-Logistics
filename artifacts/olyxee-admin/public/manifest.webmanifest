@@ -1,0 +1,14 @@
+{
+  "name": "Olyxee Logistics",
+  "short_name": "Olyxee",
+  "description": "Manage logistics orders, invoices, customers and shipment updates.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "6250x6250", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/default-icon.png", "sizes": "6250x6250", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

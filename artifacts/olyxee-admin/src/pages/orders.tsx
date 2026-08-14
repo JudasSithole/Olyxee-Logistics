@@ -284,22 +284,25 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <section className="overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.09] via-background to-background px-5 py-6 shadow-sm sm:px-7 sm:py-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-              <ClipboardCheck className="h-4 w-4" /> Order workspace
+      <section className="rounded-3xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+        <div className="grid gap-5 lg:grid-cols-[minmax(240px,0.7fr)_minmax(420px,1.3fr)] lg:items-center">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <ClipboardCheck className="h-4 w-4 text-primary" /> Orders
             </div>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Manage every shipment in one place</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Create an order after a quote is accepted, confirm its invoice payment, then keep the customer updated through delivery.</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight">Manage orders</h1>
+            <p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">Create, find and update customer shipments.</p>
+            <div className="mt-4"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
           </div>
-          <div className="shrink-0"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
-        </div>
 
-        <div className="mt-6 border-t border-border/60 pt-5">
-          <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-base font-semibold">Orders by status</h2><p className="mt-1 text-xs text-muted-foreground">See where your current workload is concentrated.</p></div>{orderStats && <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{orderStats.totalOrders}</span> total orders</p>}</div>
-          <div className="mt-5">
-          {loadingOrderStats ? <Skeleton className="h-56 w-full rounded-2xl" /> : orderStatusChart.length === 0 ? <div className="grid h-44 place-items-center rounded-2xl bg-muted/20 text-center"><div><Package className="mx-auto h-6 w-6 text-muted-foreground/50"/><p className="mt-2 text-sm font-medium">No order data yet</p><p className="mt-1 text-xs text-muted-foreground">Your status chart will appear after the first order.</p></div></div> : <div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={orderStatusChart} layout="vertical" margin={{ top: 0, right: 16, bottom: 0, left: 12 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))"/><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{fontSize:11,fill:"hsl(var(--muted-foreground))"}}/><YAxis type="category" dataKey="label" width={130} axisLine={false} tickLine={false} tick={{fontSize:11,fill:"hsl(var(--muted-foreground))"}}/><Tooltip cursor={{fill:"hsl(var(--muted) / 0.35)"}} contentStyle={{borderRadius:12,border:"1px solid hsl(var(--border))",background:"hsl(var(--card))",fontSize:12}}/><Bar dataKey="count" name="Orders" fill="hsl(var(--primary))" radius={[0,6,6,0]} maxBarSize={22}/></BarChart></ResponsiveContainer></div>}
+          <div className="border-t border-border/60 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+            <div className="flex items-center justify-between gap-3">
+              <div><h2 className="text-sm font-semibold">Orders by status</h2><p className="text-xs text-muted-foreground">A quick workload snapshot</p></div>
+              {orderStats && <p className="whitespace-nowrap text-xs text-muted-foreground"><span className="font-semibold text-foreground">{orderStats.totalOrders}</span> total</p>}
+            </div>
+            <div className="mt-2">
+              {loadingOrderStats ? <Skeleton className="h-32 w-full rounded-xl" /> : orderStatusChart.length === 0 ? <div className="grid h-28 place-items-center rounded-xl bg-muted/20 text-center"><p className="text-xs text-muted-foreground">Status activity will appear here.</p></div> : <div className="h-32 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={orderStatusChart} layout="vertical" margin={{ top: 0, right: 10, bottom: 0, left: 0 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))"/><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{fontSize:10,fill:"hsl(var(--muted-foreground))"}}/><YAxis type="category" dataKey="label" width={112} axisLine={false} tickLine={false} tick={{fontSize:10,fill:"hsl(var(--muted-foreground))"}}/><Tooltip cursor={{fill:"hsl(var(--muted) / 0.35)"}} contentStyle={{borderRadius:10,border:"1px solid hsl(var(--border))",background:"hsl(var(--card))",fontSize:11}}/><Bar dataKey="count" name="Orders" fill="hsl(var(--primary))" radius={[0,5,5,0]} maxBarSize={14}/></BarChart></ResponsiveContainer></div>}
+            </div>
           </div>
         </div>
       </section>

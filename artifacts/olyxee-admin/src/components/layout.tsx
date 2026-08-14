@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
+import { InstallAppPrompt } from "@/components/install-app-prompt";
 
 function UserRow() {
   const { user, signOut } = useAuth();
@@ -177,18 +178,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <div className="flex-shrink-0 border-t border-sidebar-border">
-        {/* Dark mode toggle row */}
-        <div className="flex items-center justify-between px-5 py-2.5 border-b border-sidebar-border">
-          <span className="text-xs text-sidebar-foreground/50">Appearance</span>
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
-          >
-            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            {isDark ? "Light" : "Dark"}
-          </button>
-        </div>
-
         {/* User row */}
         <UserRow />
 
@@ -202,6 +191,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background">
+      <InstallAppPrompt />
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-56 flex-col border-r border-border flex-shrink-0">
         <SidebarContent />
@@ -219,7 +209,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarContent />
           </SheetContent>
         </Sheet>
-        <span className="text-sm font-semibold text-sidebar-foreground">{businessName}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">{businessName}</span>
+        <button
+          type="button"
+          onClick={() => setIsDark(!isDark)}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-pressed={isDark}
+          title={isDark ? "Light mode" : "Dark mode"}
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
       </div>
 
       {/* Main Content.
@@ -229,6 +229,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           can still use the full container width on a 27" screen.
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">
+        <div className="hidden h-14 shrink-0 items-center justify-end border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
+          <button
+            type="button"
+            onClick={() => setIsDark(!isDark)}
+            className="relative flex h-9 w-[68px] items-center rounded-full border border-border bg-muted/60 p-1 shadow-sm transition-colors hover:bg-muted"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={isDark}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <Sun className="absolute left-2 h-3.5 w-3.5 text-muted-foreground" />
+            <Moon className="absolute right-2 h-3.5 w-3.5 text-muted-foreground" />
+            <span className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow-sm transition-transform duration-200 ${isDark ? "translate-x-7" : "translate-x-0"}`}>
+              {isDark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+            </span>
+          </button>
+        </div>
         <div className="flex-1 overflow-auto">
           <div
             key={location}
