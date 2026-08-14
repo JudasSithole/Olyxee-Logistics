@@ -403,8 +403,8 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   const date=(value:Date)=>value.toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"});
   const address=escapeHtml(p.customerAddress||"").replace(/\n/g,"<br />");
   const shipmentRows=[
-    ["Cargo",p.description],["Transport",p.transportMode?`${p.transportMode} Freight`:null],["Weight",p.weight],
-    ["Order Reference",p.orderReference||"Not provided"],["Origin",p.origin||"Not provided"],["Destination",p.destination||"Not provided"],
+    ["Cargo",p.description],["Route",[p.origin,p.destination].filter(Boolean).join(" → ")||"Not provided"],
+    ["Transport",p.transportMode?`${p.transportMode} Freight`:"Not provided"],["Order Reference",p.orderReference||"Not provided"],
   ].map(([label,value])=>`<tr><td style="padding:6px 10px;color:#64748b;width:38%">${escapeHtml(label!)}</td><td style="padding:6px 10px;font-weight:600">${escapeHtml(value||"")}</td></tr>`).join("");
   const payment=escapeHtml(p.paymentDetails||"Contact the issuer for payment instructions.").replace(/\n/g,"<br />");
   const terms=escapeHtml(p.paymentTerms||"Payment due within agreed terms.");

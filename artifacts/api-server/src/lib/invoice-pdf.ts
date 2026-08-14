@@ -31,7 +31,7 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
     } catch { /* The business name remains as the safe logo fallback. */ }
   }
   const navy = /^#[0-9a-f]{6}$/i.test(p.primaryColor || "") ? p.primaryColor! : "#10243e";
-  const ink = "#142033", muted = "#64748b", line = "#dbe3ec", pale = "#f4f7fb", amber = "#b45309";
+  const ink = "#142033", muted = "#64748b", line = "#dbe3ec", pale = "#f4f7fb";
   doc.rect(0, 0, 595.28, 12).fill(navy);
   doc.fillColor(ink).font("Helvetica-Bold").fontSize(20).text(p.businessName, 48, 112, { width: 300 });
   doc.font("Helvetica").fontSize(8.5).fillColor(muted).text([p.supportEmail, p.businessPhone].filter(Boolean).join("  |  "), 48, 140, { width: 300 });
@@ -43,7 +43,7 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.font("Helvetica").fontSize(9).fillColor(muted).text("INVOICE NUMBER", 365, 91, { align: "right", width: 182 });
   doc.font("Helvetica-Bold").fontSize(11).fillColor(ink).text(p.invoiceNumber, 365, 105, { align: "right", width: 182 });
   doc.roundedRect(392, 130, 155, 28, 4).fill("#fff7ed");
-  doc.fillColor(amber).font("Helvetica-Bold").fontSize(8.5).text("PENDING PAYMENT", 401, 140, { align: "center", width: 137, characterSpacing: 0.6 });
+  doc.fillColor("#b45309").font("Helvetica-Bold").fontSize(8.5).text("PENDING PAYMENT", 401, 140, { align: "center", width: 137, characterSpacing: 0.6 });
 
   doc.moveTo(48, 210).lineTo(547, 210).lineWidth(1).strokeColor(line).stroke();
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("BILL TO", 48, 232, { characterSpacing: 1 });
@@ -54,40 +54,39 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("ISSUE DATE", 360, 232).text("DUE DATE", 465, 232);
   doc.fillColor(ink).font("Helvetica").fontSize(10).text(date(p.createdAt), 360, 249).text(date(p.dueDate), 465, 249);
 
-  doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("SHIPMENT", 48, 338, { characterSpacing: 1 });
+  doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("SHIPMENT SUMMARY", 48, 338, { characterSpacing: 1 });
   const shipment = [
-    ["Cargo", p.description], ["Transport", p.transportMode ? `${p.transportMode} Freight` : "Not provided"], ["Weight", p.weight || "Not provided"],
-    ["Order Reference", p.orderReference || "Not provided"], ["Origin", p.origin || "Not provided"],
-    ["Destination", p.destination || "Not provided"],
+    ["Cargo", p.description], ["Route", [p.origin,p.destination].filter(Boolean).join(" -> ") || "Not provided"],
+    ["Transport", p.transportMode ? `${p.transportMode} Freight` : "Not provided"], ["Order Reference", p.orderReference || "Not provided"],
   ];
-  shipment.forEach(([label, value], index) => { const col=index%2,row=Math.floor(index/2),x=48+col*250,y=355+row*20; doc.fillColor(muted).font("Helvetica").fontSize(7.5).text(label, x, y, {width:90}); doc.fillColor(ink).font("Helvetica-Bold").text(value, x+92, y, {width:150,height:12,ellipsis:true}); });
+  doc.roundedRect(48,350,499,50,4).fill(pale);
+  shipment.forEach(([label, value], index) => { const x=60+index*122; doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x, 362, {width:112}); doc.fillColor(ink).font("Helvetica-Bold").fontSize(8.5).text(value, x, 377, {width:112,height:12,ellipsis:true}); });
 
-  const top = 424;
+  const top = 426;
   doc.roundedRect(48, top, 499, 34, 3).fill(navy);
   doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8)
-    .text("DESCRIPTION", 60, top + 13, { characterSpacing: 0.7 }).text("QTY", 350, top + 13, { width: 40, align: "right" })
-    .text("RATE", 395, top + 13, { width: 70, align: "right" }).text("AMOUNT", 470, top + 13, { width: 65, align: "right" });
+    .text("DESCRIPTION", 60, top + 13, { characterSpacing: 0.7 }).text("AMOUNT", 450, top + 13, { width: 85, align: "right" });
   const chargeDescription=[p.transportMode?`${p.transportMode} Freight`:"Logistics service",p.description,p.weight].filter(Boolean).join(" - ");
-  doc.fillColor(ink).font("Helvetica-Bold").fontSize(10.5).text(chargeDescription, 60, top + 51, { width: 270 });
-  doc.fillColor(ink).fontSize(10).text(String(p.quantity), 350, top + 53, { width: 40, align: "right" })
-    .text(money(p.subtotal), 395, top + 53, { width: 70, align: "right" }).font("Helvetica-Bold").text(money(p.subtotal), 470, top + 53, { width: 65, align: "right" });
-  doc.moveTo(48, top + 106).lineTo(547, top + 106).strokeColor(line).stroke();
-  let totalY = top + 122;
+  doc.fillColor(ink).font("Helvetica-Bold").fontSize(10.5).text(chargeDescription, 60, top + 51, { width: 340 });
+  doc.fillColor(ink).font("Helvetica-Bold").fontSize(10).text(money(p.subtotal), 450, top + 53, { width: 85, align: "right" });
+  doc.moveTo(48, top + 91).lineTo(547, top + 91).strokeColor(line).stroke();
+  let totalY = top + 107;
   if (p.additionalCharges > 0) {
     doc.fillColor(muted).font("Helvetica").fontSize(9).text("Additional charges", 337, totalY).fillColor(ink).text(money(p.additionalCharges), 455, totalY, { width: 80, align: "right" });
     totalY += 25;
   }
-  doc.roundedRect(337, totalY, 210, 62, 4).fill(pale);
-  doc.fillColor(muted).font("Helvetica").fontSize(8).text("Subtotal",351,totalY+9).text(money(p.total),420,totalY+9,{width:113,align:"right"}).text("VAT",351,totalY+23).text("Not separately charged",420,totalY+23,{width:113,align:"right"});
-  doc.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("TOTAL DUE", 351, totalY + 43).fontSize(14).text(money(p.total), 420, totalY + 40, { width: 113, align: "right" });
+  doc.fillColor(muted).font("Helvetica").fontSize(8).text("VAT: Not separately charged",337,totalY+5,{width:210,align:"right"});
+  doc.moveTo(337,totalY+23).lineTo(547,totalY+23).lineWidth(2).strokeColor(navy).stroke();
+  doc.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("TOTAL DUE", 337, totalY + 36).fontSize(16).text(money(p.total), 417, totalY + 32, { width: 130, align: "right" });
 
-  const payY = Math.max(620, totalY + 72);
-  doc.roundedRect(48, payY, 315, 115, 5).fill(pale);
+  const payY = Math.max(610, totalY + 72);
+  doc.roundedRect(48, payY, 499, 112, 5).fill(pale);
   doc.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("PAYMENT DETAILS", 64, payY + 18, { characterSpacing: 0.8 });
-  doc.fillColor(ink).font("Helvetica").fontSize(8.7).text(`${p.paymentDetails || "Payment details have not been configured. Contact the issuer."}\n\nPayment Reference: ${p.invoiceNumber}`, 64, payY + 39, { lineGap: 3, width: 282, height: 78, ellipsis: true });
-  doc.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("PAYMENT TERMS", 391, payY + 18, { characterSpacing: 0.8 });
-  doc.fillColor(muted).font("Helvetica").fontSize(8.7).text(p.paymentTerms || "Payment due within agreed terms.", 391, payY + 39, { width: 156, lineGap: 3 });
-  doc.fillColor(amber).font("Helvetica-Bold").fontSize(8).text("SHIPMENT STATUS UPDATES BECOME AVAILABLE AFTER PAYMENT IS CONFIRMED.", 391, payY + 76, { width: 156, lineGap: 2 });
+  doc.fillColor(ink).font("Helvetica").fontSize(8.7).text(p.paymentDetails || "Contact the issuer for payment instructions.", 64, payY + 39, { lineGap: 3, width: 275, height: 62, ellipsis: true });
+  doc.moveTo(360,payY+18).lineTo(360,payY+94).lineWidth(1).strokeColor(line).stroke();
+  doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text("PAYMENT REFERENCE", 382, payY + 20).fillColor(ink).fontSize(9).text(p.invoiceNumber,382,payY+34,{width:145});
+  doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text("TERMS", 382, payY + 57).fillColor(ink).font("Helvetica").fontSize(8).text(p.paymentTerms || "Payment due on receipt.",382,payY+70,{width:145});
+  doc.fillColor(muted).font("Helvetica").fontSize(8).text("Shipment updates begin after payment is confirmed.",48,payY+126,{width:499,align:"center"});
 
   if (p.footerNote) doc.fillColor(muted).font("Helvetica").fontSize(8).text(p.footerNote, 48, 762, { width: 499, align: "center", height: 12, ellipsis: true });
   doc.moveTo(48, 778).lineTo(547, 778).strokeColor(line).stroke();
