@@ -14,8 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { StatusBadge } from "@/components/status-badge";
-import { Plus, Search, Package, Check, ChevronsUpDown } from "lucide-react";
-import { EmptyState } from "@/components/page-loader";
+import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, CircleDollarSign, ClipboardCheck, Filter, Plane, RotateCcw, Ship, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
@@ -258,28 +257,65 @@ export default function OrdersPage() {
     setPage(1);
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{data?.total ?? 0} total orders</p>
-        </div>
-        <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
-      </div>
+  const clearFilters = () => {
+    setSearch("");
+    setQuerySearch("");
+    setStatusFilter("all");
+    setPage(1);
+  };
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+  const hasActiveFilters = Boolean(querySearch || statusFilter !== "all");
+
+  const transportIcon = (mode: string | null) => {
+    if (mode === "AIR") return Plane;
+    if (mode === "SEA") return Ship;
+    return Truck;
+  };
+
+  return (
+    <div className="space-y-6 pb-8">
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.09] via-background to-background px-5 py-6 shadow-sm sm:px-7 sm:py-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <ClipboardCheck className="h-4 w-4" /> Order workspace
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Manage every shipment in one place</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Create an order after a quote is accepted, confirm its invoice payment, then keep the customer updated through delivery.</p>
+          </div>
+          <div className="shrink-0"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
+        </div>
+
+        <div className="mt-6 grid gap-2 sm:grid-cols-3">
+          {[
+            { icon: ClipboardCheck, step: "1", title: "Create order", detail: "Invoice is sent automatically", tone: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
+            { icon: CircleDollarSign, step: "2", title: "Confirm payment", detail: "Staff verifies payment manually", tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
+            { icon: Truck, step: "3", title: "Update shipment", detail: "Share progress through delivery", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+          ].map(({ icon: Icon, step, title, detail, tone }) => (
+            <div key={step} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/75 p-3.5 backdrop-blur-sm">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></div>
+              <div className="min-w-0"><p className="text-sm font-semibold"><span className="mr-1.5 text-muted-foreground">{step}.</span>{title}</p><p className="truncate text-xs text-muted-foreground">{detail}</p></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
+        <CardHeader className="space-y-4 border-b border-border/60 bg-muted/20 p-4 sm:p-5">
+          <div className="flex items-end justify-between gap-3">
+            <div><h2 className="text-lg font-semibold">All orders</h2><p className="mt-0.5 text-sm text-muted-foreground">{data?.total ?? 0} {data?.total === 1 ? "order" : "orders"}{hasActiveFilters ? " found" : " in your workspace"}</p></div>
+            {hasActiveFilters && <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={clearFilters}><RotateCcw className="h-3.5 w-3.5" /> Clear</Button>}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <form onSubmit={handleSearch} className="flex flex-1 gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9" placeholder="Search tracking ID, reference or customer name..." value={search} onChange={e => setSearch(e.target.value)} />
+                <Input className="h-11 rounded-xl border-border/80 bg-background pl-9" placeholder="Search ID, reference or customer" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
-              <Button type="submit" variant="secondary">Search</Button>
+              <Button type="submit" variant="secondary" className="h-11 rounded-xl px-4">Search</Button>
             </form>
             <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
+              <SelectTrigger className="h-11 w-full rounded-xl bg-background sm:w-[220px]"><Filter className="mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="All statuses" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 {ORDER_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -292,22 +328,22 @@ export default function OrdersPage() {
           {isLoading ? (
             <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : !data?.orders.length ? (
-            <EmptyState
-              icon={<Package className="h-12 w-12" />}
-              title="No orders found"
-              description="Create your first order to get started."
-            />
+            <div className="px-5 py-14 text-center sm:py-20">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Package className="h-8 w-8" /></div>
+              <h3 className="mt-5 text-lg font-semibold">{hasActiveFilters ? "No matching orders" : "Your orders will appear here"}</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{hasActiveFilters ? "Try a different search term or clear the filters to see all orders." : "Create an order once the customer accepts their quote. We’ll generate and send the invoice automatically."}</p>
+              {hasActiveFilters && <Button variant="outline" className="mt-5 rounded-xl" onClick={clearFilters}>Clear filters</Button>}
+            </div>
           ) : (
             <>
-              <Table>
+              <div className="hidden md:block"><Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Tracking ID</TableHead>
+                  <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableHead className="pl-5">Order</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Reference</TableHead>
+                    <TableHead>Shipment</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Est. Delivery</TableHead>
-                    <TableHead>Updated</TableHead>
                     <TableHead className="text-right pr-4"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -318,29 +354,37 @@ export default function OrdersPage() {
                       className="cursor-pointer hover:bg-muted/40"
                       onClick={() => navigate(`/orders/${order.id}`)}
                     >
-                      <TableCell>
-                        <span className="font-mono text-sm font-semibold">{order.tracking_id}</span>
+                      <TableCell className="py-4 pl-5">
+                        <span className="font-mono text-sm font-semibold">{order.order_reference ?? order.tracking_id}</span>
+                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">{order.tracking_id}</p>
                       </TableCell>
-                      <TableCell className="font-medium">{order.customers?.full_name ?? "-"}</TableCell>
-                      <TableCell className="text-muted-foreground">{order.order_reference ?? "-"}</TableCell>
+                      <TableCell><p className="font-medium">{order.customers?.full_name ?? "Unknown customer"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {format(new Date(order.updated_at), "MMM d, HH:mm")}</p></TableCell>
+                      <TableCell>{(() => { const Icon = transportIcon(order.transport_mode); return <div className="flex items-center gap-2 text-sm"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-4 w-4" /></span><span>{order.transport_mode ? TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode : "Not set"}</span></div>; })()}</TableCell>
                       <TableCell><StatusBadge status={order.current_status} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(order.updated_at), "MMM d, HH:mm")}
-                      </TableCell>
                       <TableCell className="text-right pr-4" onClick={e => e.stopPropagation()}>
                         <Link href={`/orders/${order.id}`}>
-                          <Button size="sm" variant="secondary" className="h-8 text-xs">
-                            Update
+                          <Button size="sm" variant="ghost" className="h-9 gap-1.5 rounded-lg text-xs">
+                            Open <ArrowRight className="h-3.5 w-3.5" />
                           </Button>
                         </Link>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
+
+              <div className="divide-y divide-border/60 md:hidden">
+                {data.orders.map(order => {
+                  const Icon = transportIcon(order.transport_mode);
+                  return <Link key={order.id} href={`/orders/${order.id}`} className="block p-4 transition-colors hover:bg-muted/30">
+                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-mono text-sm font-semibold">{order.order_reference ?? order.tracking_id}</p><p className="mt-1 truncate text-sm text-muted-foreground">{order.customers?.full_name ?? "Unknown customer"}</p></div><StatusBadge status={order.current_status} /></div>
+                    <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{order.transport_mode ? TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode : "Transport not set"}</span><span className="flex items-center gap-1 text-foreground">Open <ArrowRight className="h-3.5 w-3.5" /></span></div>
+                  </Link>;
+                })}
+              </div>
 
               {data.total > 20 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t">
