@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BarChart3, CheckCircle2, CircleDollarSign, Clock3, Crown, MapPinned, Package, Plus, Sparkles, TrendingUp, Truck } from "lucide-react";
+import { ArrowRight, CircleDollarSign, Clock3, Crown, Package, Plus, Sparkles, TrendingUp, Truck } from "lucide-react";
 import { format } from "date-fns";
 
 function StatCard({
@@ -65,7 +65,7 @@ export default function DashboardPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Operations overview</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">Good day, {firstName}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Your priority briefing and the business signals behind it.</p>
+          <p className="mt-1 text-sm text-muted-foreground">See what needs attention and continue working.</p>
         </div>
         <Button asChild className="h-11 gap-2 rounded-xl px-5"><Link href="/orders"><Plus className="h-4 w-4" /> New order</Link></Button>
       </div>
@@ -78,29 +78,26 @@ export default function DashboardPage() {
       ) : null}
 
       {loadingSummary ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
+        <div className="grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
       ) : summary ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <StatCard label="Unpaid invoices" value={summary.unpaidInvoices} helper="Waiting for manual confirmation" icon={CircleDollarSign} href="/invoices" tone="bg-amber-500/10 text-amber-700 dark:text-amber-300" />
           <StatCard label="Active deliveries" value={summary.activeDeliveries} helper="Shipments currently in progress" icon={Truck} href={`/orders?status=${encodeURIComponent("In transit")}`} tone="bg-blue-500/10 text-blue-700 dark:text-blue-300" />
           <StatCard label="Delayed" value={summary.delayedOrders} helper="Orders that may need follow-up" icon={Clock3} href="/orders?status=Delayed" tone="bg-red-500/10 text-red-700 dark:text-red-300" />
-          <StatCard label="Delivered" value={summary.deliveredOrders} helper="Successfully completed orders" icon={CheckCircle2} href="/orders?status=Delivered" tone="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" />
         </div>
       ) : null}
 
       {!loadingSummary && summary && (
-        <section className="space-y-3">
-          <div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /><div><h2 className="text-lg font-semibold">Business intelligence</h2><p className="mt-0.5 text-xs text-muted-foreground">Calculated from your orders and confirmed paid invoices.</p></div></div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Card className="rounded-2xl border-border/70 shadow-sm"><CardContent className="p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700"><Package className="h-5 w-5" /></div><p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Most shipped product</p><p className="mt-1 truncate text-lg font-bold">{summary.topProduct?.name ?? "Not enough data"}</p><p className="mt-1 text-xs text-muted-foreground">{summary.topProduct ? `${summary.topProduct.orderCount} orders` : "Add cargo details to orders"}</p></CardContent></Card>
-            <Card className="rounded-2xl border-border/70 shadow-sm"><CardContent className="p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-700"><MapPinned className="h-5 w-5" /></div><p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Busiest route</p><p className="mt-1 truncate text-lg font-bold" title={summary.topRoute?.name}>{summary.topRoute?.name ?? "Not enough data"}</p><p className="mt-1 text-xs text-muted-foreground">{summary.topRoute ? `${summary.topRoute.orderCount} shipments` : "Add origins and destinations"}</p></CardContent></Card>
-            <Link href={summary.topCustomer ? `/customers/${summary.topCustomer.id}` : "/customers"} className="block"><Card className="h-full rounded-2xl border-border/70 shadow-sm transition-colors hover:border-primary/25"><CardContent className="p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700"><Crown className="h-5 w-5" /></div><p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Top paying client</p><p className="mt-1 truncate text-lg font-bold">{summary.topCustomer?.companyName || summary.topCustomer?.name || "Not enough data"}</p><p className="mt-1 text-xs text-muted-foreground">{summary.topCustomer ? `${money(summary.topCustomer.paidAmount)} confirmed` : "Based on paid invoices"}</p></CardContent></Card></Link>
-            <Card className="rounded-2xl border-border/70 shadow-sm"><CardContent className="p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700"><TrendingUp className="h-5 w-5" /></div><p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Confirmed revenue</p><p className="mt-1 truncate text-lg font-bold">{money(summary.paidRevenue)}</p><p className="mt-1 text-xs text-muted-foreground">Paid invoices only</p></CardContent></Card>
-          </div>
-        </section>
+        <Card className="rounded-3xl border-border/70 shadow-sm">
+          <CardContent className="grid gap-5 p-5 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
+            <div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700"><Package className="h-4 w-4" /></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Top product</p><p className="mt-1 truncate font-bold">{summary.topProduct?.name ?? "No data yet"}</p><p className="text-xs text-muted-foreground">{summary.topProduct ? `${summary.topProduct.orderCount} orders` : "From order cargo"}</p></div></div>
+            <Link href={summary.topCustomer ? `/customers/${summary.topCustomer.id}` : "/customers"} className="flex items-start gap-3 sm:pl-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700"><Crown className="h-4 w-4" /></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Top client</p><p className="mt-1 truncate font-bold">{summary.topCustomer?.companyName || summary.topCustomer?.name || "No data yet"}</p><p className="text-xs text-muted-foreground">{summary.topCustomer ? `${money(summary.topCustomer.paidAmount)} paid` : "From paid invoices"}</p></div></Link>
+            <div className="flex items-start gap-3 sm:pl-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700"><TrendingUp className="h-4 w-4" /></div><div><p className="text-xs text-muted-foreground">Paid revenue</p><p className="mt-1 font-bold">{money(summary.paidRevenue)}</p><p className="text-xs text-muted-foreground">Confirmed invoices</p></div></div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div>
         <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border/60 p-5">
             <div><CardTitle className="text-lg">Recent orders</CardTitle><p className="mt-1 text-xs text-muted-foreground">Your latest shipment activity</p></div>
@@ -126,16 +123,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-border/70 shadow-sm">
-          <CardHeader className="pb-3"><CardTitle className="text-lg">Next actions</CardTitle><p className="text-xs text-muted-foreground">The normal order workflow</p></CardHeader>
-          <CardContent className="space-y-2">
-            {[
-              { number: 1, title: "Create accepted order", detail: "Generate and send its invoice", href: "/orders" },
-              { number: 2, title: "Confirm payment", detail: `${summary?.unpaidInvoices ?? 0} waiting now`, href: "/invoices" },
-              { number: 3, title: "Update shipments", detail: `${summary?.activeDeliveries ?? 0} active deliveries`, href: "/orders" },
-            ].map(action => <Link key={action.number} href={action.href} className="group flex items-center gap-3 rounded-2xl border border-border/60 p-3.5 transition-colors hover:bg-muted/40"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{action.number}</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{action.title}</span><span className="block truncate text-xs text-muted-foreground">{action.detail}</span></span><ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground" /></Link>)}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
