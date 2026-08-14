@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
+import { useOrders, useCustomers, useCreateOrder, useDashboardStats } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { StatusBadge } from "@/components/status-badge";
-import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, CircleDollarSign, ClipboardCheck, Filter, Plane, RotateCcw, Ship, Truck } from "lucide-react";
+import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, ClipboardCheck, Filter, Plane, RotateCcw, Ship, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function generateOrderReference(): string {
   const d = new Date();
@@ -250,6 +251,15 @@ export default function OrdersPage() {
     page,
     limit: 20,
   });
+  const { data: orderStats, isLoading: loadingOrderStats } = useDashboardStats(user?.businessId);
+  const orderStatusChart = Object.entries(orderStats?.statusBreakdown ?? {})
+    .map(([status, count]) => ({
+      status,
+      label: status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()),
+      count,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,17 +296,11 @@ export default function OrdersPage() {
           <div className="shrink-0"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
         </div>
 
-        <div className="mt-6 grid gap-2 sm:grid-cols-3">
-          {[
-            { icon: ClipboardCheck, step: "1", title: "Create order", detail: "Invoice is sent automatically", tone: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
-            { icon: CircleDollarSign, step: "2", title: "Confirm payment", detail: "Staff verifies payment manually", tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
-            { icon: Truck, step: "3", title: "Update shipment", detail: "Share progress through delivery", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
-          ].map(({ icon: Icon, step, title, detail, tone }) => (
-            <div key={step} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/75 p-3.5 backdrop-blur-sm">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></div>
-              <div className="min-w-0"><p className="text-sm font-semibold"><span className="mr-1.5 text-muted-foreground">{step}.</span>{title}</p><p className="truncate text-xs text-muted-foreground">{detail}</p></div>
-            </div>
-          ))}
+        <div className="mt-6 border-t border-border/60 pt-5">
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-base font-semibold">Orders by status</h2><p className="mt-1 text-xs text-muted-foreground">See where your current workload is concentrated.</p></div>{orderStats && <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{orderStats.totalOrders}</span> total orders</p>}</div>
+          <div className="mt-5">
+          {loadingOrderStats ? <Skeleton className="h-56 w-full rounded-2xl" /> : orderStatusChart.length === 0 ? <div className="grid h-44 place-items-center rounded-2xl bg-muted/20 text-center"><div><Package className="mx-auto h-6 w-6 text-muted-foreground/50"/><p className="mt-2 text-sm font-medium">No order data yet</p><p className="mt-1 text-xs text-muted-foreground">Your status chart will appear after the first order.</p></div></div> : <div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={orderStatusChart} layout="vertical" margin={{ top: 0, right: 16, bottom: 0, left: 12 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))"/><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{fontSize:11,fill:"hsl(var(--muted-foreground))"}}/><YAxis type="category" dataKey="label" width={130} axisLine={false} tickLine={false} tick={{fontSize:11,fill:"hsl(var(--muted-foreground))"}}/><Tooltip cursor={{fill:"hsl(var(--muted) / 0.35)"}} contentStyle={{borderRadius:12,border:"1px solid hsl(var(--border))",background:"hsl(var(--card))",fontSize:12}}/><Bar dataKey="count" name="Orders" fill="hsl(var(--primary))" radius={[0,6,6,0]} maxBarSize={22}/></BarChart></ResponsiveContainer></div>}
+          </div>
         </div>
       </section>
 
