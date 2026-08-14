@@ -690,6 +690,8 @@ export function useDashboardStats(businessId: string | null | undefined) {
           delayedOrStuckShipments: number;
           paidRevenue: number;
           topProduct: { name: string; orderCount: number } | null;
+          productBreakdown: Array<{ name: string; orderCount: number }>;
+          revenueByMonth: Array<{ month: string; amount: number }>;
           topRoute: { name: string; orderCount: number } | null;
           topCustomer: { id: string; name: string; companyName: string | null; paidAmount: number } | null;
         }>("/api/dashboard/summary"),
@@ -720,6 +722,8 @@ export function useDashboardStats(businessId: string | null | undefined) {
         delayedOrStuckShipments: summary.delayedOrStuckShipments,
         paidRevenue: summary.paidRevenue,
         topProduct: summary.topProduct,
+        productBreakdown: summary.productBreakdown,
+        revenueByMonth: summary.revenueByMonth,
         topRoute: summary.topRoute,
         topCustomer: summary.topCustomer,
       };

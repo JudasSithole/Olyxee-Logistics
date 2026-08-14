@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CircleDollarSign, Clock3, Crown, Package, Plus, Sparkles, TrendingUp, Truck } from "lucide-react";
+import { ArrowRight, CircleDollarSign, Clock3, Crown, Package, Plus, Sparkles, Truck } from "lucide-react";
 import { format } from "date-fns";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function StatCard({
   label,
@@ -88,13 +89,18 @@ export default function DashboardPage() {
       ) : null}
 
       {!loadingSummary && summary && (
-        <Card className="rounded-3xl border-border/70 shadow-sm">
-          <CardContent className="grid gap-5 p-5 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
-            <div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700"><Package className="h-4 w-4" /></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Top product</p><p className="mt-1 truncate font-bold">{summary.topProduct?.name ?? "No data yet"}</p><p className="text-xs text-muted-foreground">{summary.topProduct ? `${summary.topProduct.orderCount} orders` : "From order cargo"}</p></div></div>
-            <Link href={summary.topCustomer ? `/customers/${summary.topCustomer.id}` : "/customers"} className="flex items-start gap-3 sm:pl-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700"><Crown className="h-4 w-4" /></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Top client</p><p className="mt-1 truncate font-bold">{summary.topCustomer?.companyName || summary.topCustomer?.name || "No data yet"}</p><p className="text-xs text-muted-foreground">{summary.topCustomer ? `${money(summary.topCustomer.paidAmount)} paid` : "From paid invoices"}</p></div></Link>
-            <div className="flex items-start gap-3 sm:pl-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700"><TrendingUp className="h-4 w-4" /></div><div><p className="text-xs text-muted-foreground">Paid revenue</p><p className="mt-1 font-bold">{money(summary.paidRevenue)}</p><p className="text-xs text-muted-foreground">Confirmed invoices</p></div></div>
-          </CardContent>
-        </Card>
+        <section className="grid gap-4 lg:grid-cols-2">
+          <Card className="rounded-3xl border-border/70 shadow-sm">
+            <CardHeader className="pb-2"><CardTitle className="text-base">Orders by product</CardTitle><p className="text-xs text-muted-foreground">Most frequently shipped cargo</p></CardHeader>
+            <CardContent>
+              {summary.productBreakdown.length ? <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.productBreakdown} layout="vertical" margin={{ left: 8, right: 12 }}><CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} /><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" width={90} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }} formatter={(value) => [`${value} orders`, "Orders"]} /><Bar dataKey="orderCount" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <div className="flex h-56 items-center justify-center text-center"><div><Package className="mx-auto h-8 w-8 text-muted-foreground/30" /><p className="mt-3 text-sm font-medium">No product data yet</p><p className="mt-1 text-xs text-muted-foreground">Cargo types will appear after orders are created.</p></div></div>}
+            </CardContent>
+          </Card>
+          <Card className="rounded-3xl border-border/70 shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2"><div><CardTitle className="text-base">Paid revenue</CardTitle><p className="mt-1 text-xs text-muted-foreground">Confirmed invoices · last 6 months</p></div><div className="text-right"><p className="text-xl font-bold">{money(summary.paidRevenue)}</p>{summary.topCustomer && <Link href={`/customers/${summary.topCustomer.id}`} className="mt-1 flex items-center justify-end gap-1 text-[11px] text-muted-foreground hover:text-foreground"><Crown className="h-3 w-3 text-amber-600" />{summary.topCustomer.companyName || summary.topCustomer.name}</Link>}</div></CardHeader>
+            <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><AreaChart data={summary.revenueByMonth} margin={{ left: 0, right: 8, top: 12 }}><defs><linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)} width={34} /><Tooltip formatter={(value) => [money(Number(value)), "Paid revenue"]} /><Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#revenueFill)" /></AreaChart></ResponsiveContainer></div></CardContent>
+          </Card>
+        </section>
       )}
 
       <div>
