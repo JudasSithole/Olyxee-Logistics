@@ -26,7 +26,6 @@ import SettingsPage from "@/pages/settings";
 import ProfilePage from "@/pages/profile";
 import UpdatesPage from "@/pages/updates";
 import UpgradePage from "@/pages/upgrade";
-import PricingPage from "@/pages/pricing";
 import BillingCallbackPage from "@/pages/billing-callback";
 import NotFound from "@/pages/not-found";
 import InvoiceDetailPage from "@/pages/invoice-detail";
@@ -127,7 +126,7 @@ function PublicOnly({ component: Component }: { component: React.ComponentType }
   return <Component />;
 }
 
-// Announcement / pricing pages are public: logged-out visitors see them wrapped
+// Announcement and plan pages are public: logged-out visitors see them wrapped
 // in the public site chrome (header + nav tabs), while authenticated users see
 // them inside the app sidebar layout.
 function PublicOrApp({ component: Component }: { component: React.ComponentType }) {
@@ -191,7 +190,7 @@ function AppRoutes() {
       <Route path="/whats-new"><Redirect to="/updates" /></Route>
       <Route path="/coming-soon"><Redirect to="/updates" /></Route>
       <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
-      <Route path="/pricing" component={() => <PublicOrApp component={PricingPage} />} />
+      <Route path="/pricing"><Redirect to="/" /></Route>
       <Route
         path="/billing/callback"
         component={() => (

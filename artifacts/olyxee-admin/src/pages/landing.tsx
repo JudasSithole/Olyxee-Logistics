@@ -17,8 +17,6 @@ import dryCleanerPhoto from "@assets/image_1781655294134.png";
 import bakeryPhoto from "@assets/image_1781655422517.png";
 import logisticsPhoto from "@assets/image_1781655528508.png";
 import repairPhoto from "@assets/image_1781655658557.png";
-import { LaunchCountdown } from "@/components/launch-countdown";
-import { plans, LAUNCH_LABEL, type PlanId } from "@/lib/launch";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
@@ -527,11 +525,8 @@ const Landing: FC = () => {
             <span className="text-lg font-bold tracking-tight sm:text-xl">Olyxee Logistics</span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1">
-            <Link href="/pricing" className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
-              Pricing
-            </Link>
             <Link href="/upgrade" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
-              Upgrade Plan
+              Pricing
             </Link>
             <Link href="/login" className="ml-1 text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
               Log In
@@ -862,93 +857,6 @@ const Landing: FC = () => {
   );
 };
 
-const PLAN_BLURB: Record<PlanId, string> = {
-  beta: "Everything unlimited while we're in beta.",
-  free: "Get started and keep your first customers in the loop.",
-  pro: "For growing businesses that need SMS, branding and evidence.",
-  business: "Full power: high volume, advanced branding, and communication APIs.",
-};
-
-function planFeatures(id: PlanId): string[] {
-  return plans[id].features ?? [];
-}
-
-const PRICING_TIERS: PlanId[] = ["free", "pro", "business"];
-
-export const PricingSection: FC = () => (
-  <section id="pricing" className="px-4 sm:px-8 py-20 sm:py-28 bg-neutral-50 border-t border-neutral-200">
-    <div className="max-w-7xl mx-auto">
-      <div className="text-center max-w-2xl mx-auto">
-        <p style={mono} className="text-[10px] tracking-[0.25em] text-orange-500 mb-4">
-          PRICING
-        </p>
-        <h2 style={serif} className="text-4xl sm:text-5xl tracking-[-0.03em] text-neutral-900">
-          Simple plans for every stage
-        </h2>
-        <p className="mt-4 text-neutral-600">
-          Plans go live on {LAUNCH_LABEL}. Prices in South African Rand (ZAR).
-        </p>
-        <div className="mt-8 max-w-md mx-auto">
-          <LaunchCountdown />
-        </div>
-      </div>
-
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
-        {PRICING_TIERS.map((id) => {
-          const p = plans[id];
-          const highlight = id === "pro";
-          return (
-            <div
-              key={id}
-              data-testid={`pricing-${id}`}
-              className={`relative flex flex-col rounded-2xl bg-white p-8 ${
-                highlight ? "ring-2 ring-orange-500 shadow-lg" : "border border-neutral-200"
-              }`}
-            >
-              {highlight && (
-                <span
-                  style={mono}
-                  className="absolute -top-3 left-8 rounded-full bg-orange-500 px-3 py-1 text-[10px] tracking-[0.15em] text-white"
-                >
-                  MOST POPULAR
-                </span>
-              )}
-              <h3 style={serif} className="text-2xl text-neutral-900">
-                {p.name}
-              </h3>
-              <p className="mt-2 text-sm text-neutral-600 min-h-[40px]">{PLAN_BLURB[id]}</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight text-neutral-900">
-                  {p.price === 0 ? "Free" : `R${p.price}`}
-                </span>
-                {p.price > 0 && <span className="text-sm text-neutral-500">/month</span>}
-              </div>
-              <ul className="mt-6 space-y-3 flex-1">
-                {planFeatures(id).map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-neutral-700">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?mode=signup"
-                className={`mt-8 inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium transition-colors ${
-                  highlight
-                    ? "bg-neutral-900 text-white hover:bg-black"
-                    : "border border-neutral-300 text-neutral-900 hover:bg-neutral-100"
-                }`}
-              >
-                Get started
-              </Link>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  </section>
-);
-
 export const SiteFooter: FC = () => (
   <footer className="border-t border-neutral-200 bg-white px-4 sm:px-8 pt-16 pb-10">
     <div className="max-w-7xl mx-auto">
@@ -985,11 +893,6 @@ export const SiteFooter: FC = () => (
               >
                 About Olyxee <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
-            </li>
-            <li>
-              <Link href="/pricing" className="text-neutral-700 hover:text-neutral-950">
-                Pricing
-              </Link>
             </li>
             <li>
               <Link href="/contact" className="text-neutral-700 hover:text-neutral-950">

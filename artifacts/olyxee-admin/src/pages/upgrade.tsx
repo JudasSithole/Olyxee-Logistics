@@ -40,7 +40,7 @@ const FEATURE_GROUPS = [
     ["Public shipment tracking", true, true, true],
     ["Cancel and reschedule requests", true, true, true],
     ["Email status notifications", true, true, true],
-    ["SMS notifications", false, "100 / month", "100 / month"],
+    ["SMS notifications", false, "100 / month", "500 / month"],
   ]},
   { title: "Invoices and brand", rows: [
     ["Automatic PDF invoices", true, true, true],
@@ -49,6 +49,7 @@ const FEATURE_GROUPS = [
     ["Remove Olyxee branding", false, true, true],
   ]},
   { title: "Support", rows: [
+    ["Call centre", false, false, true],
     ["Standard support", true, true, true],
     ["Priority support", false, false, true],
   ]},
@@ -158,7 +159,7 @@ export default function UpgradePage() {
               </div>
 
               <p className="mt-5 text-xs font-semibold text-foreground">Plan highlights</p><ul className="mt-3 space-y-2.5">
-                {featureList(id).slice(0, 5).map((f) => (
+                {featureList(id).slice(0, id === "business" ? 6 : 5).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0" /><span className="text-muted-foreground">{f}</span>
                   </li>

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRight, Building2, Phone, Plus, Search, Users } from "lucide-react";
+import { ArrowRight, Building2, Mail, MapPin, Phone, Plus, ReceiptText, Search, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -23,18 +23,24 @@ function CustomerAvatar({ name, size = "sm" }: { name: string; size?: "sm" | "lg
 
 function CreateCustomerDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", companyName: "", address: "" });
+  const emptyForm = { fullName: "", email: "", phone: "", companyName: "", street: "", suburb: "", city: "", province: "", postalCode: "", country: "South Africa" };
+  const [form, setForm] = useState(emptyForm);
   const createMutation = useCreateCustomer();
+
+  const billingAddress = [form.street, form.suburb, form.city, form.province, form.postalCode, form.country]
+    .map(value => value.trim())
+    .filter(Boolean)
+    .join(", ");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(
-      { business_id: businessId, full_name: form.fullName, email: form.email, phone: form.phone || undefined, company_name: form.companyName || undefined, address: form.address || undefined },
+      { business_id: businessId, full_name: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim() || undefined, company_name: form.companyName.trim() || undefined, address: billingAddress || undefined },
       {
         onSuccess: () => {
           toast.success("Customer created successfully");
           setOpen(false);
-          setForm({ fullName: "", email: "", phone: "", companyName: "", address: "" });
+          setForm(emptyForm);
           onSuccess();
         },
         onError: () => toast.error("Failed to create customer"),
@@ -47,38 +53,38 @@ function CreateCustomerDialog({ onSuccess, businessId }: { onSuccess: () => void
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" /> New Customer</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[560px]">
+      <DialogContent className="max-h-[94vh] overflow-y-auto p-0 sm:max-w-[680px]">
+        <div className="border-b border-border px-5 py-5 sm:px-6">
         <DialogHeader className="text-left">
           <DialogTitle className="text-xl">Add a customer</DialogTitle>
-          <p className="text-sm leading-6 text-muted-foreground">These details are reused on orders, invoices, and delivery emails.</p>
+          <p className="text-sm leading-6 text-muted-foreground">Add the contact once. We’ll reuse it on orders, invoices, and customer updates.</p>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
-          <div className="grid grid-cols-2 gap-4 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
-            <div className="col-span-2"><p className="font-semibold">Primary contact</p><p className="mt-1 text-xs text-muted-foreground">Who should receive invoices and updates?</p></div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="fullName">Full name *</Label>
-              <Input id="fullName" autoFocus placeholder="e.g. Lethabo Scofield" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required />
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-0">
+          <section className="px-5 py-5 sm:px-6">
+            <div className="mb-4 flex items-start gap-3"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted"><UserRound className="h-4 w-4" /></div><div><h3 className="text-sm font-semibold">Primary contact</h3><p className="mt-0.5 text-xs text-muted-foreground">The person receiving invoices and shipment updates.</p></div></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2"><Label htmlFor="fullName">Full name *</Label><Input id="fullName" autoFocus autoComplete="name" placeholder="Lethabo Scofield" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required /></div>
+              <div className="space-y-2"><Label htmlFor="email">Email address *</Label><div className="relative"><Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input id="email" className="pl-9" type="email" autoComplete="email" placeholder="name@company.co.za" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required /></div></div>
+              <div className="space-y-2"><Label htmlFor="phone">Phone number</Label><div className="relative"><Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input id="phone" className="pl-9" type="tel" autoComplete="tel" inputMode="tel" placeholder="071 234 5678" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div></div>
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input id="email" type="email" placeholder="name@company.co.za" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+          </section>
+
+          <section className="border-t border-border px-5 py-5 sm:px-6">
+            <div className="mb-4 flex items-start gap-3"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted"><ReceiptText className="h-4 w-4" /></div><div><h3 className="text-sm font-semibold">Company and billing</h3><p className="mt-0.5 text-xs text-muted-foreground">Shown in the Bill To section of generated invoices.</p></div></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2"><Label htmlFor="companyName">Company name <span className="font-normal text-muted-foreground">(optional)</span></Label><div className="relative"><Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input id="companyName" className="pl-9" autoComplete="organization" placeholder="Pentagon Trading (Pty) Ltd" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} /></div></div>
+              <div className="space-y-2 sm:col-span-2"><Label htmlFor="street">Street address</Label><div className="relative"><MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/><Input id="street" className="pl-9" autoComplete="street-address" placeholder="73 Nugget Street" value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} /></div></div>
+              <div className="space-y-2"><Label htmlFor="suburb">Suburb</Label><Input id="suburb" placeholder="Hillbrow" value={form.suburb} onChange={e => setForm(f => ({ ...f, suburb: e.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="city">City</Label><Input id="city" autoComplete="address-level2" placeholder="Johannesburg" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="province">Province</Label><select id="province" autoComplete="address-level1" value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="">Select province</option>{["Eastern Cape","Free State","Gauteng","KwaZulu-Natal","Limpopo","Mpumalanga","Northern Cape","North West","Western Cape"].map(province=><option key={province}>{province}</option>)}</select></div>
+              <div className="space-y-2"><Label htmlFor="postalCode">Postal code</Label><Input id="postalCode" autoComplete="postal-code" inputMode="numeric" maxLength={10} placeholder="2001" value={form.postalCode} onChange={e => setForm(f => ({ ...f, postalCode: e.target.value }))} /></div>
+              <div className="space-y-2 sm:col-span-2"><Label htmlFor="country">Country</Label><Input id="country" autoComplete="country-name" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} /></div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone number</Label>
-              <Input id="phone" type="tel" placeholder="071 234 5678" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company name</Label>
-              <Input id="companyName" placeholder="Optional" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="address">Billing or delivery address</Label>
-              <Input id="address" placeholder="Street, suburb, city, postal code" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
-            </div>
-          </div>
-          <Button type="submit" size="lg" className="h-12 w-full rounded-xl" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Adding customer..." : "Add customer"}
-          </Button>
+            {billingAddress && <div className="mt-4 rounded-xl bg-muted/40 px-4 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Invoice preview</p><p className="mt-1 text-sm leading-5">{billingAddress}</p></div>}
+          </section>
+
+          <div className="sticky bottom-0 flex items-center justify-between gap-4 border-t border-border bg-background/95 px-5 py-4 backdrop-blur sm:px-6"><p className="hidden text-xs text-muted-foreground sm:block">Only name and email are required.</p><Button type="submit" size="lg" className="h-11 w-full rounded-xl sm:w-auto sm:min-w-36" disabled={createMutation.isPending}>{createMutation.isPending ? "Adding customer..." : "Add customer"}</Button></div>
         </form>
       </DialogContent>
     </Dialog>

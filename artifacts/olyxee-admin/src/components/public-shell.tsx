@@ -2,11 +2,10 @@ import { FC, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
 const TABS = [
-  { href: "/pricing", label: "Pricing" },
-  { href: "/upgrade", label: "Upgrade Plan" },
+  { href: "/upgrade", label: "Pricing" },
 ];
 
-// Public chrome for logged-out visitors viewing the announcement / pricing
+// Public chrome for logged-out visitors viewing announcement and plan
 // pages. Authenticated users see these same pages inside the app sidebar
 // layout instead (see App.tsx).
 export const PublicShell: FC<{ children: ReactNode }> = ({ children }) => {
