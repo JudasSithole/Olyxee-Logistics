@@ -15,20 +15,18 @@ function StatCard({
   helper,
   icon: Icon,
   href,
-  tone,
 }: {
   label: string;
   value: number;
   helper: string;
   icon: typeof Package;
   href: string;
-  tone: string;
 }) {
   return (
     <Link href={href} className="group block">
-      <Card className="h-full rounded-2xl border-border/70 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md">
+      <Card className="h-full rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-colors hover:bg-muted/25">
         <CardContent className="flex items-start gap-4 p-5">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground"><Icon className="h-5 w-5" /></div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-muted-foreground">{label}</p><ArrowRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" /></div>
             <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
@@ -72,8 +70,8 @@ export default function DashboardPage() {
       </div>
 
       {loadingSummary ? <Skeleton className="h-28 rounded-3xl" /> : priority ? (
-        <div className={`flex flex-col gap-4 rounded-3xl border p-5 sm:flex-row sm:items-center sm:justify-between ${priority.tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-100" : priority.tone === "green" ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-100" : "border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/25 dark:text-blue-100"}`}>
-          <div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-background/30"><Sparkles className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-[0.14em] opacity-65">Your next best action</p><p className="mt-1 text-lg font-bold">{priority.title}</p><p className="mt-1 max-w-2xl text-sm leading-6 opacity-75">{priority.detail}</p></div></div>
+        <div className="flex flex-col gap-4 rounded-3xl border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Sparkles className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">Your next best action</p><p className="mt-1 text-lg font-bold">{priority.title}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{priority.detail}</p></div></div>
           <Button asChild className="shrink-0 rounded-xl"><Link href={priority.href}>{priority.action} <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
         </div>
       ) : null}
@@ -82,29 +80,29 @@ export default function DashboardPage() {
         <div className="grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
       ) : summary ? (
         <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard label="Unpaid invoices" value={summary.unpaidInvoices} helper="Waiting for manual confirmation" icon={CircleDollarSign} href="/invoices" tone="bg-amber-500/10 text-amber-700 dark:text-amber-300" />
-          <StatCard label="Active deliveries" value={summary.activeDeliveries} helper="Shipments currently in progress" icon={Truck} href={`/orders?status=${encodeURIComponent("In transit")}`} tone="bg-blue-500/10 text-blue-700 dark:text-blue-300" />
-          <StatCard label="Delayed" value={summary.delayedOrders} helper="Orders that may need follow-up" icon={Clock3} href="/orders?status=Delayed" tone="bg-red-500/10 text-red-700 dark:text-red-300" />
+          <StatCard label="Unpaid invoices" value={summary.unpaidInvoices} helper="Waiting for manual confirmation" icon={CircleDollarSign} href="/invoices" />
+          <StatCard label="Active deliveries" value={summary.activeDeliveries} helper="Shipments currently in progress" icon={Truck} href={`/orders?status=${encodeURIComponent("In transit")}`} />
+          <StatCard label="Delayed" value={summary.delayedOrders} helper="Orders that may need follow-up" icon={Clock3} href="/orders?status=Delayed" />
         </div>
       ) : null}
 
       {!loadingSummary && summary && (
         <section className="grid gap-4 lg:grid-cols-2">
-          <Card className="rounded-3xl border-border/70 shadow-sm">
+          <Card className="rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
             <CardHeader className="pb-2"><CardTitle className="text-base">Orders by product</CardTitle><p className="text-xs text-muted-foreground">Most frequently shipped cargo</p></CardHeader>
             <CardContent>
               {summary.productBreakdown.length ? <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.productBreakdown} layout="vertical" margin={{ left: 8, right: 12 }}><CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} /><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" width={90} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }} formatter={(value) => [`${value} orders`, "Orders"]} /><Bar dataKey="orderCount" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <div className="flex h-56 items-center justify-center text-center"><div><Package className="mx-auto h-8 w-8 text-muted-foreground/30" /><p className="mt-3 text-sm font-medium">No product data yet</p><p className="mt-1 text-xs text-muted-foreground">Cargo types will appear after orders are created.</p></div></div>}
             </CardContent>
           </Card>
-          <Card className="rounded-3xl border-border/70 shadow-sm">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2"><div><CardTitle className="text-base">Paid revenue</CardTitle><p className="mt-1 text-xs text-muted-foreground">Confirmed invoices · last 6 months</p></div><div className="text-right"><p className="text-xl font-bold">{money(summary.paidRevenue)}</p>{summary.topCustomer && <Link href={`/customers/${summary.topCustomer.id}`} className="mt-1 flex items-center justify-end gap-1 text-[11px] text-muted-foreground hover:text-foreground"><Crown className="h-3 w-3 text-amber-600" />{summary.topCustomer.companyName || summary.topCustomer.name}</Link>}</div></CardHeader>
+          <Card className="rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2"><div><CardTitle className="text-base">Paid revenue</CardTitle><p className="mt-1 text-xs text-muted-foreground">Confirmed invoices · last 6 months</p></div><div className="text-right"><p className="text-xl font-bold">{money(summary.paidRevenue)}</p>{summary.topCustomer && <Link href={`/customers/${summary.topCustomer.id}`} className="mt-1 flex items-center justify-end gap-1 text-[11px] text-muted-foreground hover:text-foreground"><Crown className="h-3 w-3" />{summary.topCustomer.companyName || summary.topCustomer.name}</Link>}</div></CardHeader>
             <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><AreaChart data={summary.revenueByMonth} margin={{ left: 0, right: 8, top: 12 }}><defs><linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)} width={34} /><Tooltip formatter={(value) => [money(Number(value)), "Paid revenue"]} /><Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#revenueFill)" /></AreaChart></ResponsiveContainer></div></CardContent>
           </Card>
         </section>
       )}
 
       <div>
-        <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
+        <Card className="overflow-hidden rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border/60 p-5">
             <div><CardTitle className="text-lg">Recent orders</CardTitle><p className="mt-1 text-xs text-muted-foreground">Your latest shipment activity</p></div>
             <Button asChild variant="ghost" size="sm" className="gap-1.5 rounded-xl"><Link href="/orders">View all <ArrowRight className="h-3.5 w-3.5" /></Link></Button>
