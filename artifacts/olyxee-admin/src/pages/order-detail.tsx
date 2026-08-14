@@ -42,6 +42,11 @@ import {
   Send,
   CheckCircle2,
   Edit,
+  LockKeyhole,
+  ReceiptText,
+  Trash2,
+  Warehouse,
+  Truck,
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
@@ -303,7 +308,7 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6 max-w-6xl">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-24 w-full" />
         <div className="grid gap-6 lg:grid-cols-3">
@@ -337,48 +342,54 @@ export default function OrderDetailPage() {
   }
 
   const lastEvent = (order.tracking_events as any[])?.[0];
+  const warehouseReady = !order.transport_mode || Boolean(order.supplier_tracking_number);
+  const orderComplete = order.transport_mode
+    ? isLogisticsTerminal(order.current_status)
+    : isTerminal(order.current_status);
+  const workflowSteps = [
+    { label: "Invoice", detail: paymentConfirmed ? "Payment confirmed" : "Awaiting payment", done: paymentConfirmed, active: !paymentConfirmed, icon: ReceiptText },
+    { label: "Warehouse", detail: warehouseReady ? "Cargo received" : paymentConfirmed ? "Waiting for cargo" : "Starts after payment", done: paymentConfirmed && warehouseReady, active: paymentConfirmed && !warehouseReady, icon: Warehouse },
+    { label: "Shipment", detail: orderComplete ? "Delivery complete" : shipmentUpdatesUnlocked ? logisticsStatusLabel(order.current_status) : "Updates locked", done: orderComplete, active: shipmentUpdatesUnlocked && !orderComplete, icon: Truck },
+  ];
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl pb-8">
 
       {/* Nav + resend */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/orders">
           <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground">
             <ArrowLeft className="h-4 w-4" /> Orders
           </Button>
         </Link>
-        <div className="flex gap-2"><Button variant="outline" size="sm" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit</Button><Button variant="destructive" size="sm" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}>Delete order</Button><Button
+        <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" className="rounded-xl" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit order</Button><Button
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="gap-2 rounded-xl"
           onClick={handleResend}
           disabled={resendMutation.isPending}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? "animate-spin" : ""}`} />
-          Resend Email
-        </Button></div>
+          Resend email
+        </Button><Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-1 h-3.5 w-3.5"/>Delete</Button></div>
       </div>
 
       <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form></SheetContent></Sheet>
 
       {/* Order identity */}
-      <div className="pb-5 border-b">
-        <div className="flex flex-wrap items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold font-mono tracking-tight">{order.tracking_id}</h1>
+      <div className="rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-5 shadow-sm sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Order overview</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{order.order_reference ?? order.tracking_id}</h1>
           <StatusBadge status={order.current_status} />
           {order.transport_mode && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 border text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40">
+            <span className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40">
               {TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}
             </span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {order.order_reference && (
-            <span className="flex items-center gap-1">
-              <span className="text-xs">Ref:</span> {order.order_reference}
-            </span>
-          )}
+          <span className="flex items-center gap-1 font-mono text-xs">Tracking: {order.tracking_id}</span>
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}
@@ -401,6 +412,21 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
+      <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
+        <CardContent className="p-4 sm:p-5">
+          <div className="mb-4"><h2 className="font-semibold">Order progress</h2><p className="mt-0.5 text-xs text-muted-foreground">Complete each stage before moving to the next.</p></div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {workflowSteps.map((step, index) => {
+              const Icon = step.icon;
+              return <div key={step.label} className={`flex items-center gap-3 rounded-2xl border p-3.5 ${step.done ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/20" : step.active ? "border-primary/30 bg-primary/[0.07]" : "border-border/60 bg-muted/20"}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${step.done ? "bg-emerald-600 text-white" : step.active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{step.done ? <Check className="h-5 w-5" /> : step.active ? <Icon className="h-5 w-5" /> : <LockKeyhole className="h-4 w-4" />}</div>
+                <div className="min-w-0"><p className="text-sm font-semibold"><span className="mr-1.5 text-muted-foreground">{index + 1}.</span>{step.label}</p><p className="truncate text-xs text-muted-foreground">{step.detail}</p></div>
+              </div>;
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
 
@@ -408,26 +434,27 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Operations Control */}
-          <Card className="border-2 border-foreground/10">
+          <Card className="rounded-3xl border-border/70 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold">Operations Control</CardTitle>
+              <CardTitle className="text-lg font-bold">What happens next</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Manage delivery execution, customer communication, and tracking updates from one place.
+                This area only shows the action currently available to staff.
               </p>
             </CardHeader>
             <CardContent>
               {!paymentConfirmed ? (
-                <div className="border-2 border-amber-300 bg-amber-50 px-4 py-5 space-y-3">
+                <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-5 space-y-3">
                   <div>
                     <p className="font-semibold text-amber-950">Invoice has not been paid</p>
                     <p className="mt-1 text-sm text-amber-800">Confirm payment from the linked invoice before shipment status updates can begin.</p>
                   </div>
-                  {order.invoice_id ? <Link href={`/invoices/${order.invoice_id}`}><Button>View invoice and confirm payment</Button></Link> : null}
+                  {order.invoice_id ? <Link href={`/invoices/${order.invoice_id}`}><Button className="rounded-xl"><ReceiptText className="mr-2 h-4 w-4" />Open invoice and confirm payment</Button></Link> : null}
                 </div>
               ) : !shipmentUpdatesUnlocked ? (
-                <div className="border bg-muted/40 px-4 py-6 text-center">
-                  <p className="text-sm font-semibold">Payment confirmed</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Shipment updates unlock after the China warehouse records the internal supplier tracking number.</p>
+                <div className="rounded-2xl border bg-muted/30 px-4 py-6 text-center">
+                  <Warehouse className="mx-auto mb-2 h-7 w-7 text-muted-foreground" />
+                  <p className="text-sm font-semibold">Waiting for the China warehouse</p>
+                  <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-muted-foreground">Payment is confirmed. Record the supplier tracking number in Internal handling when the cargo arrives; customer shipment updates will then unlock.</p>
                 </div>
               ) : (order.transport_mode
                 ? isLogisticsTerminal(order.current_status)
@@ -502,7 +529,7 @@ export default function OrderDetailPage() {
           </Card>
 
           {/* Activity Timeline */}
-          <Card>
+          <Card className="rounded-3xl border-border/70 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold">Activity Timeline</CardTitle>
             </CardHeader>
@@ -572,7 +599,7 @@ export default function OrderDetailPage() {
           </Card>
 
           {/* Email History */}
-          <Card>
+          <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
             <Collapsible>
               <CollapsibleTrigger asChild>
                 <button
@@ -626,11 +653,11 @@ export default function OrderDetailPage() {
 
           {/* Customer */}
           {order.customers && (
-            <Card>
+            <Card className="rounded-3xl border-border/70 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <User className="h-3.5 w-3.5" />
-                  Customer
+                  Customer contact
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
@@ -675,11 +702,11 @@ export default function OrderDetailPage() {
           )}
 
           {/* Order details */}
-          <Card>
+          <Card className="rounded-3xl border-border/70 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Package className="h-3.5 w-3.5" />
-                Order Details
+                Shipment details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
@@ -710,17 +737,17 @@ export default function OrderDetailPage() {
                 <p className="text-sm font-mono">{order.tracking_id}</p>
               </div>
               <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier tracking number</p>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Internal handling</p>
                 {order.supplier_tracking_number ? (
-                  <p className="text-sm font-mono">{order.supplier_tracking_number}</p>
+                  <div className="rounded-xl bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">Supplier tracking number · staff only</p><p className="mt-1 text-sm font-mono font-semibold">{order.supplier_tracking_number}</p></div>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-sm text-amber-700">{order.current_status === "PENDING_TRACKING_NUMBER" ? "Payment confirmed - waiting for the China warehouse to receive the cargo" : "Tracking number entry unlocks after payment confirmation"}</p>
-                    {order.transport_mode && order.current_status === "PENDING_TRACKING_NUMBER" ? <div className="flex gap-2"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Supplier tracking number"/><Button size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Cargo received - save tracking</Button></div> : null}
+                    {order.transport_mode && order.current_status === "PENDING_TRACKING_NUMBER" ? <div className="space-y-2 rounded-xl border bg-muted/20 p-3"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Enter supplier tracking number"/><Button className="w-full rounded-xl" size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Confirm cargo received</Button><p className="text-[11px] leading-4 text-muted-foreground">This number is internal and is never shown to the customer.</p></div> : null}
                   </div>
                 )}
               </div>
-              {order.invoice_id && <div className="space-y-1"><p className="text-muted-foreground uppercase font-medium mb-0.5">Invoice</p><Link className="text-sm underline" href={`/invoices/${order.invoice_id}`}>View linked invoice</Link><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid - manually confirmed" : "Unpaid - confirmation required"}</p></div>}
+              {order.invoice_id && <div className="space-y-2 rounded-xl border p-3"><p className="text-muted-foreground uppercase font-medium">Invoice</p><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid · manually confirmed" : "Pending payment · confirmation required"}</p><Link className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline" href={`/invoices/${order.invoice_id}`}>Open invoice <ExternalLink className="h-3 w-3" /></Link></div>}
               {!order.invoice_id && <div className="space-y-2 border-t pt-3"><p className="text-muted-foreground uppercase font-medium">Generate invoice</p><Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>Generate draft invoice</Button></div>}
               {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>
