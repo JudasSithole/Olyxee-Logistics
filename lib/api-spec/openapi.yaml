@@ -896,6 +896,9 @@ components:
         allowedOrigins:
           type: string
           nullable: true
+        primaryBrandColour:
+          type: string
+          nullable: true
         onboardingCompleted:
           type: boolean
 

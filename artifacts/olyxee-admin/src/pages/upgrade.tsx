@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Check, Loader2, PackageCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, Minus } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useBusiness } from "@/hooks/use-supabase-queries";
@@ -28,6 +27,38 @@ const PLAN_COPY: Record<"free"|"pro"|"business", { eyebrow:string; description:s
   pro: { eyebrow:"For growing teams", description:"Add higher order volume, customer communication, and your own brand." },
   business: { eyebrow:"For busy operations", description:"Handle larger monthly volumes with priority help when your team needs it." },
 };
+
+const FEATURE_GROUPS = [
+  { title: "Operations", rows: [
+    ["Orders each month", "50", "300", "1,000"],
+    ["Customer and order management", true, true, true],
+    ["Air and sea freight workflows", true, true, true],
+    ["Manual payment confirmation", true, true, true],
+    ["Dashboard and business insights", true, true, true],
+  ]},
+  { title: "Customer experience", rows: [
+    ["Public shipment tracking", true, true, true],
+    ["Cancel and reschedule requests", true, true, true],
+    ["Email status notifications", true, true, true],
+    ["SMS notifications", false, "100 / month", "100 / month"],
+  ]},
+  { title: "Invoices and brand", rows: [
+    ["Automatic PDF invoices", true, true, true],
+    ["Invoice payment details", true, true, true],
+    ["Custom logo and company colour", false, true, true],
+    ["Remove Olyxee branding", false, true, true],
+  ]},
+  { title: "Support", rows: [
+    ["Standard support", true, true, true],
+    ["Priority support", false, false, true],
+  ]},
+] as const;
+
+function FeatureValue({ value }: { value: boolean | string }) {
+  if (value === true) return <Check className="mx-auto h-4 w-4" aria-label="Included" />;
+  if (value === false) return <Minus className="mx-auto h-4 w-4 text-muted-foreground/40" aria-label="Not included" />;
+  return <span className="text-xs font-medium">{value}</span>;
+}
 
 export default function UpgradePage() {
   const { status, user } = useAuth();
@@ -85,17 +116,18 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7 pb-12">
-      <header className="overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="max-w-2xl"><div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"><Sparkles className="h-3.5 w-3.5"/>Simple monthly pricing</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Choose the capacity your logistics team needs.</h1><p className="mt-3 text-base leading-relaxed text-muted-foreground">Every plan includes the complete order-to-invoice workflow, customer records, and public shipment tracking. Upgrade when your monthly volume grows.</p></div>
-          <div className="flex items-center gap-3 rounded-xl bg-muted/60 px-4 py-3"><PackageCheck className="h-5 w-5 text-primary"/><div><p className="text-sm font-semibold">No setup fees</p><p className="text-xs text-muted-foreground">Prices are monthly in ZAR</p></div></div>
+    <div className="mx-auto max-w-6xl space-y-8 pb-12">
+      <header className="border-b border-border pb-7 pt-2">
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium text-muted-foreground">Plans and pricing</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Choose a plan that fits your order volume.</h1>
+          <p className="mt-3 text-base leading-7 text-muted-foreground">All plans include the full cross-border order workflow, customer records, PDF invoices, email updates, and a customer tracking page. Upgrade for more capacity and branding.</p>
         </div>
       </header>
 
       {isAuthed && currentPlan === "beta" && (
-        <Card className="border-primary/20 bg-primary/5 p-4">
-          <div className="flex flex-wrap items-center gap-3"><Badge>BETA ACCESS</Badge><p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Your current account remains unlimited.</span> Paid subscriptions become available on {LAUNCH_LABEL}; no action is required today.</p></div>
+        <Card className="rounded-2xl border-border p-4 shadow-none">
+          <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">Your beta account is currently unlimited.</span> Paid subscriptions become available on {LAUNCH_LABEL}; you do not need to do anything today.</p>
         </Card>
       )}
 
@@ -105,23 +137,17 @@ export default function UpgradePage() {
         </Card>
       )}
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {TIERS.map((id) => {
           const p = plans[id];
           const isCurrent = currentPlan === id;
-          const isPro = id === "pro";
           return (
             <Card
               key={id}
               data-testid={`plan-${id}`}
-              className={`relative flex min-h-[500px] flex-col overflow-hidden p-6 ${
-                isPro ? "border-primary shadow-lg shadow-primary/10 ring-1 ring-primary" : "shadow-sm"
-              }`}
+              className="relative flex flex-col rounded-3xl border-border/70 p-6 shadow-sm"
             >
-              {isPro && (
-                <div className="absolute inset-x-0 top-0 bg-primary py-1.5 text-center text-[11px] font-bold uppercase tracking-widest text-primary-foreground">Most popular</div>
-              )}
-              <div className={isPro ? "pt-5" : ""}><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].eyebrow}</p><h2 className="mt-2 text-xl font-bold">{p.name}</h2><p className="mt-2 min-h-[60px] text-sm leading-relaxed text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].description}</p></div>
+              <div><p className="text-xs font-medium text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].eyebrow}</p><div className="mt-2 flex items-center gap-2"><h2 className="text-xl font-bold">{p.name}</h2>{id === "pro" && <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Recommended</span>}</div><p className="mt-2 min-h-[60px] text-sm leading-relaxed text-muted-foreground">{PLAN_COPY[id as "free"|"pro"|"business"].description}</p></div>
               <div className="mt-5 flex items-baseline gap-1 border-b border-border pb-5">
                 <span className="text-4xl font-bold tracking-tight">
                   {formatPrice(p.price)}
@@ -131,10 +157,10 @@ export default function UpgradePage() {
                 )}
               </div>
 
-              <p className="mt-5 text-xs font-bold uppercase tracking-wider text-foreground">What&apos;s included</p><ul className="mt-3 space-y-3">
-                {featureList(id).map((f) => (
+              <p className="mt-5 text-xs font-semibold text-foreground">Plan highlights</p><ul className="mt-3 space-y-2.5">
+                {featureList(id).slice(0, 5).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
-                    <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-primary/10"><Check className="h-3 w-3 text-primary" /></span><span className="text-muted-foreground">{f}</span>
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0" /><span className="text-muted-foreground">{f}</span>
                   </li>
                 ))}
               </ul>
@@ -142,7 +168,7 @@ export default function UpgradePage() {
               <div className="mt-7 flex-1" />
               <Button
                 className="w-full"
-                variant={isPro ? "default" : "outline"}
+                variant={id === "pro" ? "default" : "outline"}
                 disabled={
                   pendingPlan !== null || !checkoutEnabled || (isAuthed && isCurrent)
                 }
@@ -167,6 +193,16 @@ export default function UpgradePage() {
           );
         })}
       </div>
+
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
+        <div className="border-b border-border px-5 py-5 sm:px-6"><h2 className="text-xl font-bold">Compare every feature</h2><p className="mt-1 text-sm text-muted-foreground">A complete view of what each plan includes.</p></div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px] text-left">
+            <thead><tr className="border-b border-border bg-muted/25"><th className="w-[46%] px-6 py-4 text-xs font-semibold text-muted-foreground">Feature</th>{TIERS.map(id=><th key={id} className="px-4 py-4 text-center text-sm font-semibold">{plans[id].name}</th>)}</tr></thead>
+            <tbody>{FEATURE_GROUPS.map(group=><Fragment key={group.title}><tr className="border-b border-border bg-muted/15"><td colSpan={4} className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.title}</td></tr>{group.rows.map(row=><tr key={row[0]} className="border-b border-border/60 last:border-0"><td className="px-6 py-3.5 text-sm">{row[0]}</td><td className="px-4 py-3.5 text-center"><FeatureValue value={row[1]}/></td><td className="px-4 py-3.5 text-center"><FeatureValue value={row[2]}/></td><td className="px-4 py-3.5 text-center"><FeatureValue value={row[3]}/></td></tr>)}</Fragment>)}</tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-5 text-xs text-muted-foreground"><span>Prices in South African Rand (ZAR)</span><span>Change or cancel at any time</span><span>No payment gateway is used for customer invoices</span></div>
     </div>

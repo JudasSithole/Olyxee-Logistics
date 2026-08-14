@@ -42,11 +42,9 @@ import {
   Send,
   CheckCircle2,
   Edit,
-  LockKeyhole,
   ReceiptText,
   Trash2,
   Warehouse,
-  Truck,
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
@@ -342,16 +340,6 @@ export default function OrderDetailPage() {
   }
 
   const lastEvent = (order.tracking_events as any[])?.[0];
-  const warehouseReady = !order.transport_mode || Boolean(order.supplier_tracking_number);
-  const orderComplete = order.transport_mode
-    ? isLogisticsTerminal(order.current_status)
-    : isTerminal(order.current_status);
-  const workflowSteps = [
-    { label: "Invoice", detail: paymentConfirmed ? "Payment confirmed" : "Awaiting payment", done: paymentConfirmed, active: !paymentConfirmed, icon: ReceiptText },
-    { label: "Warehouse", detail: warehouseReady ? "Cargo received" : paymentConfirmed ? "Waiting for cargo" : "Starts after payment", done: paymentConfirmed && warehouseReady, active: paymentConfirmed && !warehouseReady, icon: Warehouse },
-    { label: "Shipment", detail: orderComplete ? "Delivery complete" : shipmentUpdatesUnlocked ? logisticsStatusLabel(order.current_status) : "Updates locked", done: orderComplete, active: shipmentUpdatesUnlocked && !orderComplete, icon: Truck },
-  ];
-
   return (
     <div className="space-y-6 max-w-6xl pb-8">
 
@@ -377,55 +365,26 @@ export default function OrderDetailPage() {
       <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form></SheetContent></Sheet>
 
       {/* Order identity */}
-      <div className="rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-5 shadow-sm sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Order overview</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{order.order_reference ?? order.tracking_id}</h1>
-          <StatusBadge status={order.current_status} />
-          {order.transport_mode && (
-            <span className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40">
-              {TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}
-            </span>
-          )}
+      <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
+        <div className="bg-gradient-to-br from-primary/[0.09] via-background to-background p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Order overview</p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{order.order_reference ?? order.tracking_id}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">{order.tracking_id}</span><span>•</span><span>Created {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2"><StatusBadge status={order.current_status} />{order.transport_mode && <span className="rounded-lg border bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}</span>}</div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1 font-mono text-xs">Tracking: {order.tracking_id}</span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}
-          </span>
-          {order.estimated_delivery_date && (
-            <span>
-              ETA: {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}
-            </span>
-          )}
-          {order.customers && (
-            <Link
-              href={`/customers/${order.customers.id}`}
-              className="flex items-center gap-1 text-primary hover:underline"
-            >
-              {order.customers.full_name}
-              {order.customers.company_name && ` · ${order.customers.company_name}`}
-              <ExternalLink className="h-3 w-3" />
-            </Link>
-          )}
+        <div className="grid border-t border-border/60 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Payment</div><p className={`mt-2 text-sm font-semibold ${paymentConfirmed ? "text-emerald-700" : "text-amber-700"}`}>{paymentConfirmed ? "Payment confirmed" : "Awaiting payment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
+          <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
+          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}</p>}</div>
+          <div className="p-4 sm:p-5"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
         </div>
       </div>
-
-      <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
-        <CardContent className="p-4 sm:p-5">
-          <div className="mb-4"><h2 className="font-semibold">Order progress</h2><p className="mt-0.5 text-xs text-muted-foreground">Complete each stage before moving to the next.</p></div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {workflowSteps.map((step, index) => {
-              const Icon = step.icon;
-              return <div key={step.label} className={`flex items-center gap-3 rounded-2xl border p-3.5 ${step.done ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/20" : step.active ? "border-primary/30 bg-primary/[0.07]" : "border-border/60 bg-muted/20"}`}>
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${step.done ? "bg-emerald-600 text-white" : step.active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{step.done ? <Check className="h-5 w-5" /> : step.active ? <Icon className="h-5 w-5" /> : <LockKeyhole className="h-4 w-4" />}</div>
-                <div className="min-w-0"><p className="text-sm font-semibold"><span className="mr-1.5 text-muted-foreground">{index + 1}.</span>{step.label}</p><p className="truncate text-xs text-muted-foreground">{step.detail}</p></div>
-              </div>;
-            })}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">

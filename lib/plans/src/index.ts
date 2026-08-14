@@ -61,7 +61,7 @@ export const plans: Record<PlanId, PlanConfig> = {
 
   pro: {
     name: "Growth",
-    price: 99,
+    price: 89,
     orderLimit: 300,
     emailLimit: null,
     smsLimit: 100,
@@ -80,7 +80,7 @@ export const plans: Record<PlanId, PlanConfig> = {
 
   business: {
     name: "Scale",
-    price: 499,
+    price: 999,
     orderLimit: 1000,
     emailLimit: null,
     smsLimit: 100,

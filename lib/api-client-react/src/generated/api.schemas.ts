@@ -96,6 +96,7 @@ export interface BusinessUpdate {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  primaryBrandColour?: string | null;
   onboardingCompleted?: boolean;
 }
 

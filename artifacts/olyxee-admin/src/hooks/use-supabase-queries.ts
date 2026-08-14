@@ -368,6 +368,7 @@ export function useUpdateBusiness() {
       if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
       if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
       if (updates.business_logo_url !== undefined) body.businessLogoUrl = updates.business_logo_url;
+      if (updates.primary_brand_colour !== undefined) body.primaryBrandColour = updates.primary_brand_colour;
       if (updates.invoice_legal_name !== undefined) body.invoiceLegalName = updates.invoice_legal_name;
       if (updates.invoice_registration_number !== undefined) body.invoiceRegistrationNumber = updates.invoice_registration_number;
       if (updates.invoice_tax_number !== undefined) body.invoiceTaxNumber = updates.invoice_tax_number;
@@ -386,8 +387,8 @@ export function useUpdateBusiness() {
       });
       return mapBusiness(data);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.business() });
+    onSuccess: (business) => {
+      qc.setQueryData(qk.business(), business);
     },
   });
 }

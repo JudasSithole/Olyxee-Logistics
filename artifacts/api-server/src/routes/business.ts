@@ -203,6 +203,8 @@ router.put("/business", requireAuth, async (req, res) => {
           : existing.allowedOrigins,
         businessLogoUrl: "businessLogoUrl" in parse.data
           ? parse.data.businessLogoUrl ?? null : existing.businessLogoUrl,
+        primaryBrandColour: "primaryBrandColour" in parse.data
+          ? parse.data.primaryBrandColour ?? null : existing.primaryBrandColour,
         invoiceLegalName: "invoiceLegalName" in parse.data ? parse.data.invoiceLegalName ?? null : existing.invoiceLegalName,
         invoiceRegistrationNumber: "invoiceRegistrationNumber" in parse.data ? parse.data.invoiceRegistrationNumber ?? null : existing.invoiceRegistrationNumber,
         invoiceTaxNumber: "invoiceTaxNumber" in parse.data ? parse.data.invoiceTaxNumber ?? null : existing.invoiceTaxNumber,

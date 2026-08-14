@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CircleDollarSign, Clock3, Crown, Package, Plus, Sparkles, Truck } from "lucide-react";
+import { ArrowRight, CircleDollarSign, Clock3, Crown, Package, Plus, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -68,13 +68,6 @@ export default function DashboardPage() {
         </div>
         <Button asChild className="h-11 gap-2 rounded-xl px-5"><Link href="/orders"><Plus className="h-4 w-4" /> New order</Link></Button>
       </div>
-
-      {loadingSummary ? <Skeleton className="h-28 rounded-3xl" /> : priority ? (
-        <div className="flex flex-col gap-4 rounded-3xl border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Sparkles className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">Your next best action</p><p className="mt-1 text-lg font-bold">{priority.title}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{priority.detail}</p></div></div>
-          <Button asChild className="shrink-0 rounded-xl"><Link href={priority.href}>{priority.action} <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-        </div>
-      ) : null}
 
       {loadingSummary ? (
         <div className="grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>

@@ -209,11 +209,20 @@ function AppRoutes() {
 // active. It only switches on once the user is authenticated, so logged-out
 // visitors always see our Olyxee Logistics favicon.
 function BrandingSync() {
-  const { status } = useAuth();
-  const { setBrandingActive } = useTheme();
+  const { status, user } = useAuth();
+  const { data: business } = useBusiness(user?.businessId);
+  const { setBrandingActive, saveSettings } = useTheme();
   useEffect(() => {
     setBrandingActive(status === "authenticated");
   }, [status, setBrandingActive]);
+  useEffect(() => {
+    if (!business) return;
+    saveSettings({
+      businessName: business.name,
+      logoUrl: business.business_logo_url ?? "",
+      primaryColor: business.primary_brand_colour || "#2b2b2b",
+    });
+  }, [business?.name, business?.business_logo_url, business?.primary_brand_colour, saveSettings]);
   return null;
 }
 
@@ -223,8 +232,8 @@ function App() {
       <WouterRouter base={basePath}>
         <TooltipProvider>
           <AuthProvider>
-            <BrandingSync />
             <QueryClientProvider client={queryClient}>
+              <BrandingSync />
               <AppRoutes />
             </QueryClientProvider>
           </AuthProvider>

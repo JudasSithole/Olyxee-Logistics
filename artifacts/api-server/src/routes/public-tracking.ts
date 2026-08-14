@@ -1,15 +1,39 @@
 import { Router } from "express";
-import { db, ordersTable, trackingEventsTable } from "@workspace/db";
+import { db, ordersTable, trackingEventsTable, businessesTable, auditLogsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
+import { generateId } from "../lib/id";
 import {
   logisticsFlow,
   logisticsStatusLabel,
-  isLogisticsTerminal,
   TRANSPORT_MODE_LABELS,
   isTransportMode,
 } from "@workspace/order-statuses";
 
 const router = Router();
+
+const selfServiceLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please call the business if you still need help." },
+});
+
+const ServiceRequestBody = z.object({
+  type: z.enum(["cancel", "reschedule"]),
+  requestedDate: z.string().max(40).optional(),
+  note: z.string().trim().max(500).optional(),
+}).superRefine((value, ctx) => {
+  if (value.type === "reschedule" && !value.requestedDate) {
+    ctx.addIssue({ code: "custom", path: ["requestedDate"], message: "Choose a preferred date" });
+  }
+});
+
+function isSelfServiceClosed(status: string) {
+  return ["DELIVERED", "CANCELLED", "RETURNED", "Delivered", "Cancelled", "Returned"].includes(status);
+}
 
 // Map internal status labels (free-form, defined in lib/order-statuses) to the
 // stable public enum the FreightShift brief specifies. Anything we don't
@@ -75,6 +99,10 @@ router.get("/public/track/:trackingId", async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
+
+    const business = await db.query.businessesTable.findFirst({
+      where: eq(businessesTable.id, order.businessId),
+    });
 
     // No business lookup here - the brief explicitly forbids leaking the
     // owning business's name on the public payload.
@@ -142,6 +170,17 @@ router.get("/public/track/:trackingId", async (req, res) => {
       ...(flow ? { flow } : {}),
       estimatedDeliveryDate: order.estimatedDeliveryDate ?? null,
       lastUpdated: order.updatedAt.toISOString(),
+      business: business ? {
+        name: business.invoiceLegalName || business.name,
+        phone: business.invoicePhone || business.phone || null,
+        email: business.invoiceEmail || business.supportEmail || null,
+        logoUrl: business.invoiceLogoUrl || business.businessLogoUrl || null,
+        primaryColor: business.primaryBrandColour || null,
+      } : null,
+      selfService: {
+        canCancel: !isSelfServiceClosed(order.currentStatus),
+        canReschedule: !isSelfServiceClosed(order.currentStatus),
+      },
       events: events.filter((e) => e.status !== "PENDING_TRACKING_NUMBER").map((e) => {
         const status = flowStatuses ? e.status : publicStatusFor(e.status);
         const label = flowStatuses
@@ -165,6 +204,60 @@ router.get("/public/track/:trackingId", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Public tracking lookup failed");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/public/track/:trackingId/requests", selfServiceLimiter, async (req, res) => {
+  try {
+    const trackingId = String(req.params.trackingId ?? "").trim().toUpperCase();
+    if (!trackingId || trackingId.length > 40 || !/^[A-Z0-9-]+$/.test(trackingId)) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const parsed = ServiceRequestBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid request" });
+      return;
+    }
+    const order = await db.query.ordersTable.findFirst({
+      where: eq(ordersTable.trackingId, trackingId),
+    });
+    if (!order) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (isSelfServiceClosed(order.currentStatus)) {
+      res.status(409).json({ error: "This order can no longer be changed online. Please contact the business." });
+      return;
+    }
+
+    const requestedAt = new Date();
+    await db.insert(auditLogsTable).values({
+      id: generateId(),
+      businessId: order.businessId,
+      userId: null,
+      action: parsed.data.type === "cancel" ? "CUSTOMER_CANCEL_REQUEST" : "CUSTOMER_RESCHEDULE_REQUEST",
+      entityType: "order",
+      entityId: order.id,
+      metadata: {
+        source: "public_tracking",
+        trackingId: order.trackingId,
+        requestedDate: parsed.data.requestedDate || null,
+        note: parsed.data.note || null,
+        requestedAt: requestedAt.toISOString(),
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: parsed.data.type === "cancel"
+        ? "Your cancellation request has been sent to the business."
+        : "Your preferred delivery date has been sent to the business.",
+      requestedAt: requestedAt.toISOString(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Public self-service request failed");
+    res.status(500).json({ error: "We could not submit your request right now." });
   }
 });
 

@@ -690,14 +690,14 @@ export default function SettingsPage() {
   // own component because it persists to the server, not localStorage.
   const initial = useMemo(
     () => ({
-      businessName: theme.businessName,
+      businessName: settingsBusiness?.name ?? theme.businessName,
       businessTagline: theme.businessTagline,
       logoUrl: settingsBusiness?.business_logo_url ?? theme.logoUrl,
       faviconUrl: theme.faviconUrl,
-      primaryColor: theme.primaryColor,
+      primaryColor: settingsBusiness?.primary_brand_colour ?? theme.primaryColor,
     }),
     // Re-baseline only when the saved theme values change (e.g. after a save).
-    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor, settingsBusiness?.business_logo_url],
+    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor, settingsBusiness?.name, settingsBusiness?.business_logo_url, settingsBusiness?.primary_brand_colour],
   );
 
   const [form, setForm] = useState(initial);
@@ -738,9 +738,14 @@ export default function SettingsPage() {
   const handleSave = useCallback(async () => {
     if (user?.businessId) {
       try {
-        await saveBusiness.mutateAsync({ id: user.businessId, business_logo_url: form.logoUrl || null });
+        await saveBusiness.mutateAsync({
+          id: user.businessId,
+          name: form.businessName.trim(),
+          business_logo_url: form.logoUrl || null,
+          primary_brand_colour: form.primaryColor || null,
+        });
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Unable to save logo");
+        toast.error(error instanceof Error ? error.message : "Unable to save business settings");
         return;
       }
     }
@@ -751,7 +756,7 @@ export default function SettingsPage() {
       faviconUrl: form.faviconUrl,
       primaryColor: form.primaryColor,
     });
-    toast.success("Settings saved - logo will be used on invoices");
+    toast.success("Business settings saved everywhere");
   }, [theme, form, user?.businessId, saveBusiness]);
 
   const handleDiscard = useCallback(() => {

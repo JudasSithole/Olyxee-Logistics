@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { CalendarDays, Check, Headphones, Mail, PackageCheck, Phone, X, XCircle } from "lucide-react";
 
 const serif = { fontFamily: '"Lora", ui-serif, Georgia, serif', fontWeight: 500 };
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
@@ -29,6 +30,8 @@ interface TrackingResponse {
   estimatedDeliveryDate: string | null;
   lastUpdated: string;
   events: TrackingEvent[];
+  business: { name: string; phone: string | null; email: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+  selfService: { canCancel: boolean; canReschedule: boolean };
 }
 
 // Tone per public status enum. Anything unknown falls back to neutral so the
@@ -87,6 +90,30 @@ export default function TrackPage() {
   const [data, setData] = useState<TrackingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [action, setAction] = useState<"cancel" | "reschedule" | null>(null);
+  const [requestedDate, setRequestedDate] = useState("");
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [requestMessage, setRequestMessage] = useState<string | null>(null);
+
+  const submitRequest = async () => {
+    if (!action || (action === "reschedule" && !requestedDate)) return;
+    setSubmitting(true);
+    try {
+      const response = await apiFetch<{ message: string }>(`/api/public/track/${encodeURIComponent(code)}/requests`, {
+        method: "POST",
+        body: { type: action, requestedDate: requestedDate || undefined, note: note || undefined },
+      });
+      setRequestMessage(response.message);
+      setAction(null);
+      setRequestedDate("");
+      setNote("");
+    } catch (err) {
+      setRequestMessage(err instanceof ApiError ? err.message : "We could not send your request. Please call the business.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -115,20 +142,19 @@ export default function TrackPage() {
 
   return (
     <div
-      className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col items-center px-4 py-10 sm:py-16"
+      className="min-h-screen bg-[#f5f5f7] text-neutral-900 flex flex-col items-center px-4 py-6 sm:py-12"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* Brand dateline */}
-      <div className="w-full max-w-xl flex items-center justify-between mb-8">
-        <span style={mono} className="text-[11px] tracking-[0.22em] text-neutral-500 uppercase">
-          Olyxee Logistics
-        </span>
-        <span style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase">
-          Order Status
-        </span>
+      <div className="w-full max-w-2xl flex items-center justify-between mb-7">
+        <div className="flex items-center gap-3">
+          {data?.business?.logoUrl ? <img src={data.business.logoUrl} alt="" className="h-9 w-9 rounded-xl object-contain bg-white border border-black/5" /> : <div className="h-9 w-9 rounded-xl bg-neutral-900 text-white grid place-items-center font-semibold">{data?.business?.name?.[0] || "O"}</div>}
+          <div><p className="text-sm font-semibold">{data?.business?.name || "Olyxee Logistics"}</p><p className="text-xs text-neutral-500">Customer tracking</p></div>
+        </div>
+        <span className="rounded-full bg-white border border-black/5 px-3 py-1.5 text-xs text-neutral-500">Secure order page</span>
       </div>
 
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-2xl">
         {loading && (
           <div className="bg-white border border-neutral-200 px-8 py-16 text-center">
             <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase">
@@ -159,9 +185,9 @@ export default function TrackPage() {
         )}
 
         {!loading && data && (
-          <div className="bg-white border border-neutral-200 shadow-[6px_6px_0_0_rgba(0,0,0,0.06)]">
+          <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_18px_60px_rgba(0,0,0,0.08)] overflow-hidden">
             {/* Header */}
-            <div className="px-8 pt-8 pb-6 border-b border-dashed border-neutral-300">
+            <div className="px-6 sm:px-9 pt-8 pb-7 border-b border-neutral-100">
               <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-3">
                 Tracking ID
               </p>
@@ -185,16 +211,17 @@ export default function TrackPage() {
                 </p>
               )}
               {data.estimatedDeliveryDate && (
-                <p className="mt-1 text-sm text-neutral-500">
-                  Estimated delivery:{" "}
-                  <span className="text-neutral-700">{formatDate(data.estimatedDeliveryDate)}</span>
-                </p>
+                <div className="mt-5 flex items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3"><CalendarDays className="h-5 w-5 text-neutral-500"/><div><p className="text-xs text-neutral-500">Estimated delivery</p><p className="text-sm font-semibold">{formatDate(data.estimatedDeliveryDate)}</p></div></div>
               )}
+            </div>
+
+            <div className="px-6 sm:px-9 py-6 border-b border-neutral-100">
+              <div className="flex items-start gap-3"><PackageCheck className="h-5 w-5 mt-0.5" style={{ color: data.business?.primaryColor || "#2b2b2b" }}/><div><p className="text-sm font-semibold">What happens next</p><p className="mt-1 text-sm leading-6 text-neutral-500">We’ll update this page as your shipment moves. You don’t need to call for routine status checks.</p></div></div>
             </div>
 
             {/* Transport-aware journey checklist (logistics orders only) */}
             {data.flow && data.flow.length > 0 && (
-              <div className="px-8 py-7 border-b border-dashed border-neutral-300">
+              <div className="px-6 sm:px-9 py-7 border-b border-neutral-100">
                 <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-5">
                   Journey
                 </p>
@@ -247,7 +274,7 @@ export default function TrackPage() {
             )}
 
             {/* Timeline */}
-            <div className="px-8 py-7">
+            <div className="px-6 sm:px-9 py-7">
               <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-5">
                 History
               </p>
@@ -283,6 +310,20 @@ export default function TrackPage() {
               )}
             </div>
 
+            {(data.selfService.canCancel || data.selfService.canReschedule || data.business?.phone || data.business?.email) && (
+              <div className="px-6 sm:px-9 py-7 bg-neutral-50 border-t border-neutral-100">
+                <div className="flex items-center gap-2 mb-4"><Headphones className="h-4 w-4"/><h2 className="text-sm font-semibold">Need help with this shipment?</h2></div>
+                {requestMessage && <div className="mb-4 flex items-start gap-2 rounded-2xl bg-green-50 text-green-800 px-4 py-3 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0"/>{requestMessage}</div>}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {data.selfService.canReschedule && <button onClick={()=>{setRequestMessage(null);setAction("reschedule");}} className="rounded-2xl bg-white border border-black/[0.07] px-3 py-3 text-sm font-medium hover:bg-neutral-100 flex flex-col items-center gap-2"><CalendarDays className="h-5 w-5"/>Reschedule</button>}
+                  {data.selfService.canCancel && <button onClick={()=>{setRequestMessage(null);setAction("cancel");}} className="rounded-2xl bg-white border border-black/[0.07] px-3 py-3 text-sm font-medium hover:bg-red-50 hover:text-red-700 flex flex-col items-center gap-2"><XCircle className="h-5 w-5"/>Cancel</button>}
+                  {data.business?.phone && <a href={`tel:${data.business.phone}`} className="rounded-2xl bg-white border border-black/[0.07] px-3 py-3 text-sm font-medium hover:bg-neutral-100 flex flex-col items-center gap-2"><Phone className="h-5 w-5"/>Call</a>}
+                  {data.business?.email && <a href={`mailto:${data.business.email}?subject=${encodeURIComponent(`Help with ${data.trackingId}`)}`} className="rounded-2xl bg-white border border-black/[0.07] px-3 py-3 text-sm font-medium hover:bg-neutral-100 flex flex-col items-center gap-2"><Mail className="h-5 w-5"/>Email</a>}
+                </div>
+                <p className="mt-3 text-xs text-neutral-500">Cancellation and date changes are requests. The business will confirm them with you.</p>
+              </div>
+            )}
+
             {/* Footer */}
             <div className="px-8 py-5 bg-neutral-50 border-t border-neutral-200">
               <p style={mono} className="text-[11px] tracking-[0.15em] text-neutral-400 uppercase">
@@ -296,6 +337,15 @@ export default function TrackPage() {
           Powered by Olyxee
         </p>
       </div>
+
+      {action && data && <div className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center" onMouseDown={(e)=>{if(e.target===e.currentTarget)setAction(null);}}>
+        <div className="w-full max-w-md rounded-[26px] bg-white p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{action === "cancel" ? "Request cancellation" : "Choose another date"}</h2><p className="mt-1 text-sm text-neutral-500">For order {data.trackingId}</p></div><button aria-label="Close" onClick={()=>setAction(null)} className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"><X className="h-4 w-4"/></button></div>
+          {action === "cancel" ? <div className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">This sends a request to the business. Your order remains active until they confirm the cancellation.</div> : <label className="mt-5 block"><span className="text-sm font-medium">Preferred delivery date</span><input type="date" min={new Date().toISOString().slice(0,10)} value={requestedDate} onChange={e=>setRequestedDate(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-neutral-200 px-3 text-sm"/></label>}
+          <label className="mt-4 block"><span className="text-sm font-medium">Note <span className="font-normal text-neutral-400">(optional)</span></span><textarea value={note} onChange={e=>setNote(e.target.value.slice(0,500))} rows={3} placeholder={action === "cancel" ? "Tell us why, if you’d like" : "Add delivery instructions"} className="mt-2 w-full rounded-xl border border-neutral-200 p-3 text-sm resize-none"/></label>
+          <button onClick={submitRequest} disabled={submitting || (action === "reschedule" && !requestedDate)} className="mt-5 h-12 w-full rounded-xl text-white font-semibold disabled:opacity-40" style={{backgroundColor:data.business?.primaryColor || "#171717"}}>{submitting ? "Sending…" : "Send request"}</button>
+        </div>
+      </div>}
     </div>
   );
 }

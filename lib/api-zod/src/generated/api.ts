@@ -89,6 +89,7 @@ export const UpdateBusinessBody = zod.object({
   "invoicePaymentDetails": zod.string().nullish(),
   "invoicePaymentTerms": zod.string().nullish(),
   "invoiceFooterNote": zod.string().nullish(),
+  "primaryBrandColour": zod.string().nullish(),
   "onboardingCompleted": zod.boolean().optional()
 })
 
