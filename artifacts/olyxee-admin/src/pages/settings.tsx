@@ -916,7 +916,6 @@ export default function SettingsPage() {
             </SectionShell>
             <div className="lg:sticky lg:top-5"><BrandIdentityPreview businessName={form.businessName} tagline={form.businessTagline} logoUrl={form.logoUrl} faviconUrl={form.faviconUrl} primaryColor={normalizeHex(form.primaryColor)||DEFAULT_PRIMARY}/></div>
           </div>
-          <div className="mt-8"><BusinessTypeSection /></div>
         </TabsContent>
 
         <TabsContent value="invoice" className="mt-6 focus-visible:outline-none">

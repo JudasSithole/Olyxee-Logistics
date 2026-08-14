@@ -31,7 +31,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import { useBusiness, useDeleteBusiness } from "@/hooks/use-supabase-queries";
+import { useBusiness, useDeleteBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
+import { BUSINESS_TYPES } from "@/components/business-type-selector";
 
 // Self-service profile editing for the signed-in admin: name, email, password,
 // and account deletion. Reachable from the sidebar (click your name) or /profile.
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { data: business } = useBusiness(user?.businessId);
   const deleteMutation = useDeleteBusiness();
+  const updateBusiness = useUpdateBusiness();
 
   // ── Account info ─────────────────────────────────────────────
   const [info, setInfo] = useState({ name: "", email: "" });
@@ -65,6 +67,8 @@ export default function ProfilePage() {
   // ── Delete account ───────────────────────────────────────────
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [businessTypeLoaded, setBusinessTypeLoaded] = useState(false);
 
   useEffect(() => {
     if (user && !loaded) {
@@ -72,6 +76,13 @@ export default function ProfilePage() {
       setLoaded(true);
     }
   }, [user, loaded]);
+
+  useEffect(() => {
+    if (business && !businessTypeLoaded) {
+      setBusinessType(business.business_type ?? "");
+      setBusinessTypeLoaded(true);
+    }
+  }, [business, businessTypeLoaded]);
 
   const infoDirty =
     loaded && user != null && (info.name !== user.name || info.email !== user.email);
@@ -107,6 +118,7 @@ export default function ProfilePage() {
     pwdMatchState === "match";
 
   const businessName = business?.name ?? "";
+  const businessTypeDirty = businessTypeLoaded && businessType !== (business?.business_type ?? "");
   const deleteMatches =
     confirmText.trim().toLowerCase() === businessName.trim().toLowerCase() &&
     businessName.trim().length > 0;
@@ -156,6 +168,20 @@ export default function ProfilePage() {
     setLocation("/login");
   };
 
+  const handleSaveBusinessType = async () => {
+    if (!user) return;
+    if (!businessType) {
+      toast.error("Choose a business type");
+      return;
+    }
+    try {
+      await updateBusiness.mutateAsync({ id: user.businessId, business_type: businessType });
+      toast.success("Business profile updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update business profile");
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (!deleteMatches || deleteMutation.isPending) return;
     try {
@@ -177,9 +203,9 @@ export default function ProfilePage() {
   const initial = (fullName || "U").charAt(0).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6 pb-10">
       {/* ─── Identity card ──────────────────────────────────────── */}
-      <header className="flex items-center gap-4 border border-border bg-card p-5">
+      <header className="flex items-center gap-4 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-sm sm:p-6">
         <Avatar className="h-16 w-16 flex-shrink-0">
           <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
             {initial}
@@ -208,7 +234,7 @@ export default function ProfilePage() {
       </header>
 
       {/* ─── Account info form ──────────────────────────────────── */}
-      <section className="border border-border bg-card">
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-foreground">Account details</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -268,8 +294,20 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
+        <div className="border-b border-border/60 px-5 py-4">
+          <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground"/><h2 className="text-sm font-semibold">Business profile</h2></div>
+          <p className="mt-1 text-xs text-muted-foreground">Account-level details about the business you operate.</p>
+        </div>
+        <div className="grid gap-5 p-5 sm:grid-cols-2">
+          <div className="space-y-1.5"><Label className="text-xs font-normal text-muted-foreground">Business name</Label><div className="flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{businessName || "Not set"}</div><p className="text-[11px] text-muted-foreground">Change branding and customer-facing names in Settings.</p></div>
+          <div className="space-y-1.5"><Label htmlFor="profileBusinessType" className="text-xs font-normal text-muted-foreground">Business type</Label><select id="profileBusinessType" value={businessType} onChange={(event)=>setBusinessType(event.target.value)} className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"><option value="">Select your industry</option>{BUSINESS_TYPES.map(type=><option key={type.value} value={type.value}>{type.label}</option>)}</select><p className="text-[11px] text-muted-foreground">Used to adapt workflows and recommendations.</p></div>
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 px-5 py-4"><span className={cn("text-xs", businessTypeDirty ? "text-amber-600" : "text-muted-foreground")}>{businessTypeDirty ? "Business type has changed." : "Business profile is up to date."}</span><Button size="sm" onClick={handleSaveBusinessType} disabled={!businessTypeDirty || updateBusiness.isPending} className="gap-1.5">{updateBusiness.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4"/>}{updateBusiness.isPending ? "Saving…" : "Save business type"}</Button></div>
+      </section>
+
       {/* ─── Password (collapsed by default) ─────────────────────── */}
-      <section className="border border-border bg-card p-5">
+      <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
         {!showPwdSection ? (
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-1">
@@ -385,7 +423,7 @@ export default function ProfilePage() {
       </section>
 
       {/* ─── Sign out ───────────────────────────────────────────── */}
-      <section className="border border-border bg-card p-5 flex items-center justify-between gap-3">
+      <section className="flex items-center justify-between gap-3 rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
         <div className="space-y-0.5">
           <Label className="text-sm font-medium">Sign out</Label>
           <p className="text-xs text-muted-foreground">
@@ -405,7 +443,7 @@ export default function ProfilePage() {
       </section>
 
       {/* ─── Danger zone: delete account ─────────────────────────── */}
-      <section className="border border-destructive/40 bg-destructive/[0.03]">
+      <section className="overflow-hidden rounded-3xl border border-destructive/40 bg-destructive/[0.03]">
         <div className="px-5 py-4 border-b border-destructive/20">
           <h2 className="text-sm font-semibold text-destructive flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
