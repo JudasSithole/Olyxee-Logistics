@@ -688,6 +688,10 @@ export function useDashboardStats(businessId: string | null | undefined) {
           airOrders: number;
           seaOrders: number;
           delayedOrStuckShipments: number;
+          paidRevenue: number;
+          topProduct: { name: string; orderCount: number } | null;
+          topRoute: { name: string; orderCount: number } | null;
+          topCustomer: { id: string; name: string; companyName: string | null; paidAmount: number } | null;
         }>("/api/dashboard/summary"),
         apiFetch<{ status: string; count: number }[]>("/api/dashboard/status-breakdown"),
         apiFetch<{ total: number }>("/api/customers", { query: { limit: 1 } }),
@@ -714,6 +718,10 @@ export function useDashboardStats(businessId: string | null | undefined) {
         airOrders: summary.airOrders,
         seaOrders: summary.seaOrders,
         delayedOrStuckShipments: summary.delayedOrStuckShipments,
+        paidRevenue: summary.paidRevenue,
+        topProduct: summary.topProduct,
+        topRoute: summary.topRoute,
+        topCustomer: summary.topCustomer,
       };
     },
   });
