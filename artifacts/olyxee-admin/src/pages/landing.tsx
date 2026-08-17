@@ -2,6 +2,90 @@ import { FC, ReactNode, useEffect, useState } from "react";
 import notifyTracking from "@assets/image_1783706089743.png";
 import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
 import olyxeeLogo from "@assets/Order-Loop-LOGO_1786979611771.png";
+import oldWayQuotes from "@assets/image_1786981204947.png";
+import oldWaySpreadsheets from "@assets/image_1786981215190.png";
+import oldWayInbox from "@assets/image_1786981225722.png";
+import oldWayPaper from "@assets/image_1786981236403.png";
+
+// ─── "The old way" rotating showcase ─────────────────────────────────────────
+const OLD_WAY_SLIDES = [
+  { img: oldWayQuotes, label: "Quotes in scattered documents", body: "Quotations live in folders, spreadsheets, and templates no one can find." },
+  { img: oldWaySpreadsheets, label: "Spreadsheets everywhere", body: "Every shipment tracked in a different sheet, updated by hand." },
+  { img: oldWayInbox, label: "The inbox is the system", body: "Bookings, bills of lading, and arrival notices buried in email threads." },
+  { img: oldWayPaper, label: "Paper trails and re-checking", body: "Carrier documents checked line by line, job by job." },
+];
+
+const OldWayShowcase: FC = () => {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => setActive((a) => (a + 1) % OLD_WAY_SLIDES.length), 4500);
+    return () => clearInterval(t);
+  }, [paused]);
+
+  const slide = OLD_WAY_SLIDES[active];
+
+  return (
+    <div
+      className="grid lg:grid-cols-[minmax(0,20rem)_1fr] gap-6 lg:gap-10 items-center"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+        {OLD_WAY_SLIDES.map((s, i) => (
+          <button
+            key={s.label}
+            onClick={() => setActive(i)}
+            className={`relative text-left shrink-0 lg:shrink rounded-2xl px-5 py-4 ring-1 transition-all ${
+              i === active
+                ? "bg-neutral-950 text-white ring-neutral-950"
+                : "bg-white text-neutral-700 ring-neutral-200 hover:ring-neutral-400"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <span
+                style={mono}
+                className={`text-[10px] tracking-widest ${i === active ? "text-orange-400" : "text-neutral-400"}`}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-sm font-medium leading-snug">{s.label}</span>
+            </span>
+            {i === active && !paused && (
+              <motion.span
+                key={`bar-${active}`}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 4.5, ease: "linear" }}
+                className="absolute left-5 right-5 bottom-2 h-0.5 origin-left rounded-full bg-orange-500/70"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative rounded-[1.75rem] overflow-hidden ring-1 ring-neutral-200 bg-neutral-100 aspect-[16/10]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease }}
+            className="absolute inset-0"
+          >
+            <img src={slide.img} alt={slide.label} className="w-full h-full object-cover" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-neutral-950/80 to-transparent pt-16 pb-5 px-6">
+              <p className="text-white text-sm sm:text-base font-medium">{slide.body}</p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -462,25 +546,6 @@ const HeroJobCard: FC = () => (
   </div>
 );
 
-// ─── Problem section content ─────────────────────────────────────────────────
-const PAIN_POINTS = [
-  {
-    icon: Search,
-    title: "Scattered information",
-    body: "Stop searching across spreadsheets, emails, WhatsApp messages, and files.",
-  },
-  {
-    icon: MessagesSquare,
-    title: "Manual customer updates",
-    body: "Keep customers informed without repeatedly sending the same shipment information.",
-  },
-  {
-    icon: Layers,
-    title: "Too much coordination",
-    body: "Keep orders, payments, shipment progress, and delivery connected.",
-  },
-];
-
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
   { label: "Add your customer", body: "Customer and their freight activity in one place.", icon: User },
@@ -576,101 +641,86 @@ const Landing: FC = () => {
 
       {/* === HERO === */}
       <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 px-4 sm:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-y-16 gap-x-8 items-center">
-            <div className="col-span-12 lg:col-span-6">
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1, ease }}
-                style={mono}
-                className="text-[11px] tracking-[0.3em] text-orange-500 mb-6"
-              >
-                FOR FREIGHT FORWARDERS &amp; CROSS-BORDER OPERATORS
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, delay: 0.2, ease }}
-                style={serif}
-                className="text-[2.6rem] sm:text-[3.6rem] lg:text-[4rem] xl:text-[4.5rem] leading-[0.95] tracking-[-0.03em]"
-              >
-                Manage your freight orders from quote to{" "}
-                <span className="relative inline-block">
-                  <em className="not-italic text-orange-500">delivery</em>
-                  <svg
-                    aria-hidden
-                    className="absolute left-0 -bottom-2 w-full"
-                    height="14"
-                    viewBox="0 0 140 14"
-                    fill="none"
-                    preserveAspectRatio="none"
-                  >
-                    <path d="M3 9 C 34 3, 70 3, 102 8 S 136 11, 137 6" stroke="#f97316" strokeWidth="3.5" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <span className="text-neutral-300">.</span>
-              </motion.h1>
+        {/* soft radial glow behind headline (CargoWise-style) */}
+        <div
+          aria-hidden
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[70rem] h-[42rem] rounded-full opacity-70"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(255,237,213,0.9), rgba(255,247,237,0.6), rgba(255,255,255,0))",
+          }}
+        />
+        <div className="relative max-w-5xl mx-auto text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, ease }}
+            style={mono}
+            className="text-[11px] tracking-[0.3em] text-orange-500 mb-6"
+          >
+            FOR FREIGHT FORWARDERS &amp; CROSS-BORDER OPERATORS
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.2, ease }}
+            style={serif}
+            className="text-[2.6rem] sm:text-[3.8rem] lg:text-[4.4rem] leading-[1.02] tracking-[-0.03em]"
+          >
+            Manage your freight orders
+            <br className="hidden sm:block" />{" "}
+            <span className="text-orange-500">from quote to delivery</span>
+          </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.35, ease }}
-                className="mt-8 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-lg"
-              >
-                Customers, quotes, orders, shipment progress, payments, and customer
-                tracking — connected in one place.
-              </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35, ease }}
+            className="mt-7 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto"
+          >
+            Customers, quotes, orders, shipment progress, payments, and customer
+            tracking — connected in one place.
+          </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5, ease }}
-                className="mt-9 flex flex-wrap items-center gap-5"
-              >
-                <Link
-                  href="/login?mode=signup"
-                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
-                >
-                  <span className="text-sm font-medium tracking-wide">Start Free</span>
-                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </span>
-                </Link>
-                <Link
-                  href="/login"
-                  style={mono}
-                  className="text-[11px] tracking-[0.22em] text-neutral-500 border-b border-neutral-300 pb-0.5 hover:text-neutral-900 hover:border-neutral-900 transition-colors"
-                >
-                  SIGN IN
-                </Link>
-              </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5, ease }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-5"
+          >
+            <Link
+              href="/login?mode=signup"
+              className="group inline-flex items-center justify-between gap-6 px-8 py-4 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-[0_20px_50px_-20px_rgba(249,115,22,0.6)]"
+            >
+              <span className="text-sm font-medium tracking-wide">Start Free</span>
+              <ArrowUpRight className="w-4 h-4 group-hover:rotate-45 transition-transform duration-500" />
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center px-8 py-4 rounded-full bg-white ring-1 ring-neutral-200 text-sm font-medium text-neutral-800 hover:ring-neutral-400 transition-all"
+            >
+              Sign In
+            </Link>
+          </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.65, ease }}
-                className="mt-8 space-y-1.5"
-              >
-                <p className="text-sm font-medium text-neutral-800">
-                  Built for freight forwarders and cross-border operators.
-                </p>
-                <p style={mono} className="text-[11px] tracking-[0.18em] text-neutral-400">
-                  R0/MONTH · NO CREDIT CARD REQUIRED
-                </p>
-              </motion.div>
-            </div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.65, ease }}
+            style={mono}
+            className="mt-7 text-[11px] tracking-[0.18em] text-neutral-400"
+          >
+            R0/MONTH · NO CREDIT CARD REQUIRED
+          </motion.p>
 
-            <div className="col-span-12 lg:col-span-6">
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.35, ease }}
-              >
-                <HeroJobCard />
-              </motion.div>
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.55, ease }}
+            className="mt-16 text-left max-w-4xl mx-auto"
+          >
+            <HeroJobCard />
+          </motion.div>
         </div>
       </section>
 
@@ -738,27 +788,14 @@ const Landing: FC = () => {
             </motion.p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            {PAIN_POINTS.map((p, i) => {
-              const Icon = p.icon;
-              return (
-                <motion.div
-                  key={p.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ duration: 0.7, delay: i * 0.12, ease }}
-                  className="rounded-[1.5rem] bg-neutral-50 ring-1 ring-neutral-200 p-7"
-                >
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 mb-5">
-                    <Icon className="w-5 h-5" />
-                  </span>
-                  <h3 style={serif} className="text-2xl tracking-tight mb-2.5">{p.title}</h3>
-                  <p className="text-sm text-neutral-500 leading-relaxed">{p.body}</p>
-                </motion.div>
-              );
-            })}
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease }}
+          >
+            <OldWayShowcase />
+          </motion.div>
         </div>
       </section>
 
