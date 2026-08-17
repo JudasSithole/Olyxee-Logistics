@@ -1,4 +1,7 @@
 import { FC, ReactNode, useEffect, useState } from "react";
+import notifyTracking from "@assets/image_1783706089743.png";
+import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
+import olyxeeLogo from "@assets/Olyxee_Black_-removebg-preview_-_Copy_1778978524027.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -551,7 +554,7 @@ const ORGNI_VALUE = [
   {
     icon: PhoneCall,
     title: "Handle routine customer questions",
-    body: "Future call-center capabilities will use the actual shipment information inside Olyxee.",
+    body: "Future call-center capabilities will use the actual shipment information inside Olyxee Logistics.",
   },
 ];
 
@@ -614,7 +617,8 @@ const Landing: FC = () => {
       {/* === HEADER === */}
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-white/80 border-b border-neutral-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-2.5">
+            <img src={olyxeeLogo} alt="Olyxee Logistics logo" className="h-8 w-8 object-contain" />
             <span className="text-lg font-bold tracking-tight sm:text-xl">Olyxee Logistics</span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1">
@@ -672,8 +676,8 @@ const Landing: FC = () => {
                 transition={{ duration: 0.8, delay: 0.35, ease }}
                 className="mt-8 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-lg"
               >
-                Manage customers, orders, invoices, payments, air and sea shipments, and customer
-                updates without jumping between spreadsheets, email, WhatsApp, and separate files.
+                Customers, orders, invoices, payments, and shipments — all in one place.
+                No more spreadsheets, email threads, and WhatsApp.
               </motion.p>
 
               <motion.div
@@ -706,9 +710,6 @@ const Landing: FC = () => {
                 transition={{ duration: 0.8, delay: 0.65, ease }}
                 className="mt-8 space-y-1.5"
               >
-                <p className="text-sm font-medium text-neutral-800">
-                  Built for freight forwarders, clearing &amp; forwarding teams, and cross-border operators.
-                </p>
                 <p style={mono} className="text-[11px] tracking-[0.18em] text-neutral-400">
                   R0/MONTH · NO CREDIT CARD REQUIRED
                 </p>
@@ -788,9 +789,7 @@ const Landing: FC = () => {
               transition={{ duration: 0.8, delay: 0.1, ease }}
               className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-2xl"
             >
-              A single shipment can involve the customer, supplier, overseas agent, carrier, customs,
-              documents, payments, and final delivery. Olyxee keeps the important information together
-              so your team spends less time searching, repeating updates, and chasing what happens next.
+              One shipment touches many people, documents, and payments. Keep it all together.
             </motion.p>
           </div>
 
@@ -834,8 +833,7 @@ const Landing: FC = () => {
               Built around the way <em className="italic text-orange-400">freight forwarders</em> work.
             </motion.h2>
             <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-2xl">
-              From a China import to a SADC cross-border movement, keep the commercial and shipment
-              journey connected in one place.
+              One job. Seven steps. Nothing gets lost.
             </p>
           </div>
 
@@ -868,9 +866,6 @@ const Landing: FC = () => {
             ))}
           </div>
 
-          <p style={mono} className="mt-10 text-[10px] tracking-[0.2em] text-white/35">
-            CUSTOMS: KEEP CLEARANCE PROGRESS AND SHIPMENT INFORMATION ORGANIZED.
-          </p>
         </div>
       </section>
 
@@ -888,16 +883,13 @@ const Landing: FC = () => {
             <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-8">
               Start with the work your team already does <em className="italic text-orange-500">every day</em>.
             </h2>
-            <ul className="space-y-5">
+            <ul className="space-y-4">
               {FREE_VALUE.map((v) => (
-                <li key={v.title} className="flex gap-3.5">
-                  <span className="mt-1 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <li key={v.title} className="flex items-center gap-3.5">
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                     <Check className="w-3 h-3" strokeWidth={3} />
                   </span>
-                  <div>
-                    <p className="text-[15px] font-medium text-neutral-900">{v.title}</p>
-                    <p className="text-sm text-neutral-500 leading-relaxed mt-0.5">{v.body}</p>
-                  </div>
+                  <p className="text-[15px] font-medium text-neutral-900">{v.title}</p>
                 </li>
               ))}
             </ul>
@@ -930,10 +922,6 @@ const Landing: FC = () => {
             >
               Made for <em className="italic text-orange-500">independent</em> freight businesses.
             </motion.h2>
-            <p className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed">
-              Especially useful for teams that still rely heavily on spreadsheets, email, WhatsApp,
-              and manual shipment reporting.
-            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -972,14 +960,8 @@ const Landing: FC = () => {
                 >
                   One China shipment. One clear <em className="italic text-orange-400">workflow</em>.
                 </motion.h2>
-                <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-lg mb-4">
-                  A customer asks you to move goods from China to South Africa. Olyxee keeps the customer,
-                  order, invoice, payment, tracking reference, shipment progress, customer updates, and
-                  final delivery connected.
-                </p>
-                <p className="text-base text-white/55 font-light leading-relaxed max-w-lg">
-                  Your team updates the job in one place instead of rebuilding the same information
-                  across different tools.
+                <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-lg">
+                  From the customer's request to final delivery — everything about the job lives together.
                 </p>
               </div>
               <div className="col-span-12 lg:col-span-6">
@@ -1016,6 +998,41 @@ const Landing: FC = () => {
         </div>
       </section>
 
+      {/* === CUSTOMER TRACKING === */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease }}
+            className="col-span-12 lg:col-span-5"
+          >
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CUSTOMER TRACKING</p>
+            <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
+              Customers track it <em className="italic text-orange-500">themselves</em>.
+            </h2>
+            <p className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-md">
+              Every job gets a tracking link. Fewer "where is my shipment?" calls.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.9, ease }}
+            className="col-span-12 lg:col-span-7"
+          >
+            <img
+              src={notifyTracking}
+              alt="Customer receiving a tracking link and following her shipment on her phone"
+              className="w-full rounded-[1.75rem] ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.35)]"
+              loading="lazy"
+            />
+          </motion.div>
+        </div>
+      </section>
+
       {/* === FREE PLAN === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-12 items-center">
@@ -1029,7 +1046,7 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              Start using Olyxee for <em className="italic text-orange-500">free</em>.
+              Start using Olyxee Logistics for <em className="italic text-orange-500">free</em>.
             </motion.h2>
             <div className="flex items-baseline gap-2 mb-8">
               <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R0</span>
@@ -1080,12 +1097,8 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              As your freight business grows, let <em className="italic text-orange-500">Orgni</em> help run the routine work.
+              Let <em className="italic text-orange-500">Orgni</em> handle the routine work.
             </motion.h2>
-            <p className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-2xl">
-              Orgni is being built to help your team spend less time checking, chasing, updating,
-              and repeating operational work.
-            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1135,11 +1148,10 @@ const Landing: FC = () => {
               </span>
             </p>
             <h2 style={serif} className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.95] mb-6">
-              Your team shouldn't have to manually check <em className="italic text-orange-400">every shipment</em>.
+              Stop checking <em className="italic text-orange-400">every shipment</em> manually.
             </h2>
             <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-lg">
-              Orgni is being built to monitor routine operations and bring your team in when
-              something actually needs attention.
+              Orgni will watch your jobs and flag only what needs attention.
             </p>
           </motion.div>
 
@@ -1166,7 +1178,7 @@ const Landing: FC = () => {
             style={serif}
             className="text-4xl sm:text-6xl tracking-tight leading-[0.98] mb-14"
           >
-            Handle more shipments without increasing repetitive admin at the <em className="italic text-orange-500">same rate</em>.
+            More shipments. <em className="italic text-orange-500">Less admin</em>.
           </motion.h2>
 
           <motion.div
@@ -1188,8 +1200,7 @@ const Landing: FC = () => {
             </div>
             <p className="mt-3 text-sm font-medium text-orange-600">Billing starts 30 September 2026.</p>
             <p className="mt-5 text-sm text-neutral-500 leading-relaxed">
-              Everything in Free, plus Orgni Intelligence and advanced operational automation as
-              features are released.
+              Everything in Free, plus Orgni Intelligence.
             </p>
             <Link
               href="/upgrade"
@@ -1209,11 +1220,6 @@ const Landing: FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950">
             <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
-            <div className="absolute top-8 right-10 hidden lg:flex items-center gap-6 opacity-25" aria-hidden>
-              <Plane className="w-10 h-10 text-white" strokeWidth={1} />
-              <Ship className="w-12 h-12 text-white" strokeWidth={1} />
-              <FileText className="w-9 h-9 text-white" strokeWidth={1} />
-            </div>
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-28 grid grid-cols-12 gap-8 items-end">
               <div className="col-span-12 lg:col-span-8">
@@ -1225,7 +1231,7 @@ const Landing: FC = () => {
                   style={serif}
                   className="text-white text-4xl sm:text-6xl md:text-7xl tracking-[-0.02em] leading-[0.95] break-words"
                 >
-                  Run your next freight shipment with <em className="text-orange-400 italic">Olyxee.</em>
+                  Run your next freight shipment with <em className="text-orange-400 italic">Olyxee Logistics.</em>
                 </motion.h2>
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
@@ -1234,8 +1240,7 @@ const Landing: FC = () => {
                   transition={{ duration: 0.8, delay: 0.1, ease }}
                   className="mt-6 text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-xl"
                 >
-                  Bring your customers, orders, invoices, payments, and shipments into one place and
-                  reduce the repetitive admin around every job.
+                  Everything about every job, in one place.
                 </motion.p>
               </div>
 
@@ -1244,7 +1249,7 @@ const Landing: FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.15, ease }}
-                className="col-span-12 lg:col-span-4 flex flex-col gap-4"
+                className="col-span-12 lg:col-span-4 flex flex-col gap-4 relative z-10"
               >
                 <Link
                   href="/login?mode=signup"
@@ -1265,6 +1270,13 @@ const Landing: FC = () => {
                 <p style={mono} className="text-[10px] tracking-[0.18em] text-white/40 pl-2 leading-relaxed">
                   BUILT FOR FREIGHT FORWARDERS · R0/MONTH · NO CREDIT CARD REQUIRED
                 </p>
+                <img
+                  src={heroPerson}
+                  alt=""
+                  aria-hidden
+                  className="hidden lg:block self-end -mb-[7rem] mt-4 w-60 xl:w-72 opacity-90 pointer-events-none"
+                  loading="lazy"
+                />
               </motion.div>
             </div>
           </div>
@@ -1283,13 +1295,13 @@ export const SiteFooter: FC = () => (
       <div className="grid grid-cols-2 md:grid-cols-12 gap-y-12 gap-x-8">
         {/* Brand */}
         <div className="col-span-2 md:col-span-5">
-          <Link href="/" className="inline-flex items-center">
+          <Link href="/" className="inline-flex items-center gap-2.5">
+            <img src={olyxeeLogo} alt="Olyxee Logistics logo" className="h-9 w-9 object-contain" />
             <span className="text-xl font-bold tracking-tight">Olyxee Logistics</span>
           </Link>
           <p className="mt-5 text-sm text-neutral-600 leading-relaxed max-w-sm">
-            Olyxee keeps customers, orders, invoices, payments, and air &amp; sea shipments
-            connected in one place for freight forwarders, clearing &amp; forwarding teams,
-            and cross-border operators.
+            One place for freight forwarders to run customers, orders, invoices,
+            payments, and shipments.
           </p>
           <Link
             href="/login?mode=signup"
