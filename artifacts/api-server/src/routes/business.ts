@@ -14,6 +14,8 @@ import {
   billingEventsTable,
   apiKeysTable,
   callRecordsTable,
+  callUsageTable,
+  invoicesTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { UpdateBusinessBody } from "@workspace/api-zod";
@@ -387,11 +389,19 @@ router.delete("/business", requireAuth, async (req, res) => {
         .delete(callRecordsTable)
         .where(eq(callRecordsTable.businessId, businessId));
       await tx
+        .delete(callUsageTable)
+        .where(eq(callUsageTable.businessId, businessId));
+      await tx
         .delete(apiKeysTable)
         .where(eq(apiKeysTable.businessId, businessId));
       await tx
         .delete(billingEventsTable)
         .where(eq(billingEventsTable.businessId, businessId));
+
+      // invoices references businesses.id AND customers.id (no ON DELETE
+      // CASCADE), so it must be peeled before both orders/customers and the
+      // business row - otherwise those deletes hit a foreign-key violation.
+      await tx.delete(invoicesTable).where(eq(invoicesTable.businessId, businessId));
 
       await tx.delete(ordersTable).where(eq(ordersTable.businessId, businessId));
       await tx.delete(customersTable).where(eq(customersTable.businessId, businessId));
