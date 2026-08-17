@@ -8,7 +8,6 @@ import oldWayInbox from "@assets/image_1786981225722.png";
 import oldWayPaper from "@assets/image_1786981236403.png";
 import freightVisual from "@assets/image_1786981575568.png";
 import airCargoImg from "@assets/air-cargo.png";
-import logisticsFleet from "@assets/logistics-fleet.png";
 import heroCourier from "@assets/hero-courier.png";
 import oceanCargoImg from "@assets/ocean-cargo.jpg";
 
@@ -811,24 +810,6 @@ const Landing: FC = () => {
             ))}
           </div>
         </div>
-      </section>
-
-      {/* === FLEET VISUAL === */}
-      <section className="py-16 sm:py-24 px-4 sm:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.9, ease }}
-          className="max-w-6xl mx-auto"
-        >
-          <img
-            src={logisticsFleet}
-            alt="Freight fleet with aircraft and trucks moving cargo"
-            className="w-full rounded-[1.75rem] ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.35)]"
-            loading="lazy"
-          />
-        </motion.div>
       </section>
 
       {/* === REAL-WORLD EXAMPLE === */}
