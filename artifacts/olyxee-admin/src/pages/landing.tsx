@@ -1122,12 +1122,36 @@ const Landing: FC = () => {
                 COMING WITH SCALE
               </span>
             </p>
-            <h2 style={serif} className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.95] mb-6">
+            <h2 style={serif} className="text-4xl sm:text-5xl lg:text-6xl tracking-[-0.02em] leading-[0.95] mb-6">
               Stop checking <em className="italic text-orange-400">every shipment</em> manually.
             </h2>
             <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-lg">
               Orgni will watch your jobs and flag only what needs attention.
             </p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {["Delays", "Missing documents", "Payment issues", "ETA changes", "Clearance actions"].map((chip, i) => (
+                <motion.span
+                  key={chip}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: 0.2 + i * 0.07, ease }}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] ring-1 ring-white/15 px-4 py-2 text-[13px] text-white/80"
+                >
+                  <Bell className="w-3.5 h-3.5 text-orange-400" />
+                  {chip}
+                </motion.span>
+              ))}
+            </div>
+            <Link
+              href="/upgrade"
+              className="group mt-9 inline-flex items-center justify-between gap-6 px-7 py-4 bg-white text-neutral-900 rounded-full hover:bg-orange-400 transition-colors"
+            >
+              <span className="text-sm font-medium tracking-wide">See Scale pricing</span>
+              <span className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                <ArrowUpRight className="w-4 h-4" />
+              </span>
+            </Link>
           </motion.div>
 
           <motion.div
@@ -1144,16 +1168,19 @@ const Landing: FC = () => {
 
       {/* === SCALE PRICING === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
-        <div className="max-w-5xl mx-auto text-center">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950 px-6 sm:px-12 py-20 sm:py-28">
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
+            <div className="relative max-w-5xl mx-auto text-center">
           <motion.h2
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, ease }}
             style={serif}
-            className="text-4xl sm:text-6xl tracking-tight leading-[0.98] mb-14"
+            className="text-white text-4xl sm:text-6xl md:text-7xl tracking-[-0.02em] leading-[0.95] break-words mb-14"
           >
-            More shipments. <em className="italic text-orange-500">Less admin</em>.
+            More shipments. <em className="text-orange-400 italic">Less admin.</em>
           </motion.h2>
 
           <motion.div
@@ -1187,6 +1214,8 @@ const Landing: FC = () => {
               </span>
             </Link>
           </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
