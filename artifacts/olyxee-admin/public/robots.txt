@@ -1,4 +1,22 @@
-## Olyxee Admin is a private operations console behind authentication.
-## There is no public content to index — tell every crawler to stay out.
+# Olyxee Logistics: index the public marketing pages,
+# keep the authenticated app surface out of search.
 User-agent: *
-Disallow: /
+Allow: /$
+Allow: /contact
+Allow: /track
+Allow: /updates
+Allow: /upgrade
+Disallow: /login
+Disallow: /reset-password
+Disallow: /signup
+Disallow: /dashboard
+Disallow: /customers
+Disallow: /orders
+Disallow: /invoices
+Disallow: /audit-logs
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /business-type
+Disallow: /billing/
+
+Sitemap: https://olyxee.com/sitemap.xml

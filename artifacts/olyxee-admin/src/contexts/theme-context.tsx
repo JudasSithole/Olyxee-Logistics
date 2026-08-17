@@ -118,7 +118,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 // Our own default tab title, shown to logged-out visitors.
-const DEFAULT_TITLE = "Olyxee Logistics · Cross-Border Operations";
+const DEFAULT_TITLE = "Olyxee Logistics | The platform that powers global logistics";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<ThemeSettings>(loadSettings);
