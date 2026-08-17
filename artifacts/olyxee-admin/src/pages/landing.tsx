@@ -479,10 +479,10 @@ const JOB_TIMELINE = [
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
   { label: "Add your customer", body: "Customer and their freight activity in one place.", icon: User },
-  { label: "Send a quote", body: "Customer accepts — you convert it to an order.", icon: MessagesSquare },
+  { label: "Send a quote", body: "Customer accepts, and you convert it to an order.", icon: MessagesSquare },
   { label: "Add freight details", body: "Air or sea, origin, destination, cargo, references.", icon: Package },
   { label: "Update shipment stages", body: "Your team moves the job through each stage.", icon: Ship },
-  { label: "Customer tracks it", body: "Public branded tracking page — no account needed.", icon: MapPin },
+  { label: "Customer tracks it", body: "Public branded tracking page, no account needed.", icon: MapPin },
   { label: "Invoice & payment status", body: "Know which jobs are paid and which are outstanding.", icon: FileText },
   { label: "Job history kept", body: "Statuses, documents, and records stay together.", icon: Check },
 ];
@@ -570,7 +570,7 @@ const Landing: FC = () => {
             className="mt-7 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0"
           >
             Customers, quotes, orders, shipment progress, payments, and customer
-            tracking — connected in one place.
+            tracking, all connected in one place.
           </motion.p>
 
           <motion.div
@@ -705,7 +705,7 @@ const Landing: FC = () => {
               Built around the way <em className="not-italic text-orange-400">freight forwarders</em> work.
             </motion.h2>
             <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl">
-              From quote to delivery — your team manages every step in Olyxee Logistics.
+              From quote to delivery, your team manages every step in Olyxee Logistics.
             </p>
           </div>
 
@@ -831,7 +831,7 @@ const Landing: FC = () => {
                   One China shipment. One clear <em className="not-italic text-orange-400">workflow</em>.
                 </motion.h2>
                 <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-lg">
-                  From the customer's request to final delivery — everything about the job lives together.
+                  From the customer's request to final delivery, everything about the job lives together.
                 </p>
               </div>
               <div className="col-span-12 lg:col-span-6">
@@ -880,7 +880,7 @@ const Landing: FC = () => {
           >
             <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">CUSTOMER TRACKING</p>
             <h2 style={serif} className="text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.0] mb-6">
-              Give your customers <em className="not-italic text-orange-500">visibility</em> — without giving them your internal workspace.
+              Give your customers <em className="not-italic text-orange-500">visibility</em>, without giving them your internal workspace.
             </h2>
             <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md mb-8">
               Every job gets a public, branded tracking page. Reference number, current
@@ -927,8 +927,8 @@ const Landing: FC = () => {
               Start with the freight workflow you need <em className="not-italic text-orange-500">today</em>.
             </motion.h2>
             <p className="text-base text-neutral-600 leading-relaxed max-w-md mb-10">
-              Everything your team uses to run jobs day to day — customers, quotes,
-              orders, shipment stages, tracking, invoices — included from day one.
+              Everything your team uses to run jobs day to day: customers, quotes,
+              orders, shipment stages, tracking, invoices. Included from day one.
             </p>
             <motion.img
               src={freightVisual}

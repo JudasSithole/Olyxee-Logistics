@@ -101,7 +101,9 @@ app.use(adminCors);
 app.use(cookieParser());
 app.use(
   express.json({
-    limit: "100kb",
+    // 1mb so branding uploads (logo/favicon data URLs from onboarding and
+    // settings) fit; everything else stays far below this.
+    limit: "1mb",
     // Stash the raw body so the Paystack webhook can verify its HMAC signature
     // against the exact bytes received. Harmless for every other route.
     verify: (req, _res, buf) => {

@@ -54,7 +54,7 @@ export default function OnboardingPage() {
     setForm((f) => ({
       name: business.name ?? f.name,
       tagline: theme.businessTagline || f.tagline,
-      logoUrl: theme.logoUrl || f.logoUrl,
+      logoUrl: business.business_logo_url || theme.logoUrl || f.logoUrl,
       industry: business.business_type ?? f.industry,
       employeeCount: business.employee_count ?? f.employeeCount,
       location: business.location ?? f.location,
@@ -83,6 +83,7 @@ export default function OnboardingPage() {
         location: form.location,
         phone: form.phone,
         website_url: form.websiteUrl,
+        business_logo_url: form.logoUrl,
         onboarding_completed: true,
       });
       // Branding is stored on-device (localStorage) via the theme context, so
