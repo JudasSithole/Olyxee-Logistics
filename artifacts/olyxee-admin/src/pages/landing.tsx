@@ -1012,10 +1012,10 @@ const Landing: FC = () => {
       </section>
 
       {/* === SCALE + ORGNI === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8">
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-gradient-to-b from-white via-orange-50/60 to-white">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-14">
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4 flex items-center gap-2">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4 flex items-center justify-center gap-2">
               <Sparkles className="w-3.5 h-3.5" /> SCALE + ORGNI
             </p>
             <motion.h2
@@ -1024,16 +1024,65 @@ const Landing: FC = () => {
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, ease }}
               style={serif}
-              className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
+              className="text-4xl sm:text-6xl tracking-tight leading-[0.98]"
             >
-              Today your team manages the workflow. Next, <em className="not-italic text-orange-500">Orgni</em> helps reduce the work around it.
+              Today your team runs it. Next, <em className="not-italic text-orange-500">Orgni</em> runs alongside.
             </motion.h2>
-            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl">
-              Olyxee Logistics gives your team the operational foundation today. Orgni Intelligence
-              is being built to reduce the repetitive work around those jobs as you grow.
-            </p>
           </div>
 
+          {/* Today vs Next split */}
+          <div className="grid lg:grid-cols-[1fr_auto_1fr] items-stretch gap-6 lg:gap-4 mb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.8, ease }}
+              className="rounded-[1.75rem] bg-white ring-1 ring-neutral-200 p-8 sm:p-10"
+            >
+              <p style={mono} className="text-[10px] tracking-[0.3em] text-neutral-400 mb-4">TODAY</p>
+              <h3 style={serif} className="text-2xl sm:text-3xl tracking-tight mb-3">
+                Your team manages the freight workflow.
+              </h3>
+              <p className="text-[15px] text-neutral-600 leading-relaxed">
+                Olyxee Logistics is the operational foundation — quotes, orders, shipment
+                stages, tracking, and payments, managed by your people.
+              </p>
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-50 ring-1 ring-emerald-200 px-4 py-2">
+                <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={3} />
+                <span style={mono} className="text-[10px] tracking-[0.2em] text-emerald-700">AVAILABLE NOW · FREE</span>
+              </div>
+            </motion.div>
+
+            <div className="hidden lg:flex flex-col items-center justify-center px-2">
+              <span className="w-12 h-12 rounded-full bg-neutral-950 text-orange-400 flex items-center justify-center shadow-lg">
+                <ArrowRight className="w-5 h-5" />
+              </span>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.8, delay: 0.1, ease }}
+              className="relative overflow-hidden rounded-[1.75rem] bg-neutral-950 text-white p-8 sm:p-10"
+            >
+              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-orange-500/20 blur-3xl" aria-hidden />
+              <p style={mono} className="relative text-[10px] tracking-[0.3em] text-orange-400 mb-4">NEXT</p>
+              <h3 style={serif} className="relative text-2xl sm:text-3xl tracking-tight mb-3">
+                Orgni reduces the work around it.
+              </h3>
+              <p className="relative text-[15px] text-white/70 leading-relaxed">
+                Orgni Intelligence is being built to take over the checking, chasing, and
+                routine coordination around each job as you grow.
+              </p>
+              <div className="relative mt-6 inline-flex items-center gap-2 rounded-full bg-orange-500/15 ring-1 ring-orange-500/30 px-4 py-2">
+                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                <span style={mono} className="text-[10px] tracking-[0.2em] text-orange-300">COMING WITH SCALE</span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Orgni capabilities */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {ORGNI_VALUE.map((v, i) => {
               const Icon = v.icon;
@@ -1044,7 +1093,7 @@ const Landing: FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-60px" }}
                   transition={{ duration: 0.7, delay: i * 0.08, ease }}
-                  className="relative rounded-[1.5rem] bg-neutral-50 ring-1 ring-neutral-200 p-7"
+                  className="group relative rounded-[1.5rem] bg-white ring-1 ring-neutral-200 hover:ring-orange-300 hover:shadow-[0_20px_60px_-40px_rgba(249,115,22,0.5)] transition-all p-7"
                 >
                   <span
                     style={mono}
@@ -1052,7 +1101,7 @@ const Landing: FC = () => {
                   >
                     COMING WITH SCALE
                   </span>
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 mb-5">
+                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 mb-5 group-hover:bg-orange-500 group-hover:text-white transition-colors">
                     <Icon className="w-5 h-5" />
                   </span>
                   <h3 style={serif} className="text-2xl tracking-tight mb-2.5 pr-2">{v.title}</h3>
@@ -1060,64 +1109,6 @@ const Landing: FC = () => {
                 </motion.div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* === SCALE PRICING === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950 px-6 sm:px-12 py-20 sm:py-28">
-            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
-            <div className="relative max-w-5xl mx-auto text-center">
-              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">SCALE</p>
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, ease }}
-                style={serif}
-                className="text-white text-4xl sm:text-6xl tracking-[-0.02em] leading-[0.98] mb-6"
-              >
-                More freight. <em className="text-orange-400 not-italic">Less repetitive work.</em>
-              </motion.h2>
-              <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl mx-auto mb-14">
-                Your people spend more time solving real problems and less time doing repetitive admin.
-              </p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, delay: 0.1, ease }}
-                className="mx-auto max-w-lg rounded-[1.75rem] bg-white ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.35)] p-8 sm:p-10 text-left text-neutral-900"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 style={serif} className="text-3xl tracking-tight">Scale</h3>
-                  <span style={mono} className="text-[9px] tracking-[0.2em] px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">
-                    ORGNI · COMING WITH SCALE
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span style={serif} className="text-5xl tracking-tight">R1,499</span>
-                  <span className="text-neutral-500">/ company / month</span>
-                </div>
-                <p className="mt-3 text-sm font-medium text-orange-600">Billing starts 30 September 2026.</p>
-                <p className="mt-5 text-sm text-neutral-500 leading-relaxed">
-                  Everything in Free, plus access to Orgni Intelligence and advanced operational
-                  capabilities as they are released.
-                </p>
-                <Link
-                  href="/upgrade"
-                  className="group mt-8 inline-flex w-full items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
-                >
-                  <span className="text-sm font-medium tracking-wide">Join Scale</span>
-                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </span>
-                </Link>
-              </motion.div>
-            </div>
           </div>
         </div>
       </section>
