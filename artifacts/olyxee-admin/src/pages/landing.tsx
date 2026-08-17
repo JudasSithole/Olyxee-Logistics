@@ -501,15 +501,6 @@ const FREE_VALUE = [
   { title: "Keep a clear history", body: "See what happened on the job without searching through old messages and files." },
 ];
 
-// ─── Who it's for ────────────────────────────────────────────────────────────
-const AUDIENCES = [
-  "Freight forwarders",
-  "Clearing & forwarding companies",
-  "Air and sea freight operators",
-  "Import/export businesses",
-  "Cross-border freight operators",
-  "Companies coordinating customs and final delivery",
-];
 
 // ─── Free plan list ──────────────────────────────────────────────────────────
 const FREE_PLAN_ITEMS = [
@@ -904,41 +895,6 @@ const Landing: FC = () => {
           >
             <CreateOrderMock />
           </motion.div>
-        </div>
-      </section>
-
-      {/* === WHO IT IS FOR === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-14">
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">WHO IT'S FOR</p>
-            <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              style={serif}
-              className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
-            >
-              Made for <em className="italic text-orange-500">independent</em> freight businesses.
-            </motion.h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AUDIENCES.map((a, i) => (
-              <motion.div
-                key={a}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: i * 0.08, ease }}
-                className="flex items-center gap-3.5 rounded-2xl bg-white ring-1 ring-neutral-200 px-6 py-5"
-              >
-                <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
-                <span className="text-[15px] font-medium text-neutral-800">{a}</span>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
