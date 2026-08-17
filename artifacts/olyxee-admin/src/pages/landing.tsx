@@ -667,9 +667,9 @@ const Landing: FC = () => {
             style={serif}
             className="text-[2.6rem] sm:text-[3.8rem] lg:text-[4.4rem] leading-[1.02] tracking-[-0.03em]"
           >
-            Manage your freight orders
+            The platform that powers
             <br className="hidden sm:block" />{" "}
-            <span className="text-orange-500">from quote to delivery</span>
+            <span className="text-orange-500">global logistics</span>
           </motion.h1>
 
           <motion.p
@@ -974,9 +974,9 @@ const Landing: FC = () => {
             transition={{ duration: 0.8, ease }}
             className="col-span-12 lg:col-span-5"
           >
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CUSTOMER TRACKING</p>
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CUSTOMERS</p>
             <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
-              Customers track it <em className="not-italic text-orange-500">themselves</em>.
+              Designed for the people who <em className="not-italic text-orange-500">move the world</em>.
             </h2>
             <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md">
               Every job gets a tracking link. Fewer "where is my shipment?" calls.
