@@ -8,6 +8,7 @@ import oldWayInbox from "@assets/image_1786981225722.png";
 import oldWayPaper from "@assets/image_1786981236403.png";
 import freightVisual from "@assets/image_1786981575568.png";
 import airCargoImg from "@assets/air-cargo.png";
+import logisticsFleet from "@assets/logistics-fleet.png";
 import oceanCargoImg from "@assets/ocean-cargo.jpg";
 
 // ─── "The old way" rotating showcase ─────────────────────────────────────────
@@ -425,51 +426,6 @@ const PhoneFrame: FC<{ children: ReactNode }> = ({ children }) => (
   </div>
 );
 
-const CreateOrderMock: FC = () => {
-  const [idx, setIdx] = useState(0);
-  const [step, setStep] = useState(0);
-  const [created, setCreated] = useState<DemoOrder[]>([]);
-
-  const cust = DEMO_CUSTOMERS[idx];
-  const detail = DEMO_DETAILS[idx];
-  const reff = DEMO_REFS[idx];
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (step >= 5) {
-        setIdx((i) => (i + 1) % DEMO_CUSTOMERS.length);
-        setStep(0);
-      } else {
-        setStep((s) => s + 1);
-      }
-    }, STEP_DELAYS[step]);
-    return () => clearTimeout(t);
-  }, [step]);
-
-  useEffect(() => {
-    if (step === 5) {
-      setCreated((c) => [{ ref: reff, customer: cust, details: detail, key: Date.now() }, ...c].slice(0, 3));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
-
-  const screenProps = { step, cust, custIdx: idx, detail, reff, created };
-
-  return (
-    <>
-      <div className="lg:hidden">
-        <PhoneFrame>
-          <OrderScreen variant="mobile" {...screenProps} />
-        </PhoneFrame>
-      </div>
-      <div className="hidden lg:block">
-        <ScreenFrame>
-          <OrderScreen variant="desktop" {...screenProps} />
-        </ScreenFrame>
-      </div>
-    </>
-  );
-};
 
 // ─── Hero visual: one freight job, fully connected ──────────────────────────
 const JOB_TIMELINE = [
@@ -587,10 +543,22 @@ const FREE_PLAN_ITEMS = [
 
 // ─── Operational pain rows ───────────────────────────────────────────────────
 const PAIN_ROWS = [
-  { label: "Shipment details scattered across messages and spreadsheets", meta: "WHATSAPP · EMAIL · XLSX" },
-  { label: "Customers repeatedly asking for updates", meta: "\u201CWHERE IS MY SHIPMENT?\u201D" },
-  { label: "Commercial and shipment information disconnected", meta: "QUOTE ≠ ORDER ≠ INVOICE" },
-  { label: "Too much time spent re-checking the same job", meta: "SAME JOB · FIVE PLACES" },
+  {
+    label: "Shipment details are scattered everywhere",
+    body: "One job lives in WhatsApp, email, and a spreadsheet — so nobody has the full picture.",
+  },
+  {
+    label: "Customers keep asking \u201Cwhere is my shipment?\u201D",
+    body: "Every update means digging up the same information and typing it out again.",
+  },
+  {
+    label: "Quotes, orders, and invoices don't connect",
+    body: "The money side and the shipment side live in different places, so things slip.",
+  },
+  {
+    label: "The same job gets checked over and over",
+    body: "You open five different places just to confirm what stage one shipment is at.",
+  },
 ];
 
 // ─── Orgni ops interface data ────────────────────────────────────────────────
@@ -758,6 +726,16 @@ const Landing: FC = () => {
                   The hard part is everything around it.
                 </span>
               </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, delay: 0.15, ease }}
+                className="mt-6 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md"
+              >
+                The paperwork, the follow-ups, the constant checking — that's what
+                eats your day. Here's what that looks like:
+              </motion.p>
             </div>
 
             <div className="col-span-12 lg:col-span-5 lg:col-start-8 lg:pt-10">
@@ -775,7 +753,7 @@ const Landing: FC = () => {
                   </span>
                   <div className="min-w-0">
                     <p className="text-[15px] font-medium text-neutral-900 leading-snug">{row.label}</p>
-                    <p style={mono} className="mt-1 text-[9px] tracking-[0.18em] text-neutral-400">{row.meta}</p>
+                    <p className="mt-1.5 text-[13px] text-neutral-500 leading-relaxed">{row.body}</p>
                   </div>
                 </motion.div>
               ))}
@@ -947,48 +925,20 @@ const Landing: FC = () => {
             className="mx-auto mt-10 h-px w-24 bg-orange-500 origin-center"
           />
         </div>
-      </section>
-
-      {/* === QUOTE TO ORDER — product UI left, copy right === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease }}
-            className="col-span-12 lg:col-span-7 relative flex items-center justify-center order-2 lg:order-1"
-          >
-            <CreateOrderMock />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease }}
-            className="col-span-12 lg:col-span-4 lg:col-start-9 order-1 lg:order-2"
-          >
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">QUOTE TO ORDER</p>
-            <h2 style={serif} className="text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight leading-[1.02] mb-5">
-              From accepted quote to working order in seconds.
-            </h2>
-            <p className="text-[15px] sm:text-base text-neutral-600 leading-relaxed mb-8">
-              Pick the customer, add the freight details, create the order. Customer
-              information carries through — nothing gets retyped, nothing gets lost.
-            </p>
-            <ul className="space-y-3.5">
-              {FREE_VALUE.map((v) => (
-                <li key={v.title} className="flex items-center gap-3">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3" strokeWidth={3} />
-                  </span>
-                  <p className="text-[14px] font-medium text-neutral-900">{v.title}</p>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.9, ease }}
+          className="max-w-6xl mx-auto mt-16"
+        >
+          <img
+            src={logisticsFleet}
+            alt="Freight fleet with aircraft and trucks moving cargo"
+            className="w-full rounded-[1.75rem] ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.35)]"
+            loading="lazy"
+          />
+        </motion.div>
       </section>
 
       {/* === REAL-WORLD EXAMPLE === */}
