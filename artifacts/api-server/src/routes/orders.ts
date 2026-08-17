@@ -18,6 +18,7 @@ import { requireAuth } from "../lib/auth";
 import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody, sendInvoiceEmail } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
+import { effectiveEmailLimit } from "../lib/plan-enforcement";
 import { sendOrderSms } from "../lib/order-notifications";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
 import { getPlan } from "@workspace/plans";
@@ -589,7 +590,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       // the send entirely (so it doesn't consume the next month's quota) and
       // record a "limit_reached" row so the order history shows why no email
       // went out. The status update itself still succeeds.
-      emailLimit = business.monthlyEmailLimit;
+      emailLimit = effectiveEmailLimit(business);
       emailUsage = await getMonthlyEmailUsage(businessId);
 
       if (emailUsage >= emailLimit) {
@@ -870,7 +871,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
 
     // Same monthly allowance check as the status endpoint - a manual resend
     // counts against the quota too.
-    const emailLimit = business.monthlyEmailLimit;
+    const emailLimit = effectiveEmailLimit(business);
     const emailUsage = await getMonthlyEmailUsage(businessId);
 
     if (emailUsage >= emailLimit) {

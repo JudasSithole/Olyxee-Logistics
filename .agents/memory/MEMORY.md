@@ -10,4 +10,4 @@
 - [Launch-prep foundations](launch-prep-foundations.md) — disabled features gate via @workspace/plans featureFlags; route gates must be path-scoped; billing is env-gated TEST-only; validate paid amount + swallow only 23505.
 - [Logistics transport flows](logistics-transport-flows.md) — AIR/SEA flows live in lib/order-statuses/logistics.ts; every order-mutating endpoint must enforce mode rules; labels never leak enum codes.
 - [Artifact router ports](artifact-router-ports.md) — preview routes / → port 23915 (artifact.toml), /api → 8080; running Vite on 5000 502s the external preview.
-- [Plan catalog](plan-catalog.md) — plan IDs (free/pro/business) are frozen (DB enum + codegen); display names differ (Growth/Scale); edit name/price/features in @workspace/plans, never hardcode plan names in JSX.
+- [Plan catalog](plan-catalog.md) — IDs frozen (DB enum + codegen); catalog is Free + Scale (R1,499, billing starts 30 Sep 2026), pro/Growth retired, SMS removed; edit @workspace/plans, never hardcode names in JSX.

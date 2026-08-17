@@ -2,7 +2,12 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { db, businessesTable, billingEventsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { isValidPlanId } from "@workspace/plans";
+import {
+  isValidPlanId,
+  isScaleBillingLive,
+  SCALE_BILLING_START_LABEL,
+  getPlan,
+} from "@workspace/plans";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { logger } from "../lib/logger";
@@ -36,6 +41,15 @@ const InitBody = z.object({
   plan: z.string().refine(isValidPlanId, "Unknown plan"),
 });
 
+// Shared activation rules for initialize, verify, AND the webhook: only an
+// active paid plan may be charged/activated, and never before the billing
+// start date.
+function isPlanActivatable(planId: string): boolean {
+  if (!isValidPlanId(planId) || planId === "beta" || planId === "free") return false;
+  if (getPlan(planId).active === false) return false;
+  return isScaleBillingLive();
+}
+
 // Trusted base URL for the post-payment redirect. Honours the request Origin
 // only when it appears in the env-configured allowlist; otherwise falls back
 // to PUBLIC_APP_URL (or the hosted admin app) so a manipulated header can
@@ -62,8 +76,21 @@ router.post("/billing/initialize", requireAuth, async (req: Request, res: Respon
       return;
     }
     const planId = parse.data.plan;
-    if (!isValidPlanId(planId) || planId === "beta" || planId === "free") {
+    if (
+      !isValidPlanId(planId) ||
+      planId === "beta" ||
+      planId === "free" ||
+      getPlan(planId).active === false
+    ) {
       res.status(400).json({ error: "Plan is not purchasable" });
+      return;
+    }
+    // Rollout period: businesses may join Scale, but no subscription charge may
+    // be processed before the billing start date.
+    if (!isScaleBillingLive()) {
+      res.status(400).json({
+        error: `Billing for this plan begins on ${SCALE_BILLING_START_LABEL}. No charge can be processed before then.`,
+      });
       return;
     }
     const business = await db.query.businessesTable.findFirst({
@@ -109,6 +136,14 @@ router.get("/billing/verify/:reference", requireAuth, async (req: Request, res: 
     const metaPlan = result.metadata?.plan as string | undefined;
     if (metaBusiness !== businessId || !metaPlan || !isValidPlanId(metaPlan)) {
       res.status(400).json({ error: "Transaction does not match this business" });
+      return;
+    }
+    // Lifecycle integrity: never activate a retired tier, and never activate a
+    // paid subscription before the billing start date — the same rules the
+    // initialize endpoint enforces must hold on verification too, or a stale/
+    // pre-created transaction could bypass them.
+    if (!isPlanActivatable(metaPlan)) {
+      res.status(400).json({ error: "Plan cannot be activated" });
       return;
     }
     // Integrity: the amount actually paid must match the plan's price. Prevents
@@ -161,6 +196,7 @@ router.post("/billing/webhook", async (req: Request, res: Response) => {
         businessId &&
         plan &&
         isValidPlanId(plan) &&
+        isPlanActivatable(plan) &&
         amount === planAmountMinor(plan)
       ) {
         await activatePlan({

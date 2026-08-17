@@ -1,0 +1,92 @@
+# Update Olyxee Logistics Pricing and Plans
+
+Update the Olyxee Logistics pricing, subscription logic, and plan presentation.
+
+## Free Plan — R0/month
+
+Keep the current Free plan available with:
+
+* Customer management
+* Order management
+* Invoicing
+* Payment confirmation
+* Air and sea shipment workflows
+* Shipment tracking
+* Branded customer tracking pages
+* Delivery and collection management
+* Maximum of 50 automated email notifications per company per month
+
+Remove all SMS functionality from the product and pricing pages for now.
+
+Existing companies should remain on the Free plan without requiring payment.
+
+## Scale Plan — R1,499/month
+
+Create a new paid plan called **Scale**.
+
+Scale should include everything in Free, with higher usage limits and access to the advanced capabilities that are introduced over time, including Orgni Intelligence.
+
+Position Scale around helping freight companies reduce repetitive operational work as they grow.
+
+Do not position the upgrade primarily around more emails. Position it around operational scale, automation, and intelligence.
+
+Scale customers should eventually receive:
+
+* Orgni Intelligence
+* Higher/unlimited email allowance based on fair-use limits
+* Automated follow-ups
+* Document monitoring
+* Exception detection
+* ETA and deadline monitoring
+* Operational alerts
+* Easier customs-clearance workflows
+* Task escalation
+* Customer communication automation
+* Call-center capabilities when available
+* Future intelligent operational automation
+
+Clearly mark capabilities that are not yet released as **Coming Soon** rather than presenting them as currently available.
+
+## Billing Start Date
+
+Do not charge anyone for Scale immediately.
+
+Allow businesses to use the platform during the current rollout period.
+
+**Scale billing should begin on September 30, 2026.**
+
+Before that date:
+
+* Users can see the Scale plan and its price.
+* Eligible companies can select or join Scale.
+* Clearly communicate that billing begins September 30, 2026.
+* Do not process a subscription charge before that date.
+
+After billing begins, Scale should cost **R1,499 per company per month**.
+
+## Product Messaging
+
+Use simple business language.
+
+Free:
+
+**Run your freight operation in one place.**
+
+Scale:
+
+**Grow your freight operation with less manual work. Let Orgni help your team monitor jobs, handle routine follow-ups, and surface what actually needs attention.**
+
+Avoid technical AI jargon.
+
+The main value proposition for Scale should be:
+
+**Handle more shipments without increasing repetitive admin at the same rate.**
+
+## Important
+
+* Completely remove SMS as a current feature.
+* Do not break existing customer, order, invoice, shipment, tracking, email, or notification functionality.
+* Preserve all current Free-plan user data.
+* Do not gate existing Free functionality behind Scale.
+* Update pricing cards, account/subscription screens, plan labels, usage limits, and backend entitlement logic consistently.
+* Use September 30, 2026 as the Scale billing start date everywhere it is displayed.

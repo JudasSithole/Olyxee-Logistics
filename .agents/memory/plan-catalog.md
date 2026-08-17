@@ -19,6 +19,20 @@ names — it cascades through codegen + a DB migration.
 changing only `plans[id].name` and `plans[id].price`, keeping IDs `pro`/`business`.
 So `plans.pro.name === "Growth"` and `plans.business.name === "Scale"`.
 
+## August 2026 restructure: Free + Scale only, SMS removed
+`pro` (Growth) is retired: `active: false`, hidden from all pricing surfaces,
+and rejected by billing (`isPlanActivatable` in billing routes covers
+initialize, verify AND webhook). Scale is R1,499/mo; its unreleased
+capabilities live in `PlanConfig.comingSoon` and MUST render with a
+"Coming Soon" marker. SMS is removed from the product: `smsNotifications`
+flag is false and no pricing/marketing surface may mention SMS (dormant code
+and schema deliberately kept). Scale billing starts 30 Sep 2026
+(`SCALE_BILLING_START*`, `isScaleBillingLive`); before that date joining Scale
+is a non-charging `POST /business/select-plan` (subscriptionStatus "trial"),
+after it checkout is required. Free's 50-email cap is enforced at send time via
+`effectiveEmailLimit` = min(plan.emailLimit, business.monthlyEmailLimit) —
+this applies regardless of the dormant planEnforcement flag.
+
 **How to apply:** When updating pricing copy, edit `name`/`price`/`features` in
 the catalog. Never hardcode a plan's display name in JSX — reference
 `plans[id].name` (e.g. the upgrade beta-trial banner uses `{plans.pro.name}`).

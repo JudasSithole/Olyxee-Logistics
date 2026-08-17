@@ -5,7 +5,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LaunchCountdown } from "@/components/launch-countdown";
-import { LAUNCH_LABEL, TRIAL_LABEL } from "@/lib/launch";
+import { LAUNCH_LABEL, SCALE_BILLING_START_LABEL } from "@/lib/launch";
 
 interface Announcement {
   date: string;
@@ -20,13 +20,13 @@ const ANNOUNCEMENTS: Announcement[] = [
     date: "July 2026",
     tag: "Launch",
     title: `Olyxee Logistics is going live on ${LAUNCH_LABEL}`,
-    body: `We're moving out of beta. On launch day, new plans become available and existing beta businesses get Growth free for the first week (${TRIAL_LABEL}). Nothing changes for you before then — keep using everything as you do today.`,
+    body: `We're moving out of beta. Existing businesses stay on the Free plan at no cost — nothing changes for you and no payment is required. The new Scale plan is visible now; Scale billing begins on ${SCALE_BILLING_START_LABEL}.`,
   },
   {
     date: "July 2026",
     tag: "Heads up",
-    title: "SMS notifications, branding & more on the way",
-    body: "We're building SMS order updates, custom business branding on your tracking pages, and a public API. Scroll down for a preview of what's coming.",
+    title: "Orgni Intelligence, branding & more on the way",
+    body: "We're building Orgni Intelligence for Scale — automated follow-ups, document monitoring, and operational alerts — plus custom business branding on your tracking pages. Scroll down for a preview of what's coming.",
   },
 ];
 
@@ -42,17 +42,17 @@ interface UpcomingFeature {
 const FEATURES: UpcomingFeature[] = [
   {
     icon: MessageSquare,
-    title: "SMS notifications",
+    title: "Orgni Intelligence",
     description:
-      "Send order status updates by SMS in addition to email, so customers hear from you wherever they are.",
-    plan: "Growth & Scale",
+      "Let Orgni help your team monitor jobs, handle routine follow-ups, and surface what actually needs attention.",
+    plan: "Scale",
   },
   {
     icon: Palette,
     title: "Business branding",
     description:
       "Add your logo, colours and sender name to tracking pages and emails — and remove Olyxee branding.",
-    plan: "Growth & Scale",
+    plan: "Scale",
   },
   {
     icon: Code2,

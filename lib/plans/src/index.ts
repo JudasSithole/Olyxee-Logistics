@@ -9,7 +9,9 @@
 
 // ─── Plan catalog ────────────────────────────────────────────────────────────
 // `null` limits mean "unlimited". `beta` is the current plan for every existing
-// user until 31 July 2026 and enforces no limits.
+// user and enforces no limits. The public catalog is Free + Scale; `pro`
+// (Growth) is retired from display but the ID stays valid because it is baked
+// into the DB enum and generated API types.
 
 export type PlanId = "beta" | "free" | "pro" | "business";
 
@@ -28,9 +30,14 @@ export interface PlanConfig {
   apiAccess?: boolean;
   automatedCallCentre?: boolean;
   availableFrom?: string;
+  // Short positioning line shown under the plan name on pricing surfaces.
+  tagline?: string;
   // Marketing bullet list shown on the pricing/upgrade surfaces. Source of truth
   // for what each tier advertises so the copy never drifts between pages.
   features?: string[];
+  // Capabilities advertised for the tier that are NOT released yet. Pricing
+  // surfaces must render these with a "Coming Soon" marker, never as available.
+  comingSoon?: string[];
 }
 
 export const plans: Record<PlanId, PlanConfig> = {
@@ -44,60 +51,67 @@ export const plans: Record<PlanId, PlanConfig> = {
   free: {
     name: "Free",
     price: 0,
-    orderLimit: 50,
-    emailLimit: null,
+    orderLimit: null,
+    emailLimit: 50,
     smsLimit: 0,
     advancedCustomization: false,
     removeOlyxeeBranding: false,
-    availableFrom: "2026-08-20",
+    tagline: "Run your freight operation in one place.",
     features: [
-      "Up to 50 orders per month",
-      "Customer tracking pages",
-      "Email status updates",
-      "PDF invoices",
-      "Customer and order management",
+      "Customer management",
+      "Order management",
+      "Invoicing and payment confirmation",
+      "Air and sea shipment workflows",
+      "Shipment tracking",
+      "Branded customer tracking pages",
+      "Delivery and collection management",
+      "50 automated email notifications per month",
     ],
   },
 
+  // Retired tier — kept only because the `pro` ID exists in the DB enum and
+  // generated API types. Not shown on any pricing surface.
   pro: {
     name: "Growth",
     price: 89,
+    active: false,
     orderLimit: 300,
     emailLimit: null,
-    smsLimit: 100,
+    smsLimit: 0,
     advancedCustomization: true,
     removeOlyxeeBranding: true,
-    availableFrom: "2026-08-20",
-    features: [
-      "Up to 300 orders per month",
-      "Everything in Free",
-      "SMS and email updates",
-      "Business branding",
-      "Invoice customization",
-      "Order and delivery records",
-    ],
+    features: [],
   },
 
   business: {
     name: "Scale",
-    price: 999,
-    orderLimit: 1000,
+    price: 1499,
+    orderLimit: null,
     emailLimit: null,
-    smsLimit: 500,
+    smsLimit: 0,
     callMinutesLimit: 0,
     advancedCustomization: true,
     removeOlyxeeBranding: true,
     apiAccess: false,
     automatedCallCentre: true,
-    availableFrom: "2026-08-20",
+    availableFrom: "2026-09-30",
+    tagline:
+      "Grow your freight operation with less manual work. Let Orgni help your team monitor jobs, handle routine follow-ups, and surface what actually needs attention.",
     features: [
-      "Up to 1,000 orders per month",
-      "Everything in Growth",
-      "Higher-volume operations",
-      "Unlimited email updates",
-      "Advanced business branding",
-      "Call centre",
-      "Priority support",
+      "Everything in Free",
+      "Higher email allowance (fair use)",
+    ],
+    comingSoon: [
+      "Orgni Intelligence",
+      "Automated follow-ups",
+      "Document monitoring",
+      "Exception detection",
+      "ETA and deadline monitoring",
+      "Operational alerts",
+      "Easier customs-clearance workflows",
+      "Task escalation",
+      "Customer communication automation",
+      "Call-centre capabilities",
     ],
   },
 } satisfies Record<PlanId, PlanConfig>;
@@ -126,7 +140,9 @@ export type SubscriptionStatus =
 // production for this preparation release.
 
 export const featureFlags = {
-  smsNotifications: true,
+  // SMS is fully removed from the product for now (pricing, notifications,
+  // settings). The dormant code paths stay behind this flag.
+  smsNotifications: false,
   subscriptionBilling: false,
   planEnforcement: false,
   businessBranding: false,
@@ -143,8 +159,6 @@ export function isFeatureEnabled(flag: FeatureFlag): boolean {
 }
 
 // ─── Launch + trial dates ────────────────────────────────────────────────────
-// 20 August 2026 00:00 Africa/Johannesburg (UTC+02:00). Existing users get Pro
-// free from 20–26 August 2026.
 
 export const orderLoopLaunch = {
   launchDate: "2026-08-20T00:00:00+02:00",
@@ -155,3 +169,15 @@ export const orderLoopLaunch = {
 // Convenience: pricing pages / countdown labels.
 export const LAUNCH_LABEL = "20 August 2026";
 export const TRIAL_LABEL = "20–26 August 2026";
+
+// ─── Scale billing start ─────────────────────────────────────────────────────
+// Businesses may see and join Scale during the rollout period, but NO
+// subscription charge may be processed before this date. Backend billing
+// endpoints and every UI surface that shows the Scale price must use these.
+
+export const SCALE_BILLING_START = "2026-09-30T00:00:00+02:00";
+export const SCALE_BILLING_START_LABEL = "30 September 2026";
+
+export function isScaleBillingLive(now: Date = new Date()): boolean {
+  return now.getTime() >= new Date(SCALE_BILLING_START).getTime();
+}

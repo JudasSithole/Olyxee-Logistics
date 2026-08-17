@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { UpdateBusinessBody } from "@workspace/api-zod";
+import { getPlan, isScaleBillingLive, SCALE_BILLING_START_LABEL } from "@workspace/plans";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
@@ -279,6 +280,60 @@ router.put("/business", requireAuth, async (req, res) => {
 
 // Hard-delete the current user's business and every row that belongs to it.
 // Irreversible. We block the demo account so the public demo can't be wiped.
+// Non-charging plan selection during the rollout period. Businesses may join
+// Scale before the billing start date without any payment (billing begins
+// 30 September 2026 and is handled by the billing routes after that date), or
+// move to Free at any time. No money is ever processed here.
+router.post("/business/select-plan", requireAuth, async (req, res) => {
+  try {
+    const businessId = (req as any).businessId as string;
+    if (businessId === DEMO_BUSINESS_ID) {
+      res.status(403).json({ error: "The demo account cannot change plans" });
+      return;
+    }
+    const plan = (req.body as { plan?: string } | undefined)?.plan;
+    if (plan !== "free" && plan !== "business") {
+      res.status(400).json({ error: "Plan must be free or business" });
+      return;
+    }
+    if (plan === "business" && isScaleBillingLive()) {
+      // Once billing is live, joining Scale must go through checkout.
+      res.status(400).json({
+        error: `${getPlan("business").name} now requires checkout — billing started on ${SCALE_BILLING_START_LABEL}.`,
+      });
+      return;
+    }
+    const business = await db.query.businessesTable.findFirst({
+      where: eq(businessesTable.id, businessId),
+    });
+    if (!business) {
+      res.status(404).json({ error: "Business not found" });
+      return;
+    }
+    await db
+      .update(businessesTable)
+      .set({
+        plan,
+        // "trial" marks a pre-billing Scale enrolment (no charge yet); Free is
+        // simply active.
+        subscriptionStatus: plan === "business" ? "trial" : "active",
+      })
+      .where(eq(businessesTable.id, businessId));
+    await db.insert(auditLogsTable).values({
+      id: generateId(),
+      businessId,
+      userId: (req as any).userId ?? null,
+      action: "SELECT_PLAN",
+      entityType: "business",
+      entityId: businessId,
+      metadata: { previousPlan: business.plan, newPlan: plan, charged: false },
+    });
+    res.json({ plan, charged: false });
+  } catch (err) {
+    res.status(500).json({ error: "Could not update plan" });
+  }
+});
+
 router.delete("/business", requireAuth, async (req, res) => {
   const businessId = (req as any).businessId as string;
 

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import { plans, isFeatureEnabled, type PlanId, LAUNCH_LABEL, TRIAL_LABEL } from "@/lib/launch";
+import { plans, isFeatureEnabled, type PlanId, SCALE_BILLING_START_LABEL } from "@/lib/launch";
 import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
@@ -605,12 +605,12 @@ function BillingSection() {
         <div className="px-4 py-4">
           <div className="rounded-[12px] border border-primary/25 bg-primary/[0.04] p-4">
             <p className="text-sm font-semibold text-foreground">
-              Paid plans go live on {LAUNCH_LABEL}
+              {plans.business.name} billing begins on {SCALE_BILLING_START_LABEL}
             </p>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Nothing changes for you before then. As an existing business, you&apos;ll get{" "}
-              <span className="font-semibold text-foreground">{plans.pro.name}</span> free during{" "}
-              {TRIAL_LABEL}.
+              Nothing changes for you before then. Your business stays on the{" "}
+              <span className="font-semibold text-foreground">{plans.free.name}</span> plan at no
+              cost — no payment is required.
             </p>
           </div>
         </div>

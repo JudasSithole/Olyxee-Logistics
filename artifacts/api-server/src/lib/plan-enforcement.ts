@@ -74,6 +74,21 @@ export function checkLimit(
   return { allowed: true, limit };
 }
 
+// ─── Email allowance ─────────────────────────────────────────────────────────
+// The monthly email cap that actually applies at send time. It is the tighter
+// of the per-business column (`monthlyEmailLimit`, an ops-tunable safety cap)
+// and the plan catalog's `emailLimit` (Free = 50; Scale/beta = unlimited from
+// the plan side). This applies ALWAYS — independent of the dormant
+// planEnforcement flag — because the email cap is a live product rule, not an
+// unfinished foundation.
+export function effectiveEmailLimit(
+  business: EnforceableBusiness & { monthlyEmailLimit: number },
+): number {
+  const planLimit = getPlan(planFor(business)).emailLimit;
+  if (planLimit == null) return business.monthlyEmailLimit;
+  return Math.min(planLimit, business.monthlyEmailLimit);
+}
+
 // ─── Existing-user trial ─────────────────────────────────────────────────────
 // Existing (BETA) users get Pro free for the launch trial window. This helper
 // reports whether a business is currently inside that window. It is inert until

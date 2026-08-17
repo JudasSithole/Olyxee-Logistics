@@ -1,0 +1,350 @@
+# Refine Olyxee Logistics Landing Page for Freight Forwarders
+
+Update `logistics.olyxee.com` so the page speaks clearly to the exact businesses we are targeting:
+
+**small and mid-sized freight forwarders, clearing & forwarding companies, import/export operators, and cross-border logistics businesses in South Africa.**
+
+Do not position Olyxee as generic logistics software.
+
+Do not target fleet management, trucking companies, route optimization, vehicle tracking, or large enterprise logistics groups.
+
+The visitor should immediately feel:
+
+> “This was built for a freight forwarding company like mine.”
+
+Preserve the current Olyxee visual style, colors, typography, layout language, spacing, animations, and overall premium/minimal feel. Improve the messaging and conversion, not the brand identity.
+
+## Hero
+
+Use:
+
+### Run your freight forwarding operation in one place.
+
+Manage customers, orders, invoices, payments, air and sea shipments, and customer updates without jumping between spreadsheets, email, WhatsApp, and separate files.
+
+Primary CTA:
+
+**Start Free**
+
+Secondary CTA:
+
+**Sign In**
+
+Supporting text:
+
+**Built for freight forwarders, clearing & forwarding teams, and cross-border operators.**
+
+**R0/month · No credit card required**
+
+The hero should immediately communicate the target customer and the operational problem.
+
+## Problem Section
+
+Heading:
+
+### Freight forwarding has enough moving parts already.
+
+Copy:
+
+A single shipment can involve the customer, supplier, overseas agent, carrier, customs, documents, payments, and final delivery.
+
+Olyxee keeps the important information together so your team spends less time searching, repeating updates, and chasing what happens next.
+
+Show concise pain points:
+
+**Scattered information**
+Stop searching across spreadsheets, emails, WhatsApp messages, and files.
+
+**Manual customer updates**
+Keep customers informed without repeatedly sending the same shipment information.
+
+**Too much coordination**
+Keep orders, payments, shipment progress, and delivery connected.
+
+## Show Their Actual Workflow
+
+Heading:
+
+### Built around the way freight forwarders work.
+
+Display:
+
+**Customer request**
+→ **Order**
+→ **Invoice & payment**
+→ **Air / Sea shipment**
+→ **Customs & clearance**
+→ **Delivery / Collection**
+→ **Job complete**
+
+Supporting copy:
+
+From a China import to a SADC cross-border movement, keep the commercial and shipment journey connected in one place.
+
+Do not claim Olyxee currently performs customs declarations automatically.
+
+For customs, use broad wording such as:
+
+**Keep clearance progress and shipment information organized.**
+
+## Current Free Product
+
+Heading:
+
+### Start with the work your team already does every day.
+
+Explain the current value in simple business language.
+
+**Manage customers and orders**
+Keep every customer and shipment organized.
+
+**Invoice and confirm payments**
+Keep the commercial side connected to the job.
+
+**Manage air and sea shipments**
+Follow the shipment journey from origin to delivery or collection.
+
+**Keep customers informed**
+Give customers branded shipment tracking and automated email updates.
+
+**Keep a clear history**
+See what happened on the job without searching through old messages and files.
+
+Avoid technical feature language.
+
+## Who It Is For
+
+Add a clear section:
+
+### Made for independent freight businesses.
+
+Include:
+
+* Freight forwarders
+* Clearing & forwarding companies
+* Air and sea freight operators
+* Import/export businesses
+* Cross-border freight operators
+* Companies coordinating customs and final delivery
+
+Supporting copy:
+
+Especially useful for teams that still rely heavily on spreadsheets, email, WhatsApp, and manual shipment reporting.
+
+This section is important. Do not hide it near the footer.
+
+## Real-World Example
+
+Add a simple use case.
+
+Heading:
+
+### One China shipment. One clear workflow.
+
+Example:
+
+A customer asks you to move goods from China to South Africa.
+
+Olyxee keeps the customer, order, invoice, payment, tracking reference, shipment progress, customer updates, and final delivery connected.
+
+Your team updates the job in one place instead of rebuilding the same information across different tools.
+
+Keep this visual and concise.
+
+## Free Plan
+
+Heading:
+
+### Start using Olyxee for free.
+
+**R0 / month**
+
+Include:
+
+* Customer management
+* Order management
+* Invoicing
+* Payment confirmation
+* Air & sea shipment workflows
+* Shipment tracking
+* Branded customer tracking
+* Delivery & collection
+* Up to 50 automated emails per month
+
+CTA:
+
+**Create Free Account**
+
+Supporting copy:
+
+**No credit card required.**
+
+## Scale + Orgni
+
+Do not present this as generic AI.
+
+Heading:
+
+### As your freight business grows, let Orgni help run the routine work.
+
+Copy:
+
+Orgni is being built to help your team spend less time checking, chasing, updating, and repeating operational work.
+
+Show practical future value:
+
+**Know what needs attention**
+See which jobs are moving normally and which need action.
+
+**Reduce follow-ups**
+Help chase missing information and routine outstanding actions.
+
+**Catch problems earlier**
+Surface delays, missing documents, payment issues, and shipment exceptions.
+
+**Make clearance easier to manage**
+Keep clearance progress, required information, and next actions organized.
+
+**Keep customers informed**
+Coordinate customer communication from the same job.
+
+**Handle routine customer questions**
+Future call-center capabilities will use the actual shipment information inside Olyxee.
+
+Clearly label unreleased capabilities:
+
+**Coming with Scale**
+
+## Scale Pricing
+
+Show:
+
+### Scale
+
+**R1,499 / company / month**
+
+**Billing starts 30 September 2026.**
+
+Copy:
+
+Everything in Free, plus Orgni Intelligence and advanced operational automation as features are released.
+
+CTA:
+
+**Join Scale**
+
+Supporting message:
+
+### Handle more shipments without increasing repetitive admin at the same rate.
+
+That should be the core paid value proposition.
+
+## Operational Intelligence Preview
+
+Show what the future experience should feel like.
+
+Example dashboard:
+
+**68 active jobs**
+
+**59 progressing normally**
+
+**9 need attention**
+
+Examples:
+
+* Missing document
+* ETA changed
+* Payment blocking shipment
+* Cargo overdue
+* Clearance action required
+* Delivery overdue
+
+Copy:
+
+### Your team shouldn't have to manually check every shipment.
+
+Orgni is being built to monitor routine operations and bring your team in when something actually needs attention.
+
+## Messaging Rules
+
+Never lead with:
+
+* AI agents
+* autonomous systems
+* LLMs
+* orchestration
+* workflows engines
+* APIs
+* digital transformation
+
+Use language a freight business owner understands immediately.
+
+Prefer:
+
+* Spend less time chasing updates
+* Keep every job organized
+* Know what needs attention
+* Keep customers informed
+* Handle more shipments with the same team
+* Reduce repetitive admin
+* Keep air and sea operations in one place
+
+## Avoid Generic Logistics Messaging
+
+Do not use imagery or copy focused on:
+
+* truck fleets
+* driver management
+* route optimization
+* fuel monitoring
+* GPS fleet tracking
+* warehouse robotics
+* last-mile consumer delivery
+
+Visuals should instead communicate:
+
+* freight forwarding jobs
+* air cargo
+* sea containers
+* import/export
+* shipment documents
+* clearing
+* customer communication
+* operational dashboards
+
+## Final CTA
+
+Heading:
+
+### Run your next freight shipment with Olyxee.
+
+Copy:
+
+Bring your customers, orders, invoices, payments, and shipments into one place and reduce the repetitive admin around every job.
+
+Primary CTA:
+
+**Start Free**
+
+Secondary CTA:
+
+**Sign In**
+
+Supporting text:
+
+**Built for freight forwarders · R0/month · No credit card required**
+
+## Final Goal
+
+Within the first 10 seconds, a freight forwarder should understand:
+
+1. Olyxee was built for freight-forwarding businesses like theirs.
+2. It organizes the work they already do across customers, invoices, shipments, and updates.
+3. It reduces repetitive admin and scattered information.
+4. They can start using it free today.
+5. Orgni will progressively help handle more of the routine operational work as they grow.
+
+The page should make the visitor think:
+
+> **“This understands how my freight business works. I should try it on one of our shipments.”**
