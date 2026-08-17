@@ -398,9 +398,17 @@ router.delete("/business", requireAuth, async (req, res) => {
         .delete(billingEventsTable)
         .where(eq(billingEventsTable.businessId, businessId));
 
-      // invoices references businesses.id AND customers.id (no ON DELETE
-      // CASCADE), so it must be peeled before both orders/customers and the
-      // business row - otherwise those deletes hit a foreign-key violation.
+      // orders and invoices reference each other in a cycle in the production
+      // schema: orders.invoice_id -> invoices.id AND invoices.order_id ->
+      // orders.id, neither DEFERRABLE. No delete order can satisfy both, so
+      // break the cycle first by nulling orders.invoice_id, then delete
+      // invoices (also clears its FKs to businesses.id and customers.id), then
+      // delete orders. (invoice_id is nullable; the FK is only added at the
+      // migration/DB level and isn't declared in the Drizzle schema.)
+      await tx
+        .update(ordersTable)
+        .set({ invoiceId: null })
+        .where(eq(ordersTable.businessId, businessId));
       await tx.delete(invoicesTable).where(eq(invoicesTable.businessId, businessId));
 
       await tx.delete(ordersTable).where(eq(ordersTable.businessId, businessId));
