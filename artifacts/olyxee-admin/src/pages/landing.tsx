@@ -15,7 +15,6 @@ import {
   Loader2,
   Mail,
   Sparkles,
-  Plane,
   Ship,
   FileText,
   AlertTriangle,
@@ -26,24 +25,22 @@ import {
   MessagesSquare,
   Layers,
   Package,
-  Truck,
-  Stamp,
 } from "lucide-react";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
 const statusWords = [
-  "ORDER CREATED",
-  "INVOICE SENT",
-  "PAYMENT CONFIRMED",
-  "VESSEL DEPARTED",
-  "ARRIVED AT PORT",
-  "CLEARANCE IN PROGRESS",
+  "QUOTE ACCEPTED",
+  "ORDER CONFIRMED",
+  "RECEIVED FROM SUPPLIER",
+  "EXPORT CUSTOMS CLEARED",
+  "IN TRANSIT",
+  "IMPORT CUSTOMS CLEARANCE",
   "OUT FOR DELIVERY",
-  "JOB COMPLETE",
+  "DELIVERED",
 ];
 
-const serif = { fontFamily: '"Newsreader", ui-serif, Georgia, serif', fontWeight: 500 };
+const serif = { fontFamily: '"Inter", system-ui, -apple-system, sans-serif', fontWeight: 650, letterSpacing: "-0.02em" };
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
 const sans = '"Inter", system-ui, -apple-system, sans-serif';
 
@@ -391,7 +388,7 @@ const CreateOrderMock: FC = () => {
 
 // ─── Hero visual: one freight job, fully connected ──────────────────────────
 const JOB_TIMELINE = [
-  { label: "Order created", meta: "Shanghai → Durban · sea freight", done: true },
+  { label: "Quote accepted · order created", meta: "Shanghai → Durban · sea freight", done: true },
   { label: "Invoice sent · payment confirmed", meta: "R48,200 · paid", done: true },
   { label: "Vessel departed", meta: "MSC Kalina · ETA 14 Sep", done: true },
   { label: "Clearance in progress", meta: "Documents organised in the job", done: false },
@@ -486,35 +483,39 @@ const PAIN_POINTS = [
 
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
-  { label: "Customer request", icon: MessagesSquare },
-  { label: "Order", icon: Package },
-  { label: "Invoice & payment", icon: FileText },
-  { label: "Air / Sea shipment", icon: Ship },
-  { label: "Customs & clearance", icon: Stamp },
-  { label: "Delivery / Collection", icon: Truck },
-  { label: "Job complete", icon: Check },
+  { label: "Add your customer", body: "Customer and their freight activity in one place.", icon: User },
+  { label: "Send a quote", body: "Customer accepts — you convert it to an order.", icon: MessagesSquare },
+  { label: "Add freight details", body: "Air or sea, origin, destination, cargo, references.", icon: Package },
+  { label: "Update shipment stages", body: "Your team moves the job through each stage.", icon: Ship },
+  { label: "Customer tracks it", body: "Public branded tracking page — no account needed.", icon: MapPin },
+  { label: "Invoice & payment status", body: "Know which jobs are paid and which are outstanding.", icon: FileText },
+  { label: "Job history kept", body: "Statuses, documents, and records stay together.", icon: Check },
 ];
 
 // ─── Free product value ──────────────────────────────────────────────────────
 const FREE_VALUE = [
-  { title: "Manage customers and orders", body: "Keep every customer and shipment organized." },
-  { title: "Invoice and confirm payments", body: "Keep the commercial side connected to the job." },
-  { title: "Manage air and sea shipments", body: "Follow the shipment journey from origin to delivery or collection." },
-  { title: "Keep customers informed", body: "Give customers branded shipment tracking and automated email updates." },
-  { title: "Keep a clear history", body: "See what happened on the job without searching through old messages and files." },
+  { title: "Customers, leads, and quotes" },
+  { title: "Convert accepted quotes to orders" },
+  { title: "Air and sea freight orders" },
+  { title: "Shipment status history and documents" },
+  { title: "Public customer tracking and email updates" },
+  { title: "Invoices and payment status" },
 ];
 
 
 // ─── Free plan list ──────────────────────────────────────────────────────────
 const FREE_PLAN_ITEMS = [
   "Customer management",
-  "Order management",
-  "Invoicing",
-  "Payment confirmation",
-  "Air & sea shipment workflows",
-  "Shipment tracking",
-  "Branded customer tracking",
-  "Delivery & collection",
+  "Leads / CRM",
+  "Quotes with accept or reject",
+  "Convert accepted quotes to orders",
+  "Air and sea freight orders",
+  "Cargo and supplier references",
+  "Shipment status history",
+  "Public customer tracking",
+  "Basic invoices and payment status",
+  "Documents",
+  "Dashboard and reporting",
   "Up to 50 automated emails per month",
 ];
 
@@ -533,7 +534,7 @@ const ORGNI_VALUE = [
   {
     icon: AlertTriangle,
     title: "Catch problems earlier",
-    body: "Surface delays, missing documents, payment issues, and shipment exceptions.",
+    body: "Surface delays, deadline changes, and shipment exceptions.",
   },
   {
     icon: ClipboardList,
@@ -594,9 +595,9 @@ const Landing: FC = () => {
                 style={serif}
                 className="text-[2.6rem] sm:text-[3.6rem] lg:text-[4rem] xl:text-[4.5rem] leading-[0.95] tracking-[-0.03em]"
               >
-                Run your freight forwarding operation in{" "}
+                Manage your freight orders from quote to{" "}
                 <span className="relative inline-block">
-                  <em className="italic text-orange-500">one place</em>
+                  <em className="not-italic text-orange-500">delivery</em>
                   <svg
                     aria-hidden
                     className="absolute left-0 -bottom-2 w-full"
@@ -617,8 +618,8 @@ const Landing: FC = () => {
                 transition={{ duration: 0.8, delay: 0.35, ease }}
                 className="mt-8 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-lg"
               >
-                Customers, orders, invoices, payments, and shipments — all in one place.
-                No more spreadsheets, email threads, and WhatsApp.
+                Customers, quotes, orders, shipment progress, payments, and customer
+                tracking — connected in one place.
               </motion.p>
 
               <motion.div
@@ -651,6 +652,9 @@ const Landing: FC = () => {
                 transition={{ duration: 0.8, delay: 0.65, ease }}
                 className="mt-8 space-y-1.5"
               >
+                <p className="text-sm font-medium text-neutral-800">
+                  Built for freight forwarders and cross-border operators.
+                </p>
                 <p style={mono} className="text-[11px] tracking-[0.18em] text-neutral-400">
                   R0/MONTH · NO CREDIT CARD REQUIRED
                 </p>
@@ -721,14 +725,14 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              Freight forwarding has enough <em className="italic text-orange-500">moving parts</em> already.
+              Freight forwarding has enough <em className="not-italic text-orange-500">moving parts</em> already.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: 0.1, ease }}
-              className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-2xl"
+              className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl"
             >
               One shipment touches many people, documents, and payments. Keep it all together.
             </motion.p>
@@ -771,10 +775,10 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              Built around the way <em className="italic text-orange-400">freight forwarders</em> work.
+              Built around the way <em className="not-italic text-orange-400">freight forwarders</em> work.
             </motion.h2>
-            <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-2xl">
-              One job. Seven steps. Nothing gets lost.
+            <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl">
+              From quote to delivery — your team manages every step in Olyxee Logistics.
             </p>
           </div>
 
@@ -789,7 +793,7 @@ const Landing: FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-60px" }}
                   transition={{ duration: 0.5, delay: i * 0.09, ease }}
-                  className={`relative rounded-2xl p-5 ring-1 flex flex-col gap-4 min-h-[9.5rem] ${
+                  className={`relative rounded-2xl p-5 ring-1 flex flex-col gap-4 min-h-[11rem] ${
                     isLast
                       ? "bg-orange-500 ring-orange-400 text-white"
                       : "bg-white/[0.04] ring-white/10 hover:bg-white/[0.08] transition-colors"
@@ -813,6 +817,9 @@ const Landing: FC = () => {
                   <div className="mt-auto">
                     <p className={`text-[13px] leading-snug font-medium ${isLast ? "text-white" : "text-white/85"}`}>
                       {step.label}
+                    </p>
+                    <p className={`mt-1.5 text-[11px] leading-snug ${isLast ? "text-white/80" : "text-white/45"}`}>
+                      {step.body}
                     </p>
                   </div>
                   {!isLast && (
@@ -838,7 +845,7 @@ const Landing: FC = () => {
           >
             <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">FREE TODAY</p>
             <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-8">
-              Start with the work your team already does <em className="italic text-orange-500">every day</em>.
+              Start with the work your team already does <em className="not-italic text-orange-500">every day</em>.
             </h2>
             <ul className="space-y-4">
               {FREE_VALUE.map((v) => (
@@ -880,9 +887,9 @@ const Landing: FC = () => {
                   style={serif}
                   className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.95] mb-6"
                 >
-                  One China shipment. One clear <em className="italic text-orange-400">workflow</em>.
+                  One China shipment. One clear <em className="not-italic text-orange-400">workflow</em>.
                 </motion.h2>
-                <p className="text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-lg">
+                <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-lg">
                   From the customer's request to final delivery — everything about the job lives together.
                 </p>
               </div>
@@ -932,9 +939,9 @@ const Landing: FC = () => {
           >
             <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CUSTOMER TRACKING</p>
             <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
-              Customers track it <em className="italic text-orange-500">themselves</em>.
+              Customers track it <em className="not-italic text-orange-500">themselves</em>.
             </h2>
-            <p className="text-base sm:text-lg text-neutral-500 font-light leading-relaxed max-w-md">
+            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md">
               Every job gets a tracking link. Fewer "where is my shipment?" calls.
             </p>
           </motion.div>
@@ -968,7 +975,7 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              Start using Olyxee Logistics for <em className="italic text-orange-500">free</em>.
+              Start using Olyxee Logistics for <em className="not-italic text-orange-500">free</em>.
             </motion.h2>
             <div className="flex items-baseline gap-2 mb-8">
               <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R0</span>
@@ -978,7 +985,7 @@ const Landing: FC = () => {
               href="/login?mode=signup"
               className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
             >
-              <span className="text-sm font-medium tracking-wide">Create Free Account</span>
+              <span className="text-sm font-medium tracking-wide">Start Free</span>
               <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
                 <ArrowUpRight className="w-4 h-4" />
               </span>
@@ -1019,8 +1026,12 @@ const Landing: FC = () => {
               style={serif}
               className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
             >
-              Let <em className="italic text-orange-500">Orgni</em> handle the routine work.
+              Today your team manages the workflow. Next, <em className="not-italic text-orange-500">Orgni</em> helps reduce the work around it.
             </motion.h2>
+            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl">
+              Olyxee Logistics gives your team the operational foundation today. Orgni Intelligence
+              is being built to reduce the repetitive work around those jobs as you grow.
+            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1053,6 +1064,64 @@ const Landing: FC = () => {
         </div>
       </section>
 
+      {/* === SCALE PRICING === */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950 px-6 sm:px-12 py-20 sm:py-28">
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
+            <div className="relative max-w-5xl mx-auto text-center">
+              <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">SCALE</p>
+              <motion.h2
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, ease }}
+                style={serif}
+                className="text-white text-4xl sm:text-6xl tracking-[-0.02em] leading-[0.98] mb-6"
+              >
+                More freight. <em className="text-orange-400 not-italic">Less repetitive work.</em>
+              </motion.h2>
+              <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl mx-auto mb-14">
+                Your people spend more time solving real problems and less time doing repetitive admin.
+              </p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, delay: 0.1, ease }}
+                className="mx-auto max-w-lg rounded-[1.75rem] bg-white ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.35)] p-8 sm:p-10 text-left text-neutral-900"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 style={serif} className="text-3xl tracking-tight">Scale</h3>
+                  <span style={mono} className="text-[9px] tracking-[0.2em] px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">
+                    ORGNI · COMING WITH SCALE
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span style={serif} className="text-5xl tracking-tight">R1,499</span>
+                  <span className="text-neutral-500">/ company / month</span>
+                </div>
+                <p className="mt-3 text-sm font-medium text-orange-600">Billing starts 30 September 2026.</p>
+                <p className="mt-5 text-sm text-neutral-500 leading-relaxed">
+                  Everything in Free, plus access to Orgni Intelligence and advanced operational
+                  capabilities as they are released.
+                </p>
+                <Link
+                  href="/upgrade"
+                  className="group mt-8 inline-flex w-full items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
+                >
+                  <span className="text-sm font-medium tracking-wide">Join Scale</span>
+                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* === FINAL CTA === */}
       <section className="relative px-4 sm:px-8 pt-6 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
@@ -1069,16 +1138,17 @@ const Landing: FC = () => {
                   style={serif}
                   className="text-white text-4xl sm:text-6xl md:text-7xl tracking-[-0.02em] leading-[0.95] break-words"
                 >
-                  Run your next freight shipment with <em className="text-orange-400 italic">Olyxee Logistics.</em>
+                  Try <em className="text-orange-400 not-italic">Olyxee Logistics</em> on your next freight order.
                 </motion.h2>
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: 0.1, ease }}
-                  className="mt-6 text-base sm:text-lg text-white/55 font-light leading-relaxed max-w-xl"
+                  className="mt-6 text-base sm:text-lg text-white/75 leading-relaxed max-w-xl"
                 >
-                  Everything about every job, in one place.
+                  Create a customer, send a quote, turn it into an order, and manage the
+                  shipment through to delivery.
                 </motion.p>
               </div>
 

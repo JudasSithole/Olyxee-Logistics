@@ -1,0 +1,266 @@
+# Update Olyxee Logistics Landing Page Around the Real Current Workflow
+
+Update `logistics.olyxee.com` while preserving the existing visual style, layout language, typography, colors, spacing, animations, and premium/minimal feel.
+
+Do not redesign the page from scratch.
+
+The landing page should explain Olyxee Logistics by showing the **real workflow that exists today**, step by step.
+
+Do not mix future Orgni capabilities into the current Free product.
+
+## Target Customer
+
+Speak directly to:
+
+* Freight forwarders
+* Clearing & forwarding companies
+* Import/export businesses
+* Cross-border freight operators
+* Air and sea freight businesses
+
+Especially small and mid-sized operators handling routes such as China → South Africa and other international/cross-border freight.
+
+## Hero
+
+### Manage your freight orders from quote to delivery.
+
+Keep customers, quotes, orders, shipment progress, payments and customer tracking connected in one place.
+
+Primary CTA:
+
+**Start Free**
+
+Secondary CTA:
+
+**Sign In**
+
+Supporting text:
+
+**Built for freight forwarders and cross-border operators.**
+
+## Show the Current Workflow
+
+Make this the main story of the page.
+
+### 1. Add your customer
+
+Keep the customer and their freight activity connected in one place.
+
+Visual:
+
+**Customer**
+
+↓
+
+### 2. Create and send a quote
+
+Create a quote for the shipment.
+
+The customer can accept or reject it.
+
+When accepted, convert it into an order without starting again.
+
+Visual:
+
+**Customer → Quote → Accepted → Order**
+
+Value:
+
+**Move from sales to operations without recreating the job.**
+
+### 3. Add the freight details
+
+Add the shipment information your team needs.
+
+Examples:
+
+* Air or sea freight
+* Origin
+* Destination
+* Cargo information
+* Supplier tracking/reference
+* Warehouse reference when available
+
+Visual:
+
+**Order → Freight Details**
+
+Value:
+
+**Keep the important shipment information attached to the same order.**
+
+### 4. Move the shipment through its stages
+
+Your team updates the shipment as it progresses.
+
+For air freight, show an example such as:
+
+**Order Confirmed**
+→ **Received from Supplier**
+→ **Export Customs Cleared**
+→ **In Transit**
+→ **Import Customs Clearance**
+→ **Out for Delivery**
+→ **Delivered**
+
+For sea freight, show the relevant sea/vessel/port stages already supported by the product.
+
+Do not imply these updates happen automatically today.
+
+Make it clear that the operations team manages the progress from Olyxee.
+
+### 5. Keep the customer informed
+
+As the order progresses, customers can follow the shipment through a public branded tracking page.
+
+Show:
+
+**Shipment Status → Customer Tracking Page**
+
+The customer should not need an Olyxee account to track their shipment.
+
+Mention automated email updates only where currently supported.
+
+Free companies receive up to **50 automated emails per month**.
+
+Do not mention SMS.
+
+### 6. Keep invoice and payment status connected
+
+Allow the team to keep basic invoice and payment information connected to the order.
+
+Use simple language:
+
+**Know which freight jobs are paid and which are still outstanding.**
+
+Do not present advanced accounting or automated payment reconciliation as available.
+
+### 7. Keep the job history
+
+Keep the shipment status history, documents, customer information and completed order record together.
+
+Value:
+
+**You can go back and see what happened without rebuilding the history from messages and spreadsheets.**
+
+## Current Free Plan
+
+### Olyxee Logistics Free
+
+**R0/month**
+
+Include the capabilities that exist today:
+
+* Customer management
+* Leads / CRM
+* Quotes
+* Quote acceptance or rejection
+* Convert accepted quotes to orders
+* Air and sea freight orders
+* Cargo and supplier references
+* Shipment status history
+* Public customer tracking
+* Basic invoices and payment status
+* Documents
+* Dashboard and reporting
+* Up to 50 automated emails per month
+
+CTA:
+
+**Start Free**
+
+Supporting text:
+
+**No credit card required.**
+
+## Then Introduce What Comes Next
+
+Only after the visitor clearly understands the current workflow, introduce Orgni.
+
+Heading:
+
+### Today your team manages the freight workflow. Next, Orgni helps reduce the work around it.
+
+Copy:
+
+Olyxee Logistics gives your team the operational foundation today.
+
+Orgni Intelligence is being built to reduce the repetitive work around those jobs as your business grows.
+
+Use practical future examples:
+
+* Notice which jobs need attention
+* Help chase missing information
+* Monitor deadlines and shipment changes
+* Surface delays and exceptions
+* Make clearance coordination easier
+* Reduce repetitive customer follow-ups
+* Help manage routine customer communication
+* Support future call-center capabilities
+* Handle more routine operational work automatically
+
+Clearly mark these:
+
+**Coming with Scale**
+
+Do not present them as currently available.
+
+## Orgni / Scale Message
+
+### Let Orgni help your team run more freight with less repetitive work.
+
+Today, your controllers manage the workflow.
+
+Over time, Orgni will increasingly help with the checking, chasing, monitoring and routine coordination around each job.
+
+The goal is simple:
+
+**Your people spend more time solving real problems and less time doing repetitive admin.**
+
+## Scale Pricing
+
+### Scale
+
+**R1,499 / company / month**
+
+**Billing starts 30 September 2026.**
+
+Include:
+
+Everything in Free, plus access to Orgni Intelligence and advanced operational capabilities as they are released.
+
+CTA:
+
+**Join Scale**
+
+## Final CTA
+
+### Try Olyxee on your next freight order.
+
+Create a customer, send a quote, turn it into an order and manage the shipment through to delivery.
+
+Primary CTA:
+
+**Start Free**
+
+Secondary CTA:
+
+**Sign In**
+
+Supporting text:
+
+**R0/month · No credit card required**
+
+## Important
+
+Do not make the current version sound more automated than it is.
+
+Today:
+
+**The team uses Olyxee to manage the freight workflow.**
+
+Future:
+
+**Orgni increasingly helps do the repetitive work around that workflow.**
+
+That distinction must be obvious throughout the landing page.
