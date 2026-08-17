@@ -1,6 +1,6 @@
 import { FC, ReactNode, useEffect, useState } from "react";
 import notifyTracking from "@assets/image_1783706089743.png";
-import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
+import ctaWarehouse from "@assets/cta-warehouse.png";
 import olyxeeLogo from "@assets/Order-Loop-LOGO_1786979611771.png";
 import oldWayQuotes from "@assets/image_1786981204947.png";
 import oldWaySpreadsheets from "@assets/image_1786981215190.png";
@@ -992,6 +992,14 @@ const Landing: FC = () => {
       <section className="relative px-4 sm:px-8 pt-6 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
           <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950">
+            <img
+              src={ctaWarehouse}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/35" aria-hidden />
             <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-28 grid grid-cols-12 gap-8 items-end">
@@ -1044,13 +1052,6 @@ const Landing: FC = () => {
                 <p style={mono} className="text-[10px] tracking-[0.18em] text-white/40 pl-2 leading-relaxed">
                   BUILT FOR FREIGHT FORWARDERS · R0/MONTH · NO CREDIT CARD REQUIRED
                 </p>
-                <img
-                  src={heroPerson}
-                  alt=""
-                  aria-hidden
-                  className="hidden lg:block self-end -mb-[7rem] mt-4 w-60 xl:w-72 opacity-90 pointer-events-none"
-                  loading="lazy"
-                />
               </motion.div>
             </div>
           </div>
