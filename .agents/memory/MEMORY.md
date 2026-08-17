@@ -9,4 +9,5 @@
 - [Reaching prod Supabase from Replit](supabase-prod-access.md) — direct db.<ref> host is unreachable here; use aws-1-eu-west-2 pooler:5432, user postgres.<ref>.
 - [Launch-prep foundations](launch-prep-foundations.md) — disabled features gate via @workspace/plans featureFlags; route gates must be path-scoped; billing is env-gated TEST-only; validate paid amount + swallow only 23505.
 - [Logistics transport flows](logistics-transport-flows.md) — AIR/SEA flows live in lib/order-statuses/logistics.ts; every order-mutating endpoint must enforce mode rules; labels never leak enum codes.
+- [Artifact router ports](artifact-router-ports.md) — preview routes / → port 23915 (artifact.toml), /api → 8080; running Vite on 5000 502s the external preview.
 - [Plan catalog](plan-catalog.md) — plan IDs (free/pro/business) are frozen (DB enum + codegen); display names differ (Growth/Scale); edit name/price/features in @workspace/plans, never hardcode plan names in JSX.
