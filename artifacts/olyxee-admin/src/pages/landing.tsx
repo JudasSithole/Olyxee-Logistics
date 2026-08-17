@@ -12,12 +12,12 @@ import logisticsFleet from "@assets/logistics-fleet.png";
 import heroCourier from "@assets/hero-courier.png";
 import oceanCargoImg from "@assets/ocean-cargo.jpg";
 
-// ─── "The old way" rotating showcase ─────────────────────────────────────────
+// ─── "The old way" exhibit showcase ──────────────────────────────────────────
 const OLD_WAY_SLIDES = [
-  { img: oldWayQuotes, label: "Quotes in scattered documents", body: "Quotations live in folders, spreadsheets, and templates no one can find." },
-  { img: oldWaySpreadsheets, label: "Spreadsheets everywhere", body: "Every shipment tracked in a different sheet, updated by hand." },
-  { img: oldWayInbox, label: "The inbox is the system", body: "Bookings, bills of lading, and arrival notices buried in email threads." },
-  { img: oldWayPaper, label: "Paper trails and re-checking", body: "Carrier documents checked line by line, job by job." },
+  { img: oldWayQuotes, tag: "EXHIBIT A", label: "Quotes live in seventeen folders.", body: "And nobody knows which one is final." },
+  { img: oldWaySpreadsheets, tag: "EXHIBIT B", label: "One shipment, four spreadsheets.", body: "All updated by hand. None matching." },
+  { img: oldWayInbox, tag: "EXHIBIT C", label: "The inbox is the system.", body: "The bill of lading is in a thread somewhere." },
+  { img: oldWayPaper, tag: "EXHIBIT D", label: "Print. Check. Re-check.", body: "Line by line, job by job, every week." },
 ];
 
 const OldWayShowcase: FC = () => {
@@ -26,7 +26,7 @@ const OldWayShowcase: FC = () => {
 
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(() => setActive((a) => (a + 1) % OLD_WAY_SLIDES.length), 4500);
+    const t = setInterval(() => setActive((a) => (a + 1) % OLD_WAY_SLIDES.length), 5000);
     return () => clearInterval(t);
   }, [paused]);
 
@@ -34,62 +34,98 @@ const OldWayShowcase: FC = () => {
 
   return (
     <div
-      className="grid lg:grid-cols-[minmax(0,20rem)_1fr] gap-6 lg:gap-10 items-center"
+      className="relative rounded-[2rem] bg-neutral-950 text-white overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-        {OLD_WAY_SLIDES.map((s, i) => (
-          <button
-            key={s.label}
-            onClick={() => setActive(i)}
-            className={`relative text-left shrink-0 lg:shrink rounded-2xl px-5 py-4 ring-1 transition-all ${
-              i === active
-                ? "bg-neutral-950 text-white ring-neutral-950"
-                : "bg-white text-neutral-700 ring-neutral-200 hover:ring-neutral-400"
-            }`}
-          >
-            <span className="flex items-center gap-3">
-              <span
-                style={mono}
-                className={`text-[10px] tracking-widest ${i === active ? "text-orange-400" : "text-neutral-400"}`}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span className="text-sm font-medium leading-snug">{s.label}</span>
-            </span>
-            <span className={`block mt-1.5 pl-[30px] text-[12px] leading-relaxed ${i === active ? "text-white/60" : "text-neutral-500"}`}>
-              {s.body}
-            </span>
-            {i === active && !paused && (
-              <motion.span
-                key={`bar-${active}`}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 4.5, ease: "linear" }}
-                className="absolute left-5 right-5 bottom-2 h-0.5 origin-left rounded-full bg-orange-500/70"
-              />
-            )}
-          </button>
-        ))}
-      </div>
+      <div className="grid lg:grid-cols-2 items-stretch">
+        {/* Left: giant numeral + one line */}
+        <div className="relative flex flex-col justify-between p-7 sm:p-10 lg:p-12 min-h-[15rem]">
+          {/* watermark numeral */}
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={`num-${active}`}
+              aria-hidden
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease }}
+              style={serif}
+              className="pointer-events-none select-none absolute -bottom-10 -right-2 lg:right-6 text-[11rem] sm:text-[15rem] leading-none text-white/[0.06]"
+            >
+              {String(active + 1).padStart(2, "0")}
+            </motion.span>
+          </AnimatePresence>
 
-      <div className="relative rounded-[1.75rem] overflow-hidden ring-1 ring-neutral-200 bg-neutral-100 aspect-[16/10]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease }}
-            className="absolute inset-0"
-          >
-            <img src={slide.img} alt={slide.label} className="w-full h-full object-cover" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-neutral-950/80 to-transparent pt-16 pb-5 px-6">
-              <p className="text-white text-sm sm:text-base font-medium">{slide.body}</p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+          <div style={mono} className="text-[10px] tracking-[0.3em] text-orange-400">
+            {slide.tag} · FOUND ON EVERY FORWARDER'S DESK
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`copy-${active}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.45, ease }}
+              className="mt-10 lg:mt-0"
+            >
+              <h3 style={serif} className="text-2xl sm:text-4xl lg:text-[2.75rem] leading-[1.05] tracking-tight max-w-md">
+                {slide.label}
+              </h3>
+              <p className="mt-3 text-sm sm:text-base text-white/55 max-w-sm">{slide.body}</p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* segmented rail */}
+          <div className="relative mt-10 flex gap-2" role="tablist" aria-label="The old way exhibits">
+            {OLD_WAY_SLIDES.map((s, i) => (
+              <button
+                key={s.tag}
+                role="tab"
+                aria-selected={i === active}
+                aria-label={s.label}
+                onClick={() => setActive(i)}
+                className="group relative h-8 flex-1 flex items-end"
+              >
+                <span className={`relative block w-full h-1 rounded-full overflow-hidden transition-colors ${i === active ? "bg-white/20" : "bg-white/10 group-hover:bg-white/25"}`}>
+                  {i === active && (
+                    <motion.span
+                      key={`fill-${active}-${paused}`}
+                      initial={{ scaleX: paused ? 1 : 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: paused ? 0 : 5, ease: "linear" }}
+                      className="absolute inset-0 origin-left bg-orange-500"
+                    />
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: the evidence photo */}
+        <div className="relative aspect-[16/11] lg:aspect-auto lg:min-h-[26rem] bg-neutral-900">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={`img-${active}`}
+              src={slide.img}
+              alt={slide.label}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.55, ease }}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
+          {/* blend into the dark panel on desktop */}
+          <div aria-hidden className="hidden lg:block absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-neutral-950 to-transparent" />
+          <div aria-hidden className="lg:hidden absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-neutral-950 to-transparent" />
+          {/* corner stamp */}
+          <div style={mono} className="absolute bottom-4 right-4 text-[9px] tracking-[0.25em] text-white/80 bg-neutral-950/70 backdrop-blur-sm rounded-full px-3 py-1.5">
+            {String(active + 1).padStart(2, "0")} / 04
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -618,18 +654,29 @@ const Landing: FC = () => {
       {/* === PAIN — the old way === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-12">
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">THE PROBLEM</p>
-            <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
+          <div className="mb-10 sm:mb-12 flex flex-wrap items-end justify-between gap-6">
+            <div className="max-w-2xl">
+              <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">THE PROBLEM</p>
+              <motion.h2
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, ease }}
+                style={serif}
+                className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
+              >
+                Sound <em className="not-italic text-orange-500">familiar?</em>
+              </motion.h2>
+            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              style={serif}
-              className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
+              transition={{ duration: 0.8, delay: 0.15, ease }}
+              className="text-sm sm:text-base text-neutral-500 max-w-xs leading-relaxed"
             >
-              Running freight jobs <em className="not-italic text-orange-500">the old way</em>.
-            </motion.h2>
+              Four exhibits from freight ops run the old way.
+            </motion.p>
           </div>
 
           <motion.div
