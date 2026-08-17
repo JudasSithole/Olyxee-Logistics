@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
@@ -10,6 +10,13 @@ import { PageLoader } from "@/components/page-loader";
 import { LogoUpload } from "@/components/logo-upload";
 import { compressLogo } from "@/lib/image-processing";
 import { useTheme } from "@/contexts/theme-context";
+import { InvoiceProfileFields } from "@/components/invoice-profile-fields";
+import {
+  EMPTY_INVOICE_PROFILE,
+  hydrateInvoiceProfile,
+  buildInvoiceUpdate,
+  type InvoiceProfile,
+} from "@/lib/invoice-profile";
 import {
   Select,
   SelectContent,
@@ -46,6 +53,24 @@ export default function OnboardingPage() {
     websiteUrl: "",
   });
 
+  // Invoice profile captured here so it's ready on every future invoice - no
+  // separate setup trip to Settings. Entirely optional: blank fields save as
+  // null and can be completed later in Settings → Invoice details.
+  const [invoice, setInvoice] = useState<InvoiceProfile>(EMPTY_INVOICE_PROFILE);
+  const updateInvoice = (key: keyof InvoiceProfile, value: string) =>
+    setInvoice((p) => ({ ...p, [key]: value }));
+  const pickInvoiceLogo = async (file: File) => {
+    if (file.type === "image/svg+xml") {
+      toast.error("Invoice logos must be PNG or JPEG so every PDF renders reliably.");
+      return;
+    }
+    try {
+      updateInvoice("logoUrl", await compressLogo(file));
+    } catch {
+      toast.error("Could not process that logo. Use a PNG or JPEG image.");
+    }
+  };
+
   // Hydrate from existing business once loaded so partially-filled onboarding
   // resumes where the user left off. Branding (logo + tagline) lives client-
   // side in the theme context, so we pull it from there instead of the API.
@@ -62,6 +87,15 @@ export default function OnboardingPage() {
       websiteUrl: business.website_url ?? f.websiteUrl,
     }));
   }, [business, theme.businessTagline, theme.logoUrl]);
+
+  // Prefill the invoice profile from the business row exactly once, so resuming
+  // onboarding keeps typed values instead of resetting them on a refetch.
+  const invoiceHydrated = useRef(false);
+  useEffect(() => {
+    if (!business || invoiceHydrated.current) return;
+    invoiceHydrated.current = true;
+    setInvoice(hydrateInvoiceProfile(business));
+  }, [business]);
 
   async function handleLogoPicked(file: File) {
     try {
@@ -85,6 +119,9 @@ export default function OnboardingPage() {
         website_url: form.websiteUrl,
         business_logo_url: form.logoUrl,
         onboarding_completed: true,
+        // Persist the (optional) invoice profile captured below so invoices are
+        // ready immediately. Blank fields save as null.
+        ...buildInvoiceUpdate(invoice),
       });
       // Branding is stored on-device (localStorage) via the theme context, so
       // push the in-form values out so the sidebar / browser tab / favicon
@@ -312,6 +349,34 @@ export default function OnboardingPage() {
                       data-testid="input-website"
                     />
                   </div>
+                </div>
+              </section>
+
+              {/* ─── Invoice details (optional) ─────────────────────────────
+                  Captured now so invoices are ready to send without a separate
+                  setup step. Everything here is optional and editable later in
+                  Settings → Invoice details. */}
+              <section className="space-y-4 pt-2 border-t border-[hsl(220,9%,90%)]">
+                <div className="flex items-center justify-between pt-4">
+                  <h2 className="text-[13px] font-semibold uppercase tracking-wider text-[hsl(220,9%,30%)]">
+                    Invoice details
+                  </h2>
+                  <span className="text-[11px] text-[hsl(220,9%,46%)]">
+                    Optional · reused on every invoice
+                  </span>
+                </div>
+                <p className="text-[13px] text-[hsl(220,9%,46%)] -mt-1">
+                  Add your billing and bank details once and we’ll put them on
+                  every invoice and PDF automatically. You can skip this and
+                  finish it later in Settings.
+                </p>
+                <div className="rounded-xl border border-border">
+                  <InvoiceProfileFields
+                    profile={invoice}
+                    update={updateInvoice}
+                    pickLogo={pickInvoiceLogo}
+                    required={false}
+                  />
                 </div>
               </section>
 
