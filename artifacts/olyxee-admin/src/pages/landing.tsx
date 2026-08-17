@@ -25,6 +25,9 @@ import {
   Search,
   MessagesSquare,
   Layers,
+  Package,
+  Truck,
+  Stamp,
 } from "lucide-react";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
@@ -483,13 +486,13 @@ const PAIN_POINTS = [
 
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
-  "Customer request",
-  "Order",
-  "Invoice & payment",
-  "Air / Sea shipment",
-  "Customs & clearance",
-  "Delivery / Collection",
-  "Job complete",
+  { label: "Customer request", icon: MessagesSquare },
+  { label: "Order", icon: Package },
+  { label: "Invoice & payment", icon: FileText },
+  { label: "Air / Sea shipment", icon: Ship },
+  { label: "Customs & clearance", icon: Stamp },
+  { label: "Delivery / Collection", icon: Truck },
+  { label: "Job complete", icon: Check },
 ];
 
 // ─── Free product value ──────────────────────────────────────────────────────
@@ -828,33 +831,49 @@ const Landing: FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-y-4 gap-x-2">
-            {WORKFLOW_STEPS.map((step, i) => (
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.5, delay: i * 0.1, ease }}
-                className="flex items-center gap-2"
-              >
-                <span
-                  className={`inline-flex items-center gap-2.5 rounded-full px-5 py-3 text-sm ring-1 ${
-                    i === WORKFLOW_STEPS.length - 1
-                      ? "bg-orange-500 text-white ring-orange-400"
-                      : "bg-white/5 text-white/85 ring-white/15"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            {WORKFLOW_STEPS.map((step, i) => {
+              const Icon = step.icon;
+              const isLast = i === WORKFLOW_STEPS.length - 1;
+              return (
+                <motion.div
+                  key={step.label}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.5, delay: i * 0.09, ease }}
+                  className={`relative rounded-2xl p-5 ring-1 flex flex-col gap-4 min-h-[9.5rem] ${
+                    isLast
+                      ? "bg-orange-500 ring-orange-400 text-white"
+                      : "bg-white/[0.04] ring-white/10 hover:bg-white/[0.08] transition-colors"
                   }`}
                 >
-                  {step === "Air / Sea shipment" && <Plane className="w-3.5 h-3.5 text-orange-400" />}
-                  {step === "Customs & clearance" && <FileText className="w-3.5 h-3.5 text-orange-400" />}
-                  {step === "Job complete" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                  {step}
-                </span>
-                {i < WORKFLOW_STEPS.length - 1 && (
-                  <ArrowRight className="w-4 h-4 text-white/30 shrink-0" />
-                )}
-              </motion.div>
-            ))}
+                  <div className="flex items-start justify-between">
+                    <span
+                      className={`inline-flex items-center justify-center w-9 h-9 rounded-xl ${
+                        isLast ? "bg-white/20 text-white" : "bg-orange-500/15 text-orange-400"
+                      }`}
+                    >
+                      <Icon className="w-[18px] h-[18px]" strokeWidth={isLast ? 3 : 2} />
+                    </span>
+                    <span
+                      style={mono}
+                      className={`text-[10px] tracking-widest ${isLast ? "text-white/70" : "text-white/30"}`}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className="mt-auto">
+                    <p className={`text-[13px] leading-snug font-medium ${isLast ? "text-white" : "text-white/85"}`}>
+                      {step.label}
+                    </p>
+                  </div>
+                  {!isLast && (
+                    <ArrowRight className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400/60 z-10" />
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
 
         </div>
