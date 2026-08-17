@@ -9,6 +9,7 @@ import oldWayPaper from "@assets/image_1786981236403.png";
 import freightVisual from "@assets/image_1786981575568.png";
 import airCargoImg from "@assets/air-cargo.png";
 import logisticsFleet from "@assets/logistics-fleet.png";
+import heroCourier from "@assets/hero-courier.png";
 import oceanCargoImg from "@assets/ocean-cargo.jpg";
 
 // ─── "The old way" rotating showcase ─────────────────────────────────────────
@@ -436,72 +437,6 @@ const JOB_TIMELINE = [
   { label: "Delivery to customer", meta: "Johannesburg · pending", done: false },
 ];
 
-const HeroJobCard: FC = () => (
-  <div className="relative">
-    <div className="rounded-[1.75rem] bg-neutral-950 p-6 sm:p-8 ring-1 ring-neutral-800 shadow-[0_50px_120px_-50px_rgba(0,0,0,0.6)]">
-      <div className="flex items-center justify-between mb-6">
-        <div style={mono} className="text-[10px] tracking-widest text-white/50">JOB · #OLY-2094</div>
-        <div style={mono} className="text-[9px] tracking-widest text-orange-400 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-          IN TRANSIT
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 mb-7">
-        <span className="w-9 h-9 rounded-full bg-orange-500 text-white text-[11px] font-medium flex items-center justify-center shrink-0">TN</span>
-        <div className="min-w-0">
-          <div className="text-[14px] text-white truncate">Thandi Nkosi · Nkosi Trading</div>
-          <div style={mono} className="text-[9px] tracking-widest text-white/40 mt-0.5">CHINA IMPORT · 20FT CONTAINER</div>
-        </div>
-        <Ship className="ml-auto w-5 h-5 text-white/30 shrink-0" />
-      </div>
-
-      <div className="space-y-0">
-        {JOB_TIMELINE.map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 + i * 0.15, ease }}
-            className="flex gap-3.5"
-          >
-            <div className="flex flex-col items-center">
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                  s.done ? "bg-emerald-500" : "bg-white/10 ring-1 ring-white/20"
-                }`}
-              >
-                {s.done ? (
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                ) : (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                )}
-              </span>
-              {i < JOB_TIMELINE.length - 1 && <span className="w-px flex-1 bg-white/10 my-1" />}
-            </div>
-            <div className="pb-4 min-w-0">
-              <div className={`text-[13px] leading-tight ${s.done ? "text-white" : "text-white/50"}`}>{s.label}</div>
-              <div style={mono} className="text-[9px] tracking-wider text-white/35 mt-1 truncate">{s.meta}</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.4, ease }}
-        className="mt-2 rounded-xl bg-white/5 ring-1 ring-white/10 px-4 py-3 flex items-center gap-3"
-      >
-        <Mail className="w-4 h-4 text-orange-400 shrink-0" />
-        <div className="min-w-0">
-          <div className="text-[12px] text-white/85 truncate">Customer notified automatically</div>
-          <div style={mono} className="text-[8px] tracking-widest text-white/35 mt-0.5">BRANDED EMAIL · LIVE TRACKING LINK</div>
-        </div>
-      </motion.div>
-    </div>
-  </div>
-);
 
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
@@ -662,9 +597,13 @@ const Landing: FC = () => {
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.55, ease }}
-            className="mt-16 text-left max-w-4xl mx-auto"
+            className="mt-16 max-w-2xl mx-auto"
           >
-            <HeroJobCard />
+            <img
+              src={heroCourier}
+              alt="Logistics operator coordinating deliveries with live customer updates"
+              className="w-full h-auto"
+            />
           </motion.div>
         </div>
       </section>
