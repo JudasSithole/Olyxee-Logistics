@@ -58,6 +58,9 @@ const OldWayShowcase: FC = () => {
               </span>
               <span className="text-sm font-medium leading-snug">{s.label}</span>
             </span>
+            <span className={`block mt-1.5 pl-[30px] text-[12px] leading-relaxed ${i === active ? "text-white/60" : "text-neutral-500"}`}>
+              {s.body}
+            </span>
             {i === active && !paused && (
               <motion.span
                 key={`bar-${active}`}
@@ -477,25 +480,6 @@ const FREE_PLAN_ITEMS = [
 ];
 
 // ─── Operational pain rows ───────────────────────────────────────────────────
-const PAIN_ROWS = [
-  {
-    label: "Shipment details are scattered everywhere",
-    body: "One job lives in WhatsApp, email, and a spreadsheet — so nobody has the full picture.",
-  },
-  {
-    label: "Customers keep asking \u201Cwhere is my shipment?\u201D",
-    body: "Every update means digging up the same information and typing it out again.",
-  },
-  {
-    label: "Quotes, orders, and invoices don't connect",
-    body: "The money side and the shipment side live in different places, so things slip.",
-  },
-  {
-    label: "The same job gets checked over and over",
-    body: "You open five different places just to confirm what stage one shipment is at.",
-  },
-];
-
 // ─── Orgni ops interface data ────────────────────────────────────────────────
 
 const Landing: FC = () => {
@@ -531,16 +515,7 @@ const Landing: FC = () => {
           }}
         />
         <div className="relative max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-center">
-          <div className="col-span-12 lg:col-span-7 text-center lg:text-left">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease }}
-            style={mono}
-            className="text-[11px] tracking-[0.3em] text-orange-500 mb-6"
-          >
-            FOR FREIGHT FORWARDERS &amp; CROSS-BORDER OPERATORS
-          </motion.p>
+          <div className="col-span-12 lg:col-span-6 text-center lg:text-left">
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -600,12 +575,12 @@ const Landing: FC = () => {
             initial={{ opacity: 0, x: 32 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, delay: 0.45, ease }}
-            className="col-span-12 lg:col-span-5"
+            className="col-span-12 lg:col-span-6"
           >
             <img
               src={heroCourier}
               alt="Logistics operator coordinating deliveries with live customer updates"
-              className="w-full max-w-md mx-auto lg:max-w-none h-auto"
+              className="w-full max-w-xl mx-auto lg:max-w-none lg:scale-[1.06] h-auto"
             />
           </motion.div>
         </div>
@@ -640,66 +615,21 @@ const Landing: FC = () => {
         `}</style>
       </section>
 
-      {/* === PAIN — asymmetric === */}
+      {/* === PAIN — the old way === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-x-8 gap-y-12 items-start mb-20 sm:mb-24">
-            <div className="col-span-12 lg:col-span-6">
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.7, ease }}
-                style={mono}
-                className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4"
-              >
-                THE PROBLEM
-              </motion.p>
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, ease }}
-                style={serif}
-                className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
-              >
-                Freight forwarders know how to <em className="not-italic text-orange-500">move cargo</em>.
-                <span className="block mt-3 text-neutral-400 text-2xl sm:text-3xl lg:text-4xl leading-tight">
-                  The hard part is everything around it.
-                </span>
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, delay: 0.15, ease }}
-                className="mt-6 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md"
-              >
-                The paperwork, the follow-ups, the constant checking — that's what
-                eats your day. Here's what that looks like:
-              </motion.p>
-            </div>
-
-            <div className="col-span-12 lg:col-span-5 lg:col-start-8 lg:pt-10">
-              {PAIN_ROWS.map((row, i) => (
-                <motion.div
-                  key={row.label}
-                  initial={{ opacity: 0, y: 14 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.6, delay: i * 0.1, ease }}
-                  className="flex items-baseline gap-4 py-4 border-b border-neutral-200 first:border-t"
-                >
-                  <span style={mono} className="text-[10px] tracking-widest text-orange-500 shrink-0">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-medium text-neutral-900 leading-snug">{row.label}</p>
-                    <p className="mt-1.5 text-[13px] text-neutral-500 leading-relaxed">{row.body}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          <div className="max-w-3xl mb-12">
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">THE PROBLEM</p>
+            <motion.h2
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.8, ease }}
+              style={serif}
+              className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
+            >
+              Running freight jobs <em className="not-italic text-orange-500">the old way</em>.
+            </motion.h2>
           </div>
 
           <motion.div
