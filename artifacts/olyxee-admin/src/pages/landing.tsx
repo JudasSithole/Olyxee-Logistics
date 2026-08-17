@@ -766,43 +766,14 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === STATEMENT === */}
-      <section className="py-24 sm:py-36 px-4 sm:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, ease }}
-            style={serif}
-            className="text-4xl sm:text-6xl lg:text-7xl tracking-tight leading-[0.98]"
-          >
-            One job. One place to see <em className="not-italic text-orange-500">what happened</em>.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, delay: 0.15, ease }}
-            className="mt-7 text-base sm:text-lg text-neutral-500 leading-relaxed max-w-xl mx-auto"
-          >
-            Customer details, quotes, orders, payments, and shipment progress stay connected.
-          </motion.p>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, delay: 0.3, ease }}
-            aria-hidden
-            className="mx-auto mt-10 h-px w-24 bg-orange-500 origin-center"
-          />
-        </div>
+      {/* === FLEET VISUAL === */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8">
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, ease }}
-          className="max-w-6xl mx-auto mt-16"
+          className="max-w-6xl mx-auto"
         >
           <img
             src={logisticsFleet}
