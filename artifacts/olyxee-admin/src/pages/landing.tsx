@@ -1,7 +1,7 @@
 import { FC, ReactNode, useEffect, useState } from "react";
 import notifyTracking from "@assets/image_1783706089743.png";
 import heroPerson from "@assets/3dc14bbb-237d-46ca-961d-b793583b5cd1-removebg-preview_1781657363854.png";
-import olyxeeLogo from "@assets/Olyxee_Black_-removebg-preview_-_Copy_1778978524027.png";
+import olyxeeLogo from "@assets/Order-Loop-LOGO_1786979611771.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
