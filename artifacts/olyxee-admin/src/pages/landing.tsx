@@ -1117,46 +1117,6 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === ORGNI — dark mood shift === */}
-      <section className="py-24 sm:py-36 px-4 sm:px-8 bg-neutral-950 text-white">
-        <div className="max-w-7xl mx-auto">
-          {/* === SCALE — connected to Orgni === */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, ease }}
-            className="relative rounded-[1.75rem] bg-white/[0.04] ring-1 ring-white/10 overflow-hidden"
-          >
-            <div aria-hidden className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-orange-500/10 blur-3xl" />
-            <div className="relative grid grid-cols-12 gap-8 p-8 sm:p-12 items-center">
-              <div className="col-span-12 lg:col-span-7">
-                <p style={mono} className="text-[10px] tracking-[0.3em] text-orange-400 mb-4">SCALE PLAN</p>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-4">
-                  <span style={serif} className="text-4xl sm:text-5xl tracking-tight">R1,499</span>
-                  <span className="text-white/50">/ company / month</span>
-                </div>
-                <p style={serif} className="text-xl sm:text-2xl tracking-tight text-white/90 mb-3">
-                  Handle more freight with less repetitive work.
-                </p>
-                <p style={mono} className="text-[10px] tracking-[0.2em] text-white/40">
-                  BILLING STARTS 30 SEPTEMBER 2026
-                </p>
-              </div>
-              <div className="col-span-12 lg:col-span-5 flex lg:justify-end">
-                <Link
-                  href="/upgrade"
-                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-[0_20px_50px_-20px_rgba(249,115,22,0.6)]"
-                >
-                  <span className="text-sm font-medium tracking-wide">Join Scale</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* === FINAL CTA === */}
       <section className="relative px-4 sm:px-8 pt-6 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
