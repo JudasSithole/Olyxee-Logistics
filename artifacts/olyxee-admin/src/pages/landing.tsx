@@ -6,6 +6,7 @@ import oldWayQuotes from "@assets/image_1786981204947.png";
 import oldWaySpreadsheets from "@assets/image_1786981215190.png";
 import oldWayInbox from "@assets/image_1786981225722.png";
 import oldWayPaper from "@assets/image_1786981236403.png";
+import freightVisual from "@assets/image_1786981575568.png";
 
 // ─── "The old way" rotating showcase ─────────────────────────────────────────
 const OLD_WAY_SLIDES = [
@@ -1031,6 +1032,16 @@ const Landing: FC = () => {
           </div>
 
           <div className="col-span-12 lg:col-span-6">
+            <motion.img
+              src={freightVisual}
+              alt="Freight container truck with order management screen and pallet"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.9, ease }}
+              className="w-full max-w-md mx-auto mb-10 drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)]"
+              loading="lazy"
+            />
             <div className="rounded-[1.75rem] bg-white ring-1 ring-neutral-200 p-7 sm:p-9 shadow-[0_30px_80px_-50px_rgba(0,0,0,0.25)]">
               <p style={mono} className="text-[10px] tracking-[0.25em] text-neutral-400 mb-6">EVERYTHING INCLUDED</p>
               <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
