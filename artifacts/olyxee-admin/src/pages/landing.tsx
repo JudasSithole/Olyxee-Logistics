@@ -999,7 +999,7 @@ const Landing: FC = () => {
               className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/35" aria-hidden />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/55 to-neutral-950/10" aria-hidden />
             <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-28 grid grid-cols-12 gap-8 items-end">
@@ -1012,18 +1012,8 @@ const Landing: FC = () => {
                   style={serif}
                   className="text-white text-4xl sm:text-6xl md:text-7xl tracking-[-0.02em] leading-[0.95] break-words"
                 >
-                  Try <em className="text-orange-400 not-italic">Olyxee Logistics</em> on your next freight order.
+                  Try <em className="text-orange-400 not-italic">Olyxee</em> on your next order.
                 </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 0.1, ease }}
-                  className="mt-6 text-base sm:text-lg text-white/75 leading-relaxed max-w-xl"
-                >
-                  Create a customer, send a quote, turn it into an order, and manage the
-                  shipment through to delivery.
-                </motion.p>
               </div>
 
               <motion.div
