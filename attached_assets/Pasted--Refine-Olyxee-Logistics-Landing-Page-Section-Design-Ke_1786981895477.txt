@@ -1,0 +1,329 @@
+# Refine Olyxee Logistics Landing Page Section Design
+
+Keep the existing Olyxee Logistics visual identity, but improve the way individual sections are composed.
+
+The page should feel intentionally art-directed like a mature freight software company, not like an AI-generated SaaS landing page.
+
+Avoid repeating the same pattern of:
+
+heading → paragraph → 3 equal cards → button
+
+for every section.
+
+Each major section should have its own visual composition while still belonging to the same design system.
+
+## Design Principle
+
+Use **editorial rhythm**.
+
+Alternate between:
+
+* large statement sections
+* split-screen product sections
+* full-width product UI sections
+* workflow/timeline sections
+* dark emphasis sections
+* customer proof sections
+* asymmetric layouts
+* compact information rows
+
+The page should feel designed section-by-section.
+
+## Hero
+
+Use a restrained, premium hero.
+
+Large headline on the left or centered.
+
+Keep the copy short.
+
+Show a large real Olyxee product interface underneath or partially overlapping the hero.
+
+Do not surround the hero with floating AI-generated cards or decorative gradients everywhere.
+
+The product itself should be the visual.
+
+## Freight Workflow Section
+
+Instead of feature cards, create a wide visual workflow.
+
+For example:
+
+Customer
+→ Quote
+→ Order
+→ Shipment
+→ Tracking
+→ Delivery
+
+Use thin connecting lines, small operational labels, actual Olyxee UI components and subtle movement.
+
+The workflow should feel like part of the software interface rather than an infographic.
+
+## Product Sections
+
+For each important part of the current product, use alternating split layouts.
+
+Example:
+
+### Quote to Order
+
+Left:
+large screenshot or cropped product interface.
+
+Right:
+small eyebrow label
+strong headline
+2–3 sentence explanation
+one short value statement.
+
+Then reverse the layout for the next section.
+
+Example:
+
+### Manage the Shipment
+
+Copy left.
+
+Large product UI right.
+
+Do not put both capabilities into identical cards.
+
+## Use Large Product Screens
+
+At least 2–3 sections should feature a large product screenshot taking roughly 50–70% of the section width.
+
+Show the actual system:
+
+* quote screen
+* order details
+* air/sea shipment stages
+* customer tracking page
+* dashboard
+
+Make screenshots feel integrated into the page with subtle borders, shadows and cropping.
+
+Avoid generic laptop/device mockups unless they genuinely improve the composition.
+
+## Strong Statement Sections
+
+Between product sections, use short full-width statements.
+
+Example:
+
+### One job. One place to see what happened.
+
+Supporting line:
+
+Customer details, quotes, orders, payments and shipment progress stay connected.
+
+No cards.
+
+Just typography, whitespace and perhaps a small visual detail.
+
+This creates visual breathing room.
+
+## Pain Section
+
+Make the pain section feel specific to freight forwarding.
+
+Use an asymmetric layout.
+
+Large copy on one side:
+
+### Freight forwarders know how to move cargo.
+
+The hard part is everything around it.
+
+On the other side, show 3–4 compact operational pain rows:
+
+* Shipment details scattered across messages and spreadsheets
+* Customers repeatedly asking for updates
+* Commercial and shipment information disconnected
+* Too much time spent checking the same job
+
+Do not turn these into four oversized generic icon cards.
+
+Use smaller rows, dividers, numbers or interface-like elements.
+
+## Customer Tracking Section
+
+Make this visually different from the internal operations sections.
+
+Use a light or contrasting background.
+
+Show the customer-facing branded tracking experience prominently.
+
+Copy:
+
+### Give your customers visibility without giving them your internal workspace.
+
+Show the tracking timeline, reference number and current shipment stage.
+
+This section should make the product feel tangible.
+
+## Free Plan Section
+
+Do not use a huge three-column SaaS pricing table when there are only two plans.
+
+Use an editorial pricing layout.
+
+Left side:
+
+### Start with the freight workflow you need today.
+
+Short explanation.
+
+Right side:
+
+A clean Free plan panel:
+
+R0/month
+
+Current features.
+
+Start Free button.
+
+Then introduce Scale separately later in the page.
+
+## Orgni Section
+
+Visually change the mood here.
+
+Use a darker or more immersive section.
+
+Headline:
+
+### Today you manage the workflow.
+
+### Next, Orgni helps run it.
+
+Show a future operations interface rather than a collection of AI feature cards.
+
+Example interface:
+
+68 active jobs
+59 progressing normally
+9 need attention
+
+Then show 3–4 attention items:
+
+Missing document
+ETA changed
+Payment blocking release
+Clearance action required
+
+The visual should communicate intelligence before the visitor reads the copy.
+
+## Scale Section
+
+Keep Scale connected visually to Orgni.
+
+Do not make it another generic pricing card.
+
+Use:
+
+Scale
+R1,499 / company / month
+
+Then a short value statement:
+
+**Handle more freight with less repetitive work.**
+
+Show billing date clearly:
+
+**Billing begins 30 September 2026.**
+
+CTA:
+
+Join Scale
+
+## Social Proof
+
+Use real people and businesses where available.
+
+Prefer:
+
+large testimonial quote
+person/company information
+small company logo
+
+instead of a carousel of five tiny testimonials.
+
+One believable story is stronger than many generic quotes.
+
+## Section Transitions
+
+Use subtle changes in:
+
+* background tone
+* spacing
+* alignment
+* screenshot placement
+* typography scale
+
+Do not add random gradients or decorative blobs simply to make sections look different.
+
+The variation should come from composition.
+
+## Visual Language
+
+Keep it:
+
+* minimal
+* operational
+* premium
+* serious
+* freight-specific
+* product-first
+
+Use:
+
+* thin borders
+* subtle shadows
+* generous whitespace
+* strong typography
+* muted secondary text
+* small operational labels/statuses
+* restrained Olyxee accent color
+
+Avoid:
+
+* excessive glassmorphism
+* generic glowing AI gradients
+* floating icon cards
+* unnecessary 3D graphics
+* generic stock photos of trucks
+* dozens of colorful feature icons
+* every section being centered
+* identical rounded cards everywhere
+
+## Overall Feel
+
+The page should feel like a designer deliberately composed every section around the story being told.
+
+The visitor should experience different visual moments as they scroll:
+
+**Big promise**
+↓
+**Real workflow**
+↓
+**Product close-up**
+↓
+**Operational pain**
+↓
+**Product solution**
+↓
+**Customer tracking**
+↓
+**Free plan**
+↓
+**Orgni future**
+↓
+**Scale**
+↓
+**Final CTA**
+
+Take inspiration from mature freight software websites such as GoFreight and CargoWise in terms of section rhythm and product storytelling, but do not copy their layouts, branding or content.
+
+Keep Olyxee visually distinct.

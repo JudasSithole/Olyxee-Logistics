@@ -7,6 +7,8 @@ import oldWaySpreadsheets from "@assets/image_1786981215190.png";
 import oldWayInbox from "@assets/image_1786981225722.png";
 import oldWayPaper from "@assets/image_1786981236403.png";
 import freightVisual from "@assets/image_1786981575568.png";
+import airCargoImg from "@assets/air-cargo.png";
+import oceanCargoImg from "@assets/ocean-cargo.jpg";
 
 // ─── "The old way" rotating showcase ─────────────────────────────────────────
 const OLD_WAY_SLIDES = [
@@ -99,14 +101,12 @@ import {
   MapPin,
   Loader2,
   Mail,
-  Sparkles,
   Ship,
   FileText,
   AlertTriangle,
   Bell,
   PhoneCall,
   ClipboardList,
-  Search,
   MessagesSquare,
   Layers,
   Package,
@@ -585,39 +585,15 @@ const FREE_PLAN_ITEMS = [
   "Up to 50 automated emails per month",
 ];
 
-// ─── Orgni future value ──────────────────────────────────────────────────────
-const ORGNI_VALUE = [
-  {
-    icon: Bell,
-    title: "Know what needs attention",
-    body: "See which jobs are moving normally and which need action.",
-  },
-  {
-    icon: MessagesSquare,
-    title: "Reduce follow-ups",
-    body: "Help chase missing information and routine outstanding actions.",
-  },
-  {
-    icon: AlertTriangle,
-    title: "Catch problems earlier",
-    body: "Surface delays, deadline changes, and shipment exceptions.",
-  },
-  {
-    icon: ClipboardList,
-    title: "Make clearance easier to manage",
-    body: "Keep clearance progress, required information, and next actions organized.",
-  },
-  {
-    icon: Mail,
-    title: "Keep customers informed",
-    body: "Coordinate customer communication from the same job.",
-  },
-  {
-    icon: PhoneCall,
-    title: "Handle routine customer questions",
-    body: "Future call-center capabilities will use the actual shipment information inside Olyxee Logistics.",
-  },
+// ─── Operational pain rows ───────────────────────────────────────────────────
+const PAIN_ROWS = [
+  { label: "Shipment details scattered across messages and spreadsheets", meta: "WHATSAPP · EMAIL · XLSX" },
+  { label: "Customers repeatedly asking for updates", meta: "\u201CWHERE IS MY SHIPMENT?\u201D" },
+  { label: "Commercial and shipment information disconnected", meta: "QUOTE ≠ ORDER ≠ INVOICE" },
+  { label: "Too much time spent re-checking the same job", meta: "SAME JOB · FIVE PLACES" },
 ];
+
+// ─── Orgni ops interface data ────────────────────────────────────────────────
 
 const Landing: FC = () => {
   return (
@@ -754,39 +730,56 @@ const Landing: FC = () => {
         `}</style>
       </section>
 
-      {/* === PROBLEM === */}
+      {/* === PAIN — asymmetric === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-16">
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease }}
-              style={mono}
-              className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4"
-            >
-              THE PROBLEM
-            </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              style={serif}
-              className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
-            >
-              Freight forwarding has enough <em className="not-italic text-orange-500">moving parts</em> already.
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, delay: 0.1, ease }}
-              className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl"
-            >
-              One shipment touches many people, documents, and payments. Keep it all together.
-            </motion.p>
+          <div className="grid grid-cols-12 gap-x-8 gap-y-12 items-start mb-20 sm:mb-24">
+            <div className="col-span-12 lg:col-span-6">
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.7, ease }}
+                style={mono}
+                className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4"
+              >
+                THE PROBLEM
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, ease }}
+                style={serif}
+                className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
+              >
+                Freight forwarders know how to <em className="not-italic text-orange-500">move cargo</em>.
+                <span className="block mt-3 text-neutral-400 text-2xl sm:text-3xl lg:text-4xl leading-tight">
+                  The hard part is everything around it.
+                </span>
+              </motion.h2>
+            </div>
+
+            <div className="col-span-12 lg:col-span-5 lg:col-start-8 lg:pt-10">
+              {PAIN_ROWS.map((row, i) => (
+                <motion.div
+                  key={row.label}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.6, delay: i * 0.1, ease }}
+                  className="flex items-baseline gap-4 py-4 border-b border-neutral-200 first:border-t"
+                >
+                  <span style={mono} className="text-[10px] tracking-widest text-orange-500 shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium text-neutral-900 leading-snug">{row.label}</p>
+                    <p style={mono} className="mt-1 text-[9px] tracking-[0.18em] text-neutral-400">{row.meta}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
           <motion.div
@@ -820,91 +813,180 @@ const Landing: FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            {WORKFLOW_STEPS.map((step, i) => {
-              const Icon = step.icon;
-              const isLast = i === WORKFLOW_STEPS.length - 1;
-              return (
-                <motion.div
-                  key={step.label}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.5, delay: i * 0.09, ease }}
-                  className={`relative rounded-2xl p-5 ring-1 flex flex-col gap-4 min-h-[11rem] ${
-                    isLast
-                      ? "bg-orange-500 ring-orange-400 text-white"
-                      : "bg-white/[0.04] ring-white/10 hover:bg-white/[0.08] transition-colors"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
+          {/* Wide operational rail: thin connecting line, small nodes, interface labels */}
+          <div className="relative">
+            <div aria-hidden className="hidden lg:block absolute top-[13px] left-4 right-4 h-px bg-white/15" />
+            <div aria-hidden className="lg:hidden absolute top-2 bottom-2 left-[13px] w-px bg-white/15" />
+            <div className="grid gap-8 lg:gap-3 lg:grid-cols-7">
+              {WORKFLOW_STEPS.map((step, i) => {
+                const Icon = step.icon;
+                const isLast = i === WORKFLOW_STEPS.length - 1;
+                return (
+                  <motion.div
+                    key={step.label}
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-60px" }}
+                    transition={{ duration: 0.5, delay: i * 0.09, ease }}
+                    className="relative flex lg:block gap-5"
+                  >
                     <span
-                      className={`inline-flex items-center justify-center w-9 h-9 rounded-xl ${
-                        isLast ? "bg-white/20 text-white" : "bg-orange-500/15 text-orange-400"
+                      className={`relative z-10 w-[27px] h-[27px] rounded-full flex items-center justify-center shrink-0 ring-1 ${
+                        isLast
+                          ? "bg-orange-500 ring-orange-400 text-white"
+                          : "bg-neutral-950 ring-white/25 text-orange-400"
                       }`}
                     >
-                      <Icon className="w-[18px] h-[18px]" strokeWidth={isLast ? 3 : 2} />
+                      <Icon className="w-3.5 h-3.5" strokeWidth={2.2} />
                     </span>
-                    <span
-                      style={mono}
-                      className={`text-[10px] tracking-widest ${isLast ? "text-white/70" : "text-white/30"}`}
-                    >
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                  </div>
-                  <div className="mt-auto">
-                    <p className={`text-[13px] leading-snug font-medium ${isLast ? "text-white" : "text-white/85"}`}>
-                      {step.label}
-                    </p>
-                    <p className={`mt-1.5 text-[11px] leading-snug ${isLast ? "text-white/80" : "text-white/45"}`}>
-                      {step.body}
-                    </p>
-                  </div>
-                  {!isLast && (
-                    <ArrowRight className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400/60 z-10" />
-                  )}
-                </motion.div>
-              );
-            })}
+                    <div className="lg:mt-5 min-w-0">
+                      <p style={mono} className="text-[9px] tracking-[0.2em] text-white/35 mb-1.5">
+                        STEP {String(i + 1).padStart(2, "0")}
+                      </p>
+                      <p className="text-[13px] font-medium leading-snug text-white/90">{step.label}</p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-white/45">{step.body}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-
         </div>
       </section>
 
-      {/* === CURRENT FREE PRODUCT === */}
+      {/* === SOLUTIONS — Air & Ocean === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-center">
-          <motion.div
+        <div className="max-w-7xl mx-auto">
+          <div className="max-w-3xl mb-14">
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">SOLUTIONS</p>
+            <motion.h2
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.8, ease }}
+              style={serif}
+              className="text-4xl sm:text-6xl tracking-tight leading-[0.98] mb-6"
+            >
+              Built for every mode. <em className="not-italic text-orange-500">Ready for every move.</em>
+            </motion.h2>
+            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl">
+              The single platform that powers global logistics from origin to destination.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {[
+              {
+                label: "Air",
+                img: airCargoImg,
+                meta: "AIR FREIGHT",
+                body: "Fast-moving air jobs with export, transit, and import clearance stages managed end to end.",
+              },
+              {
+                label: "Ocean",
+                img: oceanCargoImg,
+                meta: "OCEAN FREIGHT",
+                body: "Vessel departures, port arrivals, and container milestones tracked on every sea shipment.",
+              },
+            ].map((m, i) => (
+              <motion.div
+                key={m.label}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.8, delay: i * 0.12, ease }}
+                className="group rounded-[1.75rem] overflow-hidden ring-1 ring-neutral-200 bg-white shadow-[0_30px_80px_-50px_rgba(0,0,0,0.25)]"
+              >
+                <div className="aspect-[16/9] overflow-hidden bg-neutral-50">
+                  <img
+                    src={m.img}
+                    alt={`${m.label} freight`}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-8 sm:p-10">
+                  <p style={mono} className="text-[10px] tracking-[0.3em] text-orange-500 mb-3">{m.meta}</p>
+                  <h3 style={serif} className="text-3xl sm:text-4xl tracking-tight mb-3">{m.label}</h3>
+                  <p className="text-neutral-600 text-sm sm:text-[15px] leading-relaxed max-w-md">{m.body}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* === STATEMENT === */}
+      <section className="py-24 sm:py-36 px-4 sm:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.h2
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease }}
-            className="col-span-12 lg:col-span-5"
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, ease }}
+            style={serif}
+            className="text-4xl sm:text-6xl lg:text-7xl tracking-tight leading-[0.98]"
           >
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">FREE TODAY</p>
-            <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-8">
-              Start with the work your team already does <em className="not-italic text-orange-500">every day</em>.
-            </h2>
-            <ul className="space-y-4">
-              {FREE_VALUE.map((v) => (
-                <li key={v.title} className="flex items-center gap-3.5">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3" strokeWidth={3} />
-                  </span>
-                  <p className="text-[15px] font-medium text-neutral-900">{v.title}</p>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+            One job. One place to see <em className="not-italic text-orange-500">what happened</em>.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, delay: 0.15, ease }}
+            className="mt-7 text-base sm:text-lg text-neutral-500 leading-relaxed max-w-xl mx-auto"
+          >
+            Customer details, quotes, orders, payments, and shipment progress stay connected.
+          </motion.p>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, delay: 0.3, ease }}
+            aria-hidden
+            className="mx-auto mt-10 h-px w-24 bg-orange-500 origin-center"
+          />
+        </div>
+      </section>
 
+      {/* === QUOTE TO ORDER — product UI left, copy right === */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
+        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.9, ease }}
-            className="col-span-12 lg:col-span-7 relative flex items-center justify-center"
+            className="col-span-12 lg:col-span-7 relative flex items-center justify-center order-2 lg:order-1"
           >
             <CreateOrderMock />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease }}
+            className="col-span-12 lg:col-span-4 lg:col-start-9 order-1 lg:order-2"
+          >
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">QUOTE TO ORDER</p>
+            <h2 style={serif} className="text-3xl sm:text-4xl lg:text-[2.75rem] tracking-tight leading-[1.02] mb-5">
+              From accepted quote to working order in seconds.
+            </h2>
+            <p className="text-[15px] sm:text-base text-neutral-600 leading-relaxed mb-8">
+              Pick the customer, add the freight details, create the order. Customer
+              information carries through — nothing gets retyped, nothing gets lost.
+            </p>
+            <ul className="space-y-3.5">
+              {FREE_VALUE.map((v) => (
+                <li key={v.title} className="flex items-center gap-3">
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3" strokeWidth={3} />
+                  </span>
+                  <p className="text-[14px] font-medium text-neutral-900">{v.title}</p>
+                </li>
+              ))}
+            </ul>
           </motion.div>
         </div>
       </section>
@@ -916,7 +998,7 @@ const Landing: FC = () => {
             <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
             <div className="relative grid grid-cols-12 gap-8 p-8 sm:p-14 lg:p-16 items-center">
               <div className="col-span-12 lg:col-span-6">
-                <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">A REAL JOB</p>
+                <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">MANAGE THE SHIPMENT</p>
                 <motion.h2
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -965,8 +1047,8 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === CUSTOMER TRACKING === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8">
+      {/* === CUSTOMER TRACKING — contrasting warm section === */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-orange-50/50 border-y border-orange-100">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-12 items-center">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -975,13 +1057,21 @@ const Landing: FC = () => {
             transition={{ duration: 0.8, ease }}
             className="col-span-12 lg:col-span-5"
           >
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">CUSTOMERS</p>
-            <h2 style={serif} className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6">
-              Designed for the people who <em className="not-italic text-orange-500">move the world</em>.
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4">CUSTOMER TRACKING</p>
+            <h2 style={serif} className="text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.0] mb-6">
+              Give your customers <em className="not-italic text-orange-500">visibility</em> — without giving them your internal workspace.
             </h2>
-            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md">
-              Every job gets a tracking link. Fewer "where is my shipment?" calls.
+            <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-md mb-8">
+              Every job gets a public, branded tracking page. Reference number, current
+              stage, full status timeline. Fewer "where is my shipment?" calls.
             </p>
+            <div className="inline-flex items-center gap-3 rounded-xl bg-white ring-1 ring-neutral-200 px-4 py-3 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <div>
+                <div style={mono} className="text-[10px] tracking-widest text-neutral-500">TRACKING · #OLY-2094</div>
+                <div className="text-[13px] font-medium text-neutral-900 mt-0.5">In transit · MSC Kalina · ETA 14 Sep</div>
+              </div>
+            </div>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1000,10 +1090,10 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === FREE PLAN === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-50 border-y border-neutral-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-12 items-center">
-          <div className="col-span-12 lg:col-span-6">
+      {/* === FREE PLAN — editorial layout === */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-start">
+          <div className="col-span-12 lg:col-span-5 lg:sticky lg:top-28">
             <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">FREE PLAN</p>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
@@ -1011,27 +1101,14 @@ const Landing: FC = () => {
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, ease }}
               style={serif}
-              className="text-4xl sm:text-6xl tracking-tight leading-[0.95] mb-6"
+              className="text-4xl sm:text-5xl lg:text-[3.4rem] tracking-tight leading-[1.0] mb-6"
             >
-              Start using Olyxee Logistics for <em className="not-italic text-orange-500">free</em>.
+              Start with the freight workflow you need <em className="not-italic text-orange-500">today</em>.
             </motion.h2>
-            <div className="flex items-baseline gap-2 mb-8">
-              <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R0</span>
-              <span className="text-neutral-500">/ month</span>
-            </div>
-            <Link
-              href="/login?mode=signup"
-              className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
-            >
-              <span className="text-sm font-medium tracking-wide">Start Free</span>
-              <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
-                <ArrowUpRight className="w-4 h-4" />
-              </span>
-            </Link>
-            <p className="mt-5 text-sm font-medium text-neutral-700">No credit card required.</p>
-          </div>
-
-          <div className="col-span-12 lg:col-span-6">
+            <p className="text-base text-neutral-600 leading-relaxed max-w-md mb-10">
+              Everything your team uses to run jobs day to day — customers, quotes,
+              orders, shipment stages, tracking, invoices — included from day one.
+            </p>
             <motion.img
               src={freightVisual}
               alt="Freight container truck with order management screen and pallet"
@@ -1039,125 +1116,94 @@ const Landing: FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.9, ease }}
-              className="w-full max-w-md mx-auto mb-10 drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)]"
+              className="w-full max-w-sm drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)]"
               loading="lazy"
             />
-            <div className="rounded-[1.75rem] bg-white ring-1 ring-neutral-200 p-7 sm:p-9 shadow-[0_30px_80px_-50px_rgba(0,0,0,0.25)]">
-              <p style={mono} className="text-[10px] tracking-[0.25em] text-neutral-400 mb-6">EVERYTHING INCLUDED</p>
-              <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
-                {FREE_PLAN_ITEMS.map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-neutral-700">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3" strokeWidth={3} />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          </div>
+
+          <div className="col-span-12 lg:col-span-6 lg:col-start-7">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.9, ease }}
+              className="rounded-[1.75rem] bg-white ring-1 ring-neutral-200 shadow-[0_40px_100px_-60px_rgba(0,0,0,0.3)] overflow-hidden"
+            >
+              <div className="px-7 sm:px-9 pt-8 pb-7 border-b border-neutral-100 flex items-end justify-between gap-4">
+                <div>
+                  <p style={mono} className="text-[10px] tracking-[0.25em] text-neutral-400 mb-3">FREE · AVAILABLE NOW</p>
+                  <div className="flex items-baseline gap-2">
+                    <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R0</span>
+                    <span className="text-neutral-500">/ month</span>
+                  </div>
+                </div>
+                <span style={mono} className="hidden sm:inline-block text-[9px] tracking-[0.2em] px-3 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200 text-emerald-700">
+                  NO CREDIT CARD
+                </span>
+              </div>
+              <div className="px-7 sm:px-9 py-7">
+                <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
+                  {FREE_PLAN_ITEMS.map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-neutral-700">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/login?mode=signup"
+                  className="group mt-8 inline-flex w-full sm:w-auto items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
+                >
+                  <span className="text-sm font-medium tracking-wide">Start Free</span>
+                  <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* === SCALE + ORGNI === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-gradient-to-b from-white via-orange-50/60 to-white">
+      {/* === ORGNI — dark mood shift === */}
+      <section className="py-24 sm:py-36 px-4 sm:px-8 bg-neutral-950 text-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-500 mb-4 flex items-center justify-center gap-2">
-              <Sparkles className="w-3.5 h-3.5" /> SCALE + ORGNI
-            </p>
-            <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              style={serif}
-              className="text-4xl sm:text-6xl tracking-tight leading-[0.98]"
-            >
-              Today your team runs it. Next, <em className="not-italic text-orange-500">Orgni</em> runs alongside.
-            </motion.h2>
-          </div>
-
-          {/* Today vs Next split */}
-          <div className="grid lg:grid-cols-[1fr_auto_1fr] items-stretch gap-6 lg:gap-4 mb-16">
-            <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              className="rounded-[1.75rem] bg-white ring-1 ring-neutral-200 p-8 sm:p-10"
-            >
-              <p style={mono} className="text-[10px] tracking-[0.3em] text-neutral-400 mb-4">TODAY</p>
-              <h3 style={serif} className="text-2xl sm:text-3xl tracking-tight mb-3">
-                Your team manages the freight workflow.
-              </h3>
-              <p className="text-[15px] text-neutral-600 leading-relaxed">
-                Olyxee Logistics is the operational foundation — quotes, orders, shipment
-                stages, tracking, and payments, managed by your people.
-              </p>
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-50 ring-1 ring-emerald-200 px-4 py-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={3} />
-                <span style={mono} className="text-[10px] tracking-[0.2em] text-emerald-700">AVAILABLE NOW · FREE</span>
+          {/* === SCALE — connected to Orgni === */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease }}
+            className="relative rounded-[1.75rem] bg-white/[0.04] ring-1 ring-white/10 overflow-hidden"
+          >
+            <div aria-hidden className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-orange-500/10 blur-3xl" />
+            <div className="relative grid grid-cols-12 gap-8 p-8 sm:p-12 items-center">
+              <div className="col-span-12 lg:col-span-7">
+                <p style={mono} className="text-[10px] tracking-[0.3em] text-orange-400 mb-4">SCALE PLAN</p>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-4">
+                  <span style={serif} className="text-4xl sm:text-5xl tracking-tight">R1,499</span>
+                  <span className="text-white/50">/ company / month</span>
+                </div>
+                <p style={serif} className="text-xl sm:text-2xl tracking-tight text-white/90 mb-3">
+                  Handle more freight with less repetitive work.
+                </p>
+                <p style={mono} className="text-[10px] tracking-[0.2em] text-white/40">
+                  BILLING STARTS 30 SEPTEMBER 2026
+                </p>
               </div>
-            </motion.div>
-
-            <div className="hidden lg:flex flex-col items-center justify-center px-2">
-              <span className="w-12 h-12 rounded-full bg-neutral-950 text-orange-400 flex items-center justify-center shadow-lg">
-                <ArrowRight className="w-5 h-5" />
-              </span>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, delay: 0.1, ease }}
-              className="relative overflow-hidden rounded-[1.75rem] bg-neutral-950 text-white p-8 sm:p-10"
-            >
-              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-orange-500/20 blur-3xl" aria-hidden />
-              <p style={mono} className="relative text-[10px] tracking-[0.3em] text-orange-400 mb-4">NEXT</p>
-              <h3 style={serif} className="relative text-2xl sm:text-3xl tracking-tight mb-3">
-                Orgni reduces the work around it.
-              </h3>
-              <p className="relative text-[15px] text-white/70 leading-relaxed">
-                Orgni Intelligence is being built to take over the checking, chasing, and
-                routine coordination around each job as you grow.
-              </p>
-              <div className="relative mt-6 inline-flex items-center gap-2 rounded-full bg-orange-500/15 ring-1 ring-orange-500/30 px-4 py-2">
-                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                <span style={mono} className="text-[10px] tracking-[0.2em] text-orange-300">COMING WITH SCALE</span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Orgni capabilities */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ORGNI_VALUE.map((v, i) => {
-              const Icon = v.icon;
-              return (
-                <motion.div
-                  key={v.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.7, delay: i * 0.08, ease }}
-                  className="group relative rounded-[1.5rem] bg-white ring-1 ring-neutral-200 hover:ring-orange-300 hover:shadow-[0_20px_60px_-40px_rgba(249,115,22,0.5)] transition-all p-7"
+              <div className="col-span-12 lg:col-span-5 flex lg:justify-end">
+                <Link
+                  href="/upgrade"
+                  className="group inline-flex items-center justify-between gap-6 px-7 py-4 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-[0_20px_50px_-20px_rgba(249,115,22,0.6)]"
                 >
-                  <span
-                    style={mono}
-                    className="absolute top-5 right-5 text-[8px] tracking-[0.2em] px-2 py-1 rounded-full bg-orange-100 text-orange-700"
-                  >
-                    COMING WITH SCALE
-                  </span>
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 mb-5 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                    <Icon className="w-5 h-5" />
-                  </span>
-                  <h3 style={serif} className="text-2xl tracking-tight mb-2.5 pr-2">{v.title}</h3>
-                  <p className="text-sm text-neutral-500 leading-relaxed">{v.body}</p>
-                </motion.div>
-              );
-            })}
-          </div>
+                  <span className="text-sm font-medium tracking-wide">Join Scale</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
