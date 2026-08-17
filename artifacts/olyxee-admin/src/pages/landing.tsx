@@ -530,7 +530,8 @@ const Landing: FC = () => {
               "radial-gradient(closest-side, rgba(255,237,213,0.9), rgba(255,247,237,0.6), rgba(255,255,255,0))",
           }}
         />
-        <div className="relative max-w-5xl mx-auto text-center">
+        <div className="relative max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-center">
+          <div className="col-span-12 lg:col-span-7 text-center lg:text-left">
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -556,7 +557,7 @@ const Landing: FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.35, ease }}
-            className="mt-7 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto"
+            className="mt-7 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0"
           >
             Customers, quotes, orders, shipment progress, payments, and customer
             tracking — connected in one place.
@@ -566,7 +567,7 @@ const Landing: FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5, ease }}
-            className="mt-10 flex flex-wrap items-center justify-center gap-5"
+            className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-5"
           >
             <Link
               href="/login?mode=signup"
@@ -593,16 +594,18 @@ const Landing: FC = () => {
             R0/MONTH · NO CREDIT CARD REQUIRED
           </motion.p>
 
+          </div>
+
           <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.55, ease }}
-            className="mt-16 max-w-2xl mx-auto"
+            initial={{ opacity: 0, x: 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.9, delay: 0.45, ease }}
+            className="col-span-12 lg:col-span-5"
           >
             <img
               src={heroCourier}
               alt="Logistics operator coordinating deliveries with live customer updates"
-              className="w-full h-auto"
+              className="w-full max-w-md mx-auto lg:max-w-none h-auto"
             />
           </motion.div>
         </div>
