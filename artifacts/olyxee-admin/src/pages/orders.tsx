@@ -90,6 +90,9 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && !!form.weight.trim();
   const step3Ok = !!form.jobNumber.trim() && (!isPrepaid || !!form.invoiceSubtotal);
   const STEP_LABELS = ["Customer", "Shipment", "Billing"];
+  const STEP_SUBTITLES = ["Who is this Job for?", "Where's it going and what's inside?", "Reference and how it's billed"];
+  // Clean, Apple-style field: tall, soft-filled, gentle focus.
+  const field = "h-11 rounded-xl border-transparent bg-muted/50 shadow-none focus-visible:bg-background focus-visible:border-border focus-visible:ring-0";
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.jobNumber.trim()) {
@@ -146,31 +149,22 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" /> New Job</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-[760px]">
-        <DialogHeader className="border-b border-border/60 px-6 pb-5 pt-6 text-left">
-          <DialogTitle className="text-xl">Create a new Job</DialogTitle>
-          {/* Progress stepper */}
-          <div className="mt-3 flex items-center gap-2">
-            {STEP_LABELS.map((lbl, i) => {
-              const n = i + 1;
-              const done = n < step;
-              const active = n === step;
-              return (
-                <div key={lbl} className="flex flex-1 items-center gap-2">
-                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${active ? "bg-primary text-primary-foreground" : done ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{done ? "✓" : n}</span>
-                  <span className={`whitespace-nowrap text-xs font-medium ${active ? "text-foreground" : "text-muted-foreground"}`}>{lbl}</span>
-                  {n < 3 && <span className={`h-px flex-1 ${done ? "bg-primary/40" : "bg-border"}`} />}
-                </div>
-              );
-            })}
+      <DialogContent className="max-h-[92vh] gap-0 overflow-y-auto rounded-3xl p-0 sm:max-w-[560px]">
+        <DialogHeader className="space-y-0 px-7 pb-0 pt-7 text-left">
+          <DialogTitle className="text-[22px] font-semibold tracking-tight">New Job</DialogTitle>
+          <p className="pt-1 text-[15px] text-muted-foreground">{STEP_SUBTITLES[step - 1]}</p>
+          {/* Slim segmented progress */}
+          <div className="flex items-center gap-1.5 pt-5">
+            {STEP_LABELS.map((lbl, i) => (
+              <div key={lbl} className={`h-1.5 flex-1 rounded-full transition-colors ${i + 1 <= step ? "bg-primary" : "bg-muted"}`} />
+            ))}
           </div>
+          <p className="pt-2 text-xs font-medium text-muted-foreground">Step {step} of 3 · {STEP_LABELS[step - 1]}</p>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
+        <form onSubmit={handleSubmit} className="px-7 py-6">
           {step === 1 && (
-          <section className="space-y-4 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5 dark:border-blue-900/60 dark:bg-blue-950/20">
-            <div><h3 className="font-semibold text-blue-950 dark:text-blue-100">Who is this Job for?</h3><p className="mt-1 text-xs text-blue-900/65 dark:text-blue-200/70">Choose the customer who receives the invoice and shipment updates.</p></div>
-          <div className="space-y-2">
-            <Label>Customer *</Label>
+          <div className="space-y-2.5">
+            <Label className="text-[13px] font-medium text-muted-foreground">Customer</Label>
             <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -178,28 +172,28 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                   variant="outline"
                   role="combobox"
                   aria-expanded={customerPickerOpen}
-                  className="w-full justify-between font-normal"
+                  className={`w-full justify-between px-3.5 font-normal ${field}`}
                   data-testid="button-select-customer"
                 >
-                  <span className="truncate">
-                    {selectedCustomer ? selectedCustomer.label : "Select customer..."}
+                  <span className={`truncate ${selectedCustomer ? "" : "text-muted-foreground"}`}>
+                    {selectedCustomer ? selectedCustomer.label : "Select a customer"}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <PopoverContent className="w-[--radix-popover-trigger-width] rounded-xl p-0" align="start">
                 <Command shouldFilter={false}>
                   <CommandInput
-                    placeholder="Search by name, email or company..."
+                    placeholder="Search by name, email or company…"
                     value={customerSearch}
                     onValueChange={setCustomerSearch}
                   />
                   <CommandList className="max-h-64 overflow-y-auto">
                     <CommandEmpty>
-                      {customersFetching ? "Searching..." : "No customers found."}
+                      {customersFetching ? "Searching…" : "No customers found."}
                     </CommandEmpty>
                     {customersData?.customers.map(c => {
-                      const label = `${c.full_name} - ${c.email}`;
+                      const label = `${c.full_name} — ${c.email}`;
                       return (
                         <CommandItem
                           key={c.id}
@@ -219,95 +213,101 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 </Command>
               </PopoverContent>
             </Popover>
-          </div></section>
+            <p className="text-[13px] text-muted-foreground">They'll receive the invoice and shipment updates.</p>
+          </div>
           )}
           {step === 2 && (
-          <section className="space-y-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-            <div><h3 className="font-semibold text-emerald-950 dark:text-emerald-100">Shipment and cargo</h3><p className="mt-1 text-xs text-emerald-900/65 dark:text-emerald-200/70">Add the route and details customers should see.</p></div>
-          {(
-            <div className="space-y-2">
-              <Label>Transport mode *</Label>
-              <Select value={form.transportMode} onValueChange={v => setForm(f => ({ ...f, transportMode: v }))}>
-                <SelectTrigger><SelectValue placeholder="How is this order shipping?" /></SelectTrigger>
-                <SelectContent>
-                  {TRANSPORT_MODES.map(m => (
-                    <SelectItem key={m} value={m}>{TRANSPORT_MODE_LABELS[m as TransportMode]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Determines the tracking stages your customer will see.</p>
+          <div className="space-y-6">
+            <div className="space-y-2.5">
+              <Label className="text-[13px] font-medium text-muted-foreground">Transport mode</Label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {TRANSPORT_MODES.map(m => {
+                  const on = form.transportMode === m;
+                  const Icon = m === "AIR" ? Plane : Ship;
+                  return (
+                    <button key={m} type="button" onClick={() => setForm(f => ({ ...f, transportMode: m }))} className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-all ${on ? "border-primary bg-primary/[0.06] text-foreground shadow-sm" : "border-border/70 bg-muted/30 text-muted-foreground hover:border-border"}`}>
+                      <Icon className="h-4 w-4" />{TRANSPORT_MODE_LABELS[m as TransportMode]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Origin *</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))} placeholder="China" required/></div><div className="space-y-2"><Label>Destination *</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="South Africa" required/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="e.g. 40 × 30 × 25 cm"/></div></div>
-          <div className="space-y-2"><Label>Handling notes</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling, or other useful notes" /></div>
-          </section>
-          )}
-          {step === 3 && (
-          <section className="space-y-4 rounded-2xl border border-violet-200/80 bg-violet-50/60 p-5 dark:border-violet-900/60 dark:bg-violet-950/20">
-            <div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Job number and billing</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Give the Job your own reference and choose how it's billed.</p></div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Job Number *</Label>
-              <Input
-                value={form.jobNumber}
-                onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))}
-                placeholder="e.g. CFS-0024"
-                className="font-mono text-sm"
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">Your internal reference. Must be unique in your business.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Est. Delivery Date</Label>
-              <Input type="date" value={form.estimatedDeliveryDate} onChange={e => setForm(f => ({ ...f, estimatedDeliveryDate: e.target.value }))} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Billing Type *</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {([
-                ["PREPAID", "Invoice Before Delivery", "Invoice and payment are handled before shipment processing."],
-                ["POSTPAID", "Invoice After Delivery", "The shipment is completed first and invoiced after delivery."],
-              ] as const).map(([value, title, desc]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, billingType: value }))}
-                  className={`rounded-xl border p-4 text-left transition-colors ${form.billingType === value ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-border hover:border-violet-300"}`}
-                  data-testid={`billing-${value.toLowerCase()}`}
-                >
-                  <div className="text-sm font-semibold">{title}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{desc}</div>
-                </button>
+                ["origin", "Origin", "China"],
+                ["destination", "Destination", "South Africa"],
+                ["cargoType", "Cargo / invoice item", "e.g. Handbags"],
+                ["serviceRequired", "Service required", "e.g. Customs & tax"],
+                ["weight", "Weight", "e.g. 1.5 kg"],
+                ["dimensions", "Dimensions (optional)", "e.g. 40 × 30 × 25 cm"],
+              ] as const).map(([key, label, ph]) => (
+                <div key={key} className="space-y-2">
+                  <Label className="text-[13px] font-medium text-muted-foreground">{label}</Label>
+                  <Input value={(form as Record<string, string>)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} className={field} />
+                </div>
               ))}
             </div>
+            <div className="space-y-2">
+              <Label className="text-[13px] font-medium text-muted-foreground">Handling notes (optional)</Label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling…" className="rounded-xl border-transparent bg-muted/50 focus-visible:border-border focus-visible:bg-background focus-visible:ring-0" />
+            </div>
           </div>
-          {isPrepaid ? (
-            <>
-              <div className="rounded-xl border border-border bg-background p-4 space-y-4">
-                <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="mt-1 text-xs text-muted-foreground">Enter the quote already accepted by the customer. No online payment is taken.</p></div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2"><Label>Service subtotal *</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
-                  <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} placeholder="0.00" /></div>
-                </div>
-                <div className="flex items-center justify-between border-t border-border pt-3"><span className="text-sm text-muted-foreground">Invoice total</span><span className="text-xl font-bold">ZAR {invoiceTotal.toFixed(2)}</span></div>
+          )}
+          {step === 3 && (
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-[13px] font-medium text-muted-foreground">Job Number</Label>
+                <Input value={form.jobNumber} onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))} placeholder="CFS-0024" className={`font-mono ${field}`} />
               </div>
-              <div className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">The invoice starts as <strong>Pending Payment</strong>. Shipment tracking stays locked until an admin confirms payment manually.</div>
-            </>
-          ) : (
-            <div className="rounded-xl bg-blue-50 px-4 py-3 text-xs leading-relaxed text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">No invoice is created yet. The shipment can start immediately, and you'll invoice this Job after it's delivered.</div>
+              <div className="space-y-2">
+                <Label className="text-[13px] font-medium text-muted-foreground">Est. delivery (optional)</Label>
+                <Input type="date" value={form.estimatedDeliveryDate} onChange={e => setForm(f => ({ ...f, estimatedDeliveryDate: e.target.value }))} className={field} />
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              <Label className="text-[13px] font-medium text-muted-foreground">Billing</Label>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {([
+                  ["PREPAID", "Invoice before delivery", "Invoice and payment before the shipment moves."],
+                  ["POSTPAID", "Invoice after delivery", "Ship first, invoice once it's delivered."],
+                ] as const).map(([value, title, desc]) => {
+                  const on = form.billingType === value;
+                  return (
+                    <button key={value} type="button" onClick={() => setForm(f => ({ ...f, billingType: value }))} className={`relative rounded-2xl border p-4 text-left transition-all ${on ? "border-primary bg-primary/[0.05] shadow-sm" : "border-border/70 bg-muted/30 hover:border-border"}`} data-testid={`billing-${value.toLowerCase()}`}>
+                      <span className={`absolute right-3 top-3 grid h-4 w-4 place-items-center rounded-full border ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{on && <Check className="h-3 w-3" />}</span>
+                      <div className="pr-5 text-sm font-semibold">{title}</div>
+                      <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {isPrepaid ? (
+              <div className="space-y-3 rounded-2xl bg-muted/40 p-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[13px] font-medium">Invoice amount (ZAR)</Label>
+                  <span className="text-lg font-semibold">ZAR {invoiceTotal.toFixed(2)}</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e => setForm(f => ({ ...f, invoiceSubtotal: e.target.value }))} placeholder="Subtotal" className="h-11 rounded-xl bg-background" />
+                  <Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e => setForm(f => ({ ...f, invoiceAdditionalCharges: e.target.value }))} placeholder="Additional charges" className="h-11 rounded-xl bg-background" />
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">Sent as <strong className="font-medium text-foreground">Pending payment</strong>. The shipment stays locked until you confirm payment.</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-muted/40 px-4 py-3.5 text-xs leading-relaxed text-muted-foreground">No invoice yet — the shipment can start right away, and you'll invoice this Job after it's delivered.</div>
+            )}
+          </div>
           )}
-          </section>
-          )}
-          <div className="flex items-center gap-3 pt-1">
+          <div className="mt-8 flex items-center gap-2.5">
             {step > 1 && (
-              <Button type="button" variant="outline" className="h-12 rounded-xl px-5" onClick={() => setStep(s => s - 1)}>Back</Button>
+              <Button type="button" variant="ghost" className="h-12 rounded-xl px-5 text-muted-foreground hover:text-foreground" onClick={() => setStep(s => s - 1)}>Back</Button>
             )}
             {step < 3 ? (
               <Button
                 type="button"
-                size="lg"
-                className="h-12 flex-1 rounded-xl text-[15px]"
+                className="h-12 flex-1 rounded-xl text-[15px] font-medium"
                 disabled={step === 1 ? !step1Ok : !step2Ok}
                 onClick={() => setStep(s => s + 1)}
               >
@@ -316,11 +316,10 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             ) : (
               <Button
                 type="submit"
-                size="lg"
-                className="h-12 flex-1 rounded-xl text-[15px]"
+                className="h-12 flex-1 rounded-xl text-[15px] font-medium"
                 disabled={createMutation.isPending || !step1Ok || !step2Ok || !step3Ok}
               >
-                {createMutation.isPending ? (isPrepaid ? "Creating and sending invoice..." : "Creating Job...") : (isPrepaid ? "Create Job & Send Invoice" : "Create Job")}
+                {createMutation.isPending ? "Creating…" : isPrepaid ? "Create Job & send invoice" : "Create Job"}
               </Button>
             )}
           </div>
