@@ -66,7 +66,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     if (open) {
       setForm({
         customerId: "",
-        orderReference: generateOrderReference(),
+        jobNumber: "",
+        billingType: "PREPAID",
         description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
