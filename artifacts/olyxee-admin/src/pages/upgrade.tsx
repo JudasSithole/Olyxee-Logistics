@@ -49,20 +49,24 @@ const TIERS: PlanId[] = ["free", "business"];
 // Short, plain-language descriptions for this page (the catalog taglines are
 // longer marketing copy used elsewhere).
 const PLAN_BLURB: Record<string, string> = {
-  free: "Everything you need to run freight jobs today.",
-  business: "Less manual work as your business grows.",
+  free: "Manage the job — the core system for running your freight work in one place.",
+  business: "Make the job faster, cheaper and easier to run. Save controller time, reduce cross-border mistakes, and protect your margins.",
 };
 
 // One distinct icon per feature, matched by keyword so it keeps working if
 // catalog wording is tweaked.
 const ICON_RULES: [RegExp, LucideIcon][] = [
   [/customer management|customer and order/i, Users],
-  [/order management/i, Package],
+  [/quotes? and jobs|order management/i, Package],
+  [/quot/i, FileText],
+  [/margin|profit|landed.?cost|costs?\b|cost eat/i, BarChart3],
+  [/portal|self-service/i, Users],
   [/invoic/i, FileText],
   [/air and sea|shipment workflows/i, Ship],
   [/branded/i, Palette],
   [/tracking/i, MapPin],
   [/delivery|collection/i, Truck],
+  [/sms/i, MessageCircle],
   [/email/i, Mail],
   [/dashboard|insights/i, BarChart3],
   [/orgni/i, Sparkles],
@@ -70,8 +74,9 @@ const ICON_RULES: [RegExp, LucideIcon][] = [
   [/document/i, FileSearch],
   [/exception/i, AlertTriangle],
   [/eta|deadline/i, Clock],
-  [/alert/i, Bell],
+  [/alert|warning/i, Bell],
   [/customs|clearance/i, ClipboardCheck],
+  [/integration/i, Package],
   [/escalation/i, ArrowUpCircle],
   [/communication/i, MessageCircle],
   [/call/i, PhoneCall],
@@ -99,6 +104,23 @@ const FeatureIcon = ({ label, muted }: { label: string; muted?: boolean }) => {
   );
 };
 
+// Bold the capability name at the start of a feature line, leaving the
+// explanatory tail in normal weight (e.g. **Call-centre support** for routine
+// questions). Splits at the first dash/paren/colon or a connective word.
+const FEATURE_BOLD_SPLIT = /\s[—–]\s|\s*\(|:\s|\sfor\s|\swith\s|\sfrom\s|\son\s|\swhen\s|\susing\s|\sincluding\s/i;
+function renderFeature(text: string) {
+  const idx = text.search(FEATURE_BOLD_SPLIT);
+  if (idx > 0) {
+    return (
+      <span className="text-muted-foreground">
+        <span className="font-semibold text-foreground">{text.slice(0, idx)}</span>
+        {text.slice(idx)}
+      </span>
+    );
+  }
+  return <span className="font-semibold text-foreground">{text}</span>;
+}
+
 const FEATURE_GROUPS = [
   { title: "Operations", rows: [
     ["Customer and order management", true, true],
@@ -112,16 +134,24 @@ const FEATURE_GROUPS = [
     ["Branded customer tracking pages", true, true],
     ["Email status notifications", "50 / month", "Higher allowance"],
   ]},
-  { title: "Orgni Intelligence", comingSoon: true, rows: [
-    ["Automated follow-ups", false, "soon"],
-    ["Document monitoring", false, "soon"],
-    ["Exception detection", false, "soon"],
-    ["ETA and deadline monitoring", false, "soon"],
-    ["Operational alerts", false, "soon"],
-    ["Easier customs-clearance workflows", false, "soon"],
-    ["Task escalation", false, "soon"],
-    ["Customer communication automation", false, "soon"],
-    ["Call-centre capabilities", false, "soon"],
+  { title: "Documents & coordination", comingSoon: true, rows: [
+    ["Automatic document handling (invoices, packing lists, AWBs/BLs, permits, PODs)", false, "soon"],
+    ["Missing-document reminders and follow-ups", false, "soon"],
+    ["Easier customs and clearance coordination", false, "soon"],
+  ]},
+  { title: "Pricing, cost & profit", comingSoon: true, rows: [
+    ["Quote faster from your rates, costs and margins", false, "soon"],
+    ["Landed-cost estimates (freight, duties, taxes, clearing, delivery)", false, "soon"],
+    ["Profit and margin tracking on every job", false, "soon"],
+    ["Warnings when costs eat into your margin", false, "soon"],
+  ]},
+  { title: "Automation & service", comingSoon: true, rows: [
+    ["Automatic follow-ups with customers, suppliers and agents", false, "soon"],
+    ["Customer self-service portal", false, "soon"],
+    ["SMS shipment notifications", false, "soon"],
+    ["Call-centre support for routine questions", false, "soon"],
+    ["Orgni Intelligence — flags what needs attention", false, "soon"],
+    ["Carrier, customs and freight-system integrations", false, "soon"],
   ]},
   { title: "Support", rows: [
     ["Standard support", true, true],
@@ -150,6 +180,10 @@ export default function UpgradePage() {
   const [, navigate] = useLocation();
   const { data: business } = useBusiness(user?.businessId);
   const currentPlan = business?.plan ?? "beta";
+  // During beta every business is on Starter (the "free" tier) - Scale isn't
+  // available to join yet. Map anything that isn't an active Scale plan to
+  // Starter so it shows as the current plan.
+  const currentTier: PlanId = currentPlan === "business" ? "business" : "free";
   const billingLive = featureFlags.subscriptionBilling;
   // Test control: when the billing flag is still off, the Paystack test flow can
   // still be exercised in dev, or in any environment where the server enables
@@ -218,31 +252,10 @@ export default function UpgradePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
-      <header className="border-b border-border pb-7 pt-2">
-        <div className="max-w-3xl">
-          <p className="text-sm font-medium text-muted-foreground">Pricing</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Free for everyone until {SCALE_BILLING_START_LABEL}</h1>
-          <p className="mt-3 text-base leading-7 text-muted-foreground">
-            Every business is using Olyxee free during the beta — there's nothing to pay right now. When the beta ends you simply choose the plan that fits: stay on {plans.free.name}, or move up to {plans.business.name}.
-          </p>
-        </div>
+      <header className="pt-1">
+        <h1 className="text-xl font-bold tracking-tight">Plans</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Free for everyone until {SCALE_BILLING_START_LABEL} — nothing to pay until then.</p>
       </header>
-
-      <Card className="rounded-2xl border-primary/25 bg-primary/[0.04] p-5 shadow-none">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex-1 rounded-xl bg-background/70 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Now → {SCALE_BILLING_START_LABEL}</p>
-            <p className="mt-1 text-sm font-semibold">Free for everyone</p>
-            <p className="text-xs text-muted-foreground">All features unlocked. No card, no charge.</p>
-          </div>
-          <div className="hidden text-muted-foreground sm:block">→</div>
-          <div className="flex-1 rounded-xl bg-background/70 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">From {SCALE_BILLING_START_LABEL}</p>
-            <p className="mt-1 text-sm font-semibold">Choose your plan</p>
-            <p className="text-xs text-muted-foreground">Keep {plans.free.name} at {formatPrice(plans.free.price)}/month, or move to {plans.business.name} at {formatPrice(plans.business.price)}/month. Change or cancel anytime.</p>
-          </div>
-        </div>
-      </Card>
 
       {errorMsg && (
         <Card className="border-destructive/30 bg-destructive/5 p-4" data-testid="billing-error">
@@ -253,7 +266,7 @@ export default function UpgradePage() {
       <div className="grid gap-4 md:grid-cols-2">
         {TIERS.map((id) => {
           const p = plans[id];
-          const isCurrent = currentPlan === id;
+          const isCurrent = currentTier === id;
           return (
             <Card
               key={id}
@@ -284,13 +297,13 @@ export default function UpgradePage() {
               </div>
 
               <p className="mt-5 text-xs font-semibold text-foreground">
-                {id === "business" ? "Everything in Free, plus" : "Included"}
+                {id === "business" ? "Everything in Starter, plus" : "Included"}
               </p>
               <ul className="mt-3 space-y-2.5">
-                {(p.features ?? []).filter((f) => id !== "business" || f !== "Everything in Free").map((f) => (
+                {(p.features ?? []).filter((f) => id !== "business" || f !== "Everything in Starter").map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-sm">
                     <FeatureIcon label={f} />
-                    <span className="text-muted-foreground">{f}</span>
+                    {renderFeature(f)}
                   </li>
                 ))}
               </ul>
@@ -298,13 +311,13 @@ export default function UpgradePage() {
               {(p.comingSoon?.length ?? 0) > 0 && (
                 <>
                   <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />Orgni Intelligence <ComingSoonBadge />
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />Coming soon to {p.name} <ComingSoonBadge />
                   </p>
                   <ul className="mt-3 space-y-2.5">
-                    {(p.comingSoon ?? []).filter((f) => f !== "Orgni Intelligence").map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm">
+                    {(p.comingSoon ?? []).map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm">
                         <FeatureIcon label={f} muted />
-                        <span className="text-muted-foreground">{f}</span>
+                        {renderFeature(f)}
                       </li>
                     ))}
                   </ul>
@@ -312,35 +325,19 @@ export default function UpgradePage() {
               )}
 
               <div className="mt-7 flex-1" />
-              <Button
-                className="w-full"
-                variant={id === "business" ? "default" : "outline"}
-                disabled={
-                  pendingPlan !== null || (isAuthed && isCurrent) || id === "free"
-                }
-                onClick={() => (checkoutEnabled ? handleChoose(id) : handleJoin(id))}
-                data-testid={`button-choose-${id}`}
-              >
-                {pendingPlan === id && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {id === "free"
-                  ? isAuthed && isCurrent
-                    ? "Current plan"
-                    : "Included for every business"
-                  : isAuthed && isCurrent
-                    ? "Current plan"
-                    : !isAuthed
-                      ? "Log in to get started"
-                      : !checkoutEnabled
-                        ? `Join ${p.name}`
-                        : devTestBilling
-                          ? `Test ${p.name} checkout`
-                          : `Choose ${p.name}`}
-                {pendingPlan !== id && !isCurrent && id !== "free" ? <ArrowRight className="ml-2 h-4 w-4"/> : null}
-              </Button>
-              {id === "business" && !checkoutEnabled && (
-                <p className="mt-2 text-center text-xs text-muted-foreground">No charge before {SCALE_BILLING_START_LABEL}</p>
+              {id === "free" ? (
+                <Button className="w-full" variant="outline" disabled data-testid={`button-choose-${id}`}>
+                  {isCurrent ? "Current plan" : "Included for every business"}
+                </Button>
+              ) : (
+                // Scale isn't available to join yet - show a blurred "Upgrade"
+                // so it reads as the next step, but clearly not active.
+                <>
+                  <Button className="w-full select-none opacity-70 blur-[1.5px] pointer-events-none" variant="default" disabled tabIndex={-1} aria-hidden data-testid={`button-choose-${id}`}>
+                    Upgrade <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">Available from {SCALE_BILLING_START_LABEL}</p>
+                </>
               )}
             </Card>
           );

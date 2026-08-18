@@ -49,25 +49,26 @@ export const plans: Record<PlanId, PlanConfig> = {
   },
 
   free: {
-    // Entry tier. Free for everyone during beta; R99/month once billing starts.
-    // Plan id stays "free" (DB enum + generated types); only the label/price change.
+    // Entry tier "Starter". Free for everyone during beta; R89/month once
+    // billing starts. Plan id stays "free" (DB enum + generated types); only
+    // the label/price/copy change. The core system for running freight jobs.
     name: "Starter",
-    price: 99,
+    price: 89,
     orderLimit: null,
     emailLimit: 50,
     smsLimit: 0,
     advancedCustomization: false,
     removeOlyxeeBranding: false,
-    tagline: "Run your freight operation in one place.",
+    tagline: "Run your freight jobs in one place.",
     features: [
       "Customer management",
-      "Order management",
+      "Quotes and jobs",
       "Invoicing and payment confirmation",
       "Air and sea shipment workflows",
       "Shipment tracking",
-      "Branded customer tracking pages",
+      "Branded customer tracking",
       "Delivery and collection management",
-      "50 automated email notifications per month",
+      "Up to 50 automated emails per month",
     ],
   },
 
@@ -102,22 +103,28 @@ export const plans: Record<PlanId, PlanConfig> = {
     automatedCallCentre: true,
     availableFrom: "2026-09-30",
     tagline:
-      "Grow your freight operation with less manual work. Let Orgni help your team monitor jobs, handle routine follow-ups, and surface what actually needs attention.",
+      "Handle more cross-border freight with less admin and better control over every job. Save controller time, reduce mistakes, and protect your margins.",
     features: [
-      "Everything in Free",
-      "Higher email allowance (fair use)",
+      "Everything in Starter",
+      "Higher email allowance",
     ],
+    // Outcome-first roadmap, written for a freight owner (never internal/AI
+    // jargon). None of these are released yet, so every item renders with a
+    // "Coming Soon" marker on the pricing surfaces.
     comingSoon: [
-      "Orgni Intelligence",
-      "Automated follow-ups",
-      "Document monitoring",
-      "Exception detection",
-      "ETA and deadline monitoring",
-      "Operational alerts",
-      "Easier customs-clearance workflows",
-      "Task escalation",
-      "Customer communication automation",
-      "Call-centre capabilities",
+      "Spend less time chasing documents — automatic handling of invoices, packing lists, AWBs/BLs, permits and PODs",
+      "Missing-document reminders and follow-ups",
+      "Easier customs and clearance coordination",
+      "Quote faster using your freight rates, costs and margins",
+      "Landed-cost estimates — freight, duties, taxes, clearing and delivery",
+      "Know the real profit on every job with margin tracking",
+      "Early warnings when carrier or supplier costs eat into your margin",
+      "Automatic follow-ups with customers, suppliers and agents",
+      "Customer self-service portal for shipments, documents, invoices and updates",
+      "SMS shipment notifications",
+      "Call-centre support for routine shipment questions",
+      "Orgni Intelligence — watches active jobs and flags what needs attention",
+      "Carrier, customs and freight-system integrations as they're added",
     ],
   },
 } satisfies Record<PlanId, PlanConfig>;

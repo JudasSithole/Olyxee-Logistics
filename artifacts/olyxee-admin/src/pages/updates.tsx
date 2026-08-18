@@ -20,13 +20,13 @@ const ANNOUNCEMENTS: Announcement[] = [
     date: "July 2026",
     tag: "Launch",
     title: `Olyxee Logistics is going live on ${LAUNCH_LABEL}`,
-    body: `We're moving out of beta. Existing businesses stay on the Free plan at no cost — nothing changes for you and no payment is required. The new Scale plan is visible now; Scale billing begins on ${SCALE_BILLING_START_LABEL}.`,
+    body: `Everything is free for every business until ${SCALE_BILLING_START_LABEL} — nothing to pay right now. After that you choose: stay on Starter (R89/month) to keep running your freight jobs, or move up to Scale (R999/month). No payment is taken before then.`,
   },
   {
     date: "July 2026",
     tag: "Heads up",
-    title: "Orgni Intelligence, branding & more on the way",
-    body: "We're building Orgni Intelligence for Scale — automated follow-ups, document monitoring, and operational alerts — plus custom business branding on your tracking pages. Scroll down for a preview of what's coming.",
+    title: "More on the way for Scale",
+    body: "Scale is where we're adding the tools that save your team time and protect margin — automatic document handling, faster quoting, landed-cost and profit tracking, customer self-service, and Orgni Intelligence to flag what needs attention. Scroll down for a preview. These are marked Coming Soon until released.",
   },
 ];
 
