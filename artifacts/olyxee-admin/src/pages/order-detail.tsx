@@ -233,10 +233,21 @@ export default function OrderDetailPage() {
   const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
   const isPostpaid = order?.billing_type === "POSTPAID";
   const companyName = business?.name ?? "Company";
-  const isDelivered = order?.current_status === "DELIVERED";
+  const isDelivered = order?.current_status === "DELIVERED_COLLECTED" || order?.current_status === "DELIVERED";
+  // Billing status is tracked separately from the shipment status. Prefer the
+  // stored billing_status; fall back to deriving from the invoice for legacy
+  // Jobs whose column wasn't backfilled.
+  const rawBilling = order?.billing_status ?? "NOT_INVOICED";
+  const billingStatus =
+    rawBilling === "NOT_INVOICED" && order?.invoice_id
+      ? invoiceStatus === "paid" ? "PAID" : invoiceStatus === "sent" || invoiceStatus === "overdue" ? "AWAITING_PAYMENT" : "INVOICED"
+      : rawBilling;
+  const BILLING_LABEL: Record<string, string> = { NOT_INVOICED: "Not yet invoiced", INVOICED: "Invoiced", AWAITING_PAYMENT: "Awaiting payment", PAID: "Paid" };
+  const billingLabel = BILLING_LABEL[billingStatus] ?? "Not yet invoiced";
   // POSTPAID Jobs are never gated on payment - they're invoiced after delivery.
-  // PREPAID Jobs need a paid (or absent, for legacy) invoice.
-  const paymentConfirmed = isPostpaid || !order?.invoice_id || invoiceStatus === "paid";
+  // PREPAID Jobs need a paid (or absent, for legacy) invoice before the shipment
+  // can progress. Billing and shipment are otherwise independent.
+  const paymentConfirmed = isPostpaid || !order?.invoice_id || billingStatus === "PAID";
   // Supplier tracking is optional and never blocks shipment progression.
   const shipmentUpdatesUnlocked = paymentConfirmed;
   const saveSupplierTracking = async () => {
@@ -398,7 +409,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="grid border-t border-border/60 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing · {isPostpaid ? "After delivery" : "Before delivery"}</div><p className={`mt-2 text-sm font-semibold ${isPostpaid ? (invoiceStatus === "paid" ? "text-emerald-700" : "text-muted-foreground") : (paymentConfirmed ? "text-emerald-700" : "text-amber-700")}`}>{isPostpaid ? (!order.invoice_id ? "Invoice after delivery" : invoiceStatus === "paid" ? "Paid" : "Awaiting payment") : (paymentConfirmed ? "Payment confirmed" : "Awaiting payment")}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
+          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing</div><p className={`mt-2 text-sm font-semibold ${billingStatus === "PAID" ? "text-emerald-700" : billingStatus === "AWAITING_PAYMENT" ? "text-amber-700" : "text-foreground"}`}>{isPostpaid ? "POSTPAID" : "PREPAID"} · {billingLabel}</p><p className="mt-0.5 text-xs text-muted-foreground">{isPostpaid ? "Invoiced after delivery" : "Payment before shipment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
           <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}</p>}</div>
           <div className="p-4 sm:p-5"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>

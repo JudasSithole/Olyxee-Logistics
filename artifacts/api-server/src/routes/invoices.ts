@@ -44,7 +44,10 @@ router.post("/invoices", requireAuth, async (req,res) => {
     if(!Number.isFinite(subtotal)||!Number.isFinite(additional)||subtotal<0||additional<0){res.status(400).json({error:"Amounts must be non-negative numbers"});return;}
     const invoice=await db.transaction(async tx=>{
       const [created]=await tx.insert(invoicesTable).values({id:generateId(),businessId,invoiceNumber:invoiceNumber(),customerId:order.customerId,orderId:order.id,subtotal:parsed.data.subtotal,additionalCharges:parsed.data.additionalCharges,total:String(subtotal+additional),currency:parsed.data.currency.toUpperCase(),dueDate:parsed.data.dueDate,notes:parsed.data.notes}).returning();
-      await tx.update(ordersTable).set({invoiceId:created.id,updatedAt:new Date()}).where(and(eq(ordersTable.id,order.id),eq(ordersTable.businessId,businessId)));
+      // Link the invoice + advance billing_status to INVOICED. This NEVER
+      // touches current_status (the shipment stage): billing and shipment are
+      // independent.
+      await tx.update(ordersTable).set({invoiceId:created.id,billingStatus:"INVOICED",updatedAt:new Date()}).where(and(eq(ordersTable.id,order.id),eq(ordersTable.businessId,businessId)));
       await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_INVOICE",entityType:"invoice",entityId:created.id,metadata:{orderId:order.id,invoiceNumber:created.invoiceNumber}});
       return created;
     });
@@ -92,6 +95,8 @@ router.post("/invoices/:invoiceId/send",requireAuth,async(req,res)=>{
   const sent=await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,customerPhone:customer.phone,invoiceNumber:invoice.invoiceNumber,createdAt:invoice.createdAt,dueDate:invoice.dueDate??invoice.createdAt,description:order.cargoType||order.description||"Cross-border logistics service",serviceDetails:order.serviceRequired||"",quantity:1,subtotal:Number(invoice.subtotal),additionalCharges:Number(invoice.additionalCharges),total:Number(invoice.total),currency:invoice.currency,businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote,primaryColor:business.primaryBrandColour,orderReference:order.orderReference,trackingId:order.trackingId,externalTrackingNumber:order.supplierTrackingNumber,origin:order.origin,destination:order.destination,transportMode:order.transportMode,weight:order.weight});
   if(!sent.success){res.status(502).json({error:sent.error||"Invoice email failed"});return;}
   const now=new Date();const [updated]=await db.update(invoicesTable).set({status:"sent",sentAt:now,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
+  // Invoice sent -> billing_status AWAITING_PAYMENT (shipment status untouched).
+  await db.update(ordersTable).set({billingStatus:"AWAITING_PAYMENT",updatedAt:now}).where(and(eq(ordersTable.id,order.id),eq(ordersTable.businessId,businessId)));
   await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"SEND_INVOICE",entityType:"invoice",entityId:id,metadata:{orderId:invoice.orderId,messageId:sent.messageId,customerEmail:customer.email}});
   res.json(serialize(updated));
 });
@@ -104,10 +109,12 @@ async function updateStatus(req:any,res:any,status:"sent"|"paid"){
   const now=new Date();
   const updated=await db.transaction(async(tx)=>{
     const [nextInvoice]=await tx.update(invoicesTable).set({status,sentAt:status==="sent"?now:invoice.sentAt,paidAt:status==="paid"?now:invoice.paidAt,paymentConfirmedBy:status==="paid"?userId:invoice.paymentConfirmedBy,updatedAt:now}).where(and(eq(invoicesTable.id,id),eq(invoicesTable.businessId,businessId))).returning();
-    if(status==="paid"){
-      await tx.update(ordersTable).set({currentStatus:"PENDING_TRACKING_NUMBER",updatedAt:now}).where(and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId)));
-      await tx.insert(trackingEventsTable).values({id:generateId(),orderId:invoice.orderId,status:"PENDING_TRACKING_NUMBER",message:"Payment confirmed - waiting for the China warehouse to receive the cargo and add its tracking number",createdBy:userId});
-    }
+    // Confirming payment ONLY advances billing_status. It must NEVER move the
+    // shipment (current_status) - billing and shipment are independent, so a
+    // POSTPAID Job can be delivered long before it's paid, and paying never
+    // pushes the cargo forward. (Previously this set current_status =
+    // PENDING_TRACKING_NUMBER, which coupled the two - that coupling is removed.)
+    await tx.update(ordersTable).set({billingStatus:status==="paid"?"PAID":"AWAITING_PAYMENT",updatedAt:now}).where(and(eq(ordersTable.id,invoice.orderId),eq(ordersTable.businessId,businessId)));
     return nextInvoice;
   });
   await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:status==="paid"?"CONFIRM_INVOICE_PAYMENT":"SEND_INVOICE",entityType:"invoice",entityId:id,metadata:{orderId:invoice.orderId,previousStatus:invoice.status,newStatus:status}});

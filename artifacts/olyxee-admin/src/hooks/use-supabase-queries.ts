@@ -102,6 +102,7 @@ interface ApiOrder {
   orderReference?: string | null;
   jobNumber?: string | null;
   billingType?: string | null;
+  billingStatus?: string | null;
   currentStatus: string;
   currentStepPosition?: number;
   description?: string | null;
@@ -137,6 +138,7 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     order_reference: o.orderReference ?? null,
     job_number: o.jobNumber ?? null,
     billing_type: o.billingType ?? "PREPAID",
+    billing_status: o.billingStatus ?? "NOT_INVOICED",
     current_status: o.currentStatus,
     transport_mode: o.transportMode ?? null,
     invoice_id: o.invoiceId ?? null,

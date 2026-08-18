@@ -8,6 +8,10 @@ import { customersTable } from "./customers";
 export const BILLING_TYPES = ["PREPAID", "POSTPAID"] as const;
 export type BillingType = (typeof BILLING_TYPES)[number];
 
+// Billing/payment lifecycle, tracked independently of the shipment status.
+export const BILLING_STATUSES = ["NOT_INVOICED", "INVOICED", "AWAITING_PAYMENT", "PAID"] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];
+
 export const ORDER_STATUSES = [
   "Created",
   "Order received",
@@ -41,6 +45,9 @@ export const ordersTable = pgTable(
     // lets the shipment complete before invoicing. Defaults to PREPAID so every
     // legacy order keeps today's behaviour.
     billingType: text("billing_type", { enum: BILLING_TYPES }).notNull().default("PREPAID"),
+    // Invoice/payment lifecycle, independent of current_status (the shipment
+    // stage). NOT_INVOICED -> INVOICED -> AWAITING_PAYMENT -> PAID.
+    billingStatus: text("billing_status", { enum: BILLING_STATUSES }).notNull().default("NOT_INVOICED"),
     description: text("description"),
     currentStatus: text("current_status").notNull().default("Order received"),
     // Transport mode for LOGISTICS businesses ("AIR" | "SEA"). Null for

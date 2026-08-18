@@ -170,6 +170,7 @@ export interface Database {
           order_reference: string | null;
           job_number: string | null;
           billing_type: string;
+          billing_status: string;
           current_status: string;
           transport_mode: string | null;
           invoice_id: string | null;
@@ -200,6 +201,7 @@ export interface Database {
           order_reference?: string | null;
           job_number?: string | null;
           billing_type?: string;
+          billing_status?: string;
           current_status?: string;
           transport_mode?: string | null;
           invoice_id?: string | null;

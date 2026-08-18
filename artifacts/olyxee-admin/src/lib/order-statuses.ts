@@ -63,7 +63,24 @@ export const STATUS_VISUALS: Record<string, StatusVisual> = {
 // Visuals for the transport-aware logistics status codes. Labels come from
 // the shared lib so admin UI, emails, and the public page always agree.
 const LOGISTICS_STATUS_VISUALS: Record<string, Omit<StatusVisual, "label">> = {
-  ORDER_CONFIRMED:              { icon: ClipboardList, bg: "bg-sky-50",    border: "border-sky-300",    iconColor: "text-sky-600" },
+  // Current shipment stages
+  ORDER_CONFIRMED:               { icon: ClipboardList, bg: "bg-sky-50",    border: "border-sky-300",    iconColor: "text-sky-600" },
+  COLLECTED_FROM_SUPPLIER:       { icon: Package,       bg: "bg-violet-50", border: "border-violet-300", iconColor: "text-violet-600" },
+  RECEIVED_AT_WAREHOUSE:         { icon: Container,     bg: "bg-violet-50", border: "border-violet-300", iconColor: "text-violet-600" },
+  PREPARING_FOR_SHIPMENT:        { icon: Settings2,     bg: "bg-sky-50",    border: "border-sky-300",    iconColor: "text-sky-600" },
+  LOADING:                       { icon: Container,     bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
+  DEPARTED_IN_TRANSIT:           { icon: Ship,          bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
+  IN_TRANSIT:                    { icon: Plane,         bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
+  ARRIVED_AT_DESTINATION:        { icon: Anchor,        bg: "bg-cyan-50",   border: "border-cyan-300",   iconColor: "text-cyan-600" },
+  AWAITING_VAT_DUTY_PAYMENT:     { icon: ShieldCheck,   bg: "bg-amber-50",  border: "border-amber-300",  iconColor: "text-amber-600" },
+  VAT_DUTY_PAID:                 { icon: ShieldCheck,   bg: "bg-teal-50",   border: "border-teal-300",   iconColor: "text-teal-600" },
+  UNDERGOING_CUSTOMS_CLEARANCE:  { icon: ShieldCheck,   bg: "bg-amber-50",  border: "border-amber-300",  iconColor: "text-amber-600" },
+  CUSTOMS_CLEARANCE_COMPLETED:   { icon: ShieldCheck,   bg: "bg-green-50",  border: "border-green-300",  iconColor: "text-green-600" },
+  READY_FOR_COLLECTION_DELIVERY: { icon: Package,       bg: "bg-green-50",  border: "border-green-300",  iconColor: "text-green-600" },
+  OUT_FOR_DELIVERY:              { icon: Truck,         bg: "bg-orange-50", border: "border-orange-300", iconColor: "text-orange-600" },
+  DELIVERED_COLLECTED:           { icon: House,         bg: "bg-green-50",  border: "border-green-400",  iconColor: "text-green-600" },
+  CANCELLED:                     { icon: Ban,           bg: "bg-gray-100",  border: "border-gray-300",   iconColor: "text-gray-500" },
+  // Legacy codes (kept so existing orders still render)
   PENDING_TRACKING_NUMBER:      { icon: Package,       bg: "bg-amber-50",  border: "border-amber-300",  iconColor: "text-amber-600" },
   RECEIVED_FROM_SUPPLIER:       { icon: Package,       bg: "bg-violet-50", border: "border-violet-300", iconColor: "text-violet-600" },
   EXPORT_CUSTOMS_CLEARED:       { icon: ShieldCheck,   bg: "bg-teal-50",   border: "border-teal-300",   iconColor: "text-teal-600" },
@@ -72,16 +89,16 @@ const LOGISTICS_STATUS_VISUALS: Record<string, Omit<StatusVisual, "label">> = {
   MID_OCEAN_TRANSIT:            { icon: Waves,         bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
   APPROACHING_DESTINATION_PORT: { icon: Navigation,    bg: "bg-indigo-50", border: "border-indigo-300", iconColor: "text-indigo-600" },
   VESSEL_ARRIVED:               { icon: Anchor,        bg: "bg-cyan-50",   border: "border-cyan-300",   iconColor: "text-cyan-600" },
-  IN_TRANSIT:                   { icon: Plane,         bg: "bg-blue-50",   border: "border-blue-300",   iconColor: "text-blue-600" },
   IMPORT_CUSTOMS_CLEARANCE:     { icon: ShieldCheck,   bg: "bg-amber-50",  border: "border-amber-300",  iconColor: "text-amber-600" },
-  OUT_FOR_DELIVERY:             { icon: Truck,         bg: "bg-orange-50", border: "border-orange-300", iconColor: "text-orange-600" },
   DELIVERED:                    { icon: House,         bg: "bg-green-50",  border: "border-green-400",  iconColor: "text-green-600" },
 };
 
 export function getStatusVisual(status: string): StatusVisual {
   if (STATUS_VISUALS[status]) return STATUS_VISUALS[status];
   if (isLogiStatus(status)) {
-    const base = LOGISTICS_STATUS_VISUALS[status];
+    const base = LOGISTICS_STATUS_VISUALS[status] ?? {
+      icon: Package, bg: "bg-muted", border: "border-border", iconColor: "text-muted-foreground",
+    };
     return { ...base, label: logiLabel(status) };
   }
   return {

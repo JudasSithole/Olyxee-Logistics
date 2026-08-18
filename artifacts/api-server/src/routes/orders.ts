@@ -22,7 +22,6 @@ import { effectiveEmailLimit } from "../lib/plan-enforcement";
 import { sendOrderSms } from "../lib/order-notifications";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
 import { getPlan } from "@workspace/plans";
-import { UpdateOrderStatusBody } from "@workspace/api-zod";
 import { z } from "zod";
 import {
   FSM_ORDER_STATUSES,
@@ -97,6 +96,7 @@ async function ensureJobsSchema(): Promise<void> {
   _jobsSchemaReady = (async () => {
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "job_number" text`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_type" text NOT NULL DEFAULT 'PREPAID'`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_status" text NOT NULL DEFAULT 'NOT_INVOICED'`);
     await db.execute(
       sql`CREATE UNIQUE INDEX IF NOT EXISTS "orders_business_job_number_unique" ON "orders" ("business_id", "job_number") WHERE "job_number" IS NOT NULL`,
     );
@@ -401,7 +401,9 @@ router.post("/orders", requireAuth, async (req, res) => {
 
     await db.transaction(async (tx) => {
       await tx.insert(invoicesTable).values({id:invoiceId,businessId,invoiceNumber:invoiceNo,customerId:customer.id,orderId:o.id,subtotal:String(subtotal),additionalCharges:String(additionalCharges),total:String(total),currency:"ZAR",dueDate,status:"draft",notes:"Payment due within agreed terms."});
-      await tx.update(ordersTable).set({invoiceId,updatedAt:new Date()}).where(and(eq(ordersTable.id,o.id),eq(ordersTable.businessId,businessId)));
+      // Invoice now exists -> billing_status INVOICED (advances to
+      // AWAITING_PAYMENT below once the email actually sends).
+      await tx.update(ordersTable).set({invoiceId,billingStatus:"INVOICED",updatedAt:new Date()}).where(and(eq(ordersTable.id,o.id),eq(ordersTable.businessId,businessId)));
       await tx.insert(trackingEventsTable).values({id:generateId(),orderId:o.id,status:initialStatus,message:initialMessage,createdBy:userId});
       await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_ORDER_AND_INVOICE",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,invoiceId,invoiceNumber:invoiceNo}});
     });
@@ -409,6 +411,8 @@ router.post("/orders", requireAuth, async (req, res) => {
     const delivery = business ? await sendInvoiceEmail({customerEmail:customer.email,customerName:customer.fullName,customerAddress:customer.address,customerPhone:customer.phone,invoiceNumber:invoiceNo,createdAt:new Date(),dueDate,description:o.cargoType||o.description||"Cross-border logistics service",serviceDetails:o.serviceRequired||"",quantity:1,subtotal,additionalCharges,total,currency:"ZAR",businessName:business.invoiceLegalName||business.name,supportEmail:business.invoiceEmail||business.supportEmail,businessPhone:business.invoicePhone||business.phone,businessAddress:business.invoiceAddress||business.location,logoUrl:business.invoiceLogoUrl||business.businessLogoUrl,companyRegistration:business.invoiceRegistrationNumber||undefined,taxNumber:business.invoiceTaxNumber,paymentDetails:business.invoicePaymentDetails,paymentTerms:business.invoicePaymentTerms,footerNote:business.invoiceFooterNote,primaryColor:business.primaryBrandColour,orderReference:o.orderReference,trackingId:o.trackingId,externalTrackingNumber:o.supplierTrackingNumber,origin:o.origin,destination:o.destination,transportMode:o.transportMode,weight:o.weight}) : {success:false,error:"Business not found"};
     if(delivery.success){
       await db.update(invoicesTable).set({status:"sent",sentAt:new Date(),updatedAt:new Date()}).where(and(eq(invoicesTable.id,invoiceId),eq(invoicesTable.businessId,businessId)));
+      // Invoice sent -> billing_status AWAITING_PAYMENT.
+      await db.update(ordersTable).set({billingStatus:"AWAITING_PAYMENT",updatedAt:new Date()}).where(and(eq(ordersTable.id,o.id),eq(ordersTable.businessId,businessId)));
       await db.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"AUTO_SEND_INVOICE",entityType:"invoice",entityId:invoiceId,metadata:{messageId:delivery.messageId,customerEmail:customer.email}});
     } else {
       req.log?.error({invoiceId,error:delivery.error},"Automatic invoice email failed");
@@ -563,6 +567,11 @@ router.delete("/orders/:orderId", requireAuth, async (req, res) => {
       await tx.delete(emailNotificationsTable).where(eq(emailNotificationsTable.orderId,orderId));
       await tx.delete(smsNotificationsTable).where(eq(smsNotificationsTable.orderId,orderId));
       await tx.delete(trackingEventsTable).where(eq(trackingEventsTable.orderId,orderId));
+      // orders.invoice_id <-> invoices.order_id is a circular FK (neither
+      // DEFERRABLE), so the invoice can't be deleted while the order still
+      // points at it. Break the cycle by nulling invoice_id first, then delete
+      // the invoice, then the order.
+      await tx.update(ordersTable).set({invoiceId:null}).where(and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId)));
       await tx.delete(invoicesTable).where(and(eq(invoicesTable.orderId,orderId),eq(invoicesTable.businessId,businessId)));
       await tx.delete(ordersTable).where(and(eq(ordersTable.id,orderId),eq(ordersTable.businessId,businessId)));
       await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"DELETE_ORDER",entityType:"order",entityId:orderId,metadata:{trackingId:order.trackingId,orderReference:order.orderReference,invoiceId:order.invoiceId}});
@@ -571,12 +580,22 @@ router.delete("/orders/:orderId", requireAuth, async (req, res) => {
   } catch(err){req.log.error({err},"Failed to delete order");res.status(500).json({error:"Internal server error"});}
 });
 
+// Local status-update body. Replaces the generated UpdateOrderStatusBody whose
+// status enum only allowed the retired status codes. The status VALUE is
+// validated per-mode by isStatusValidForMode below, so here we just require a
+// non-empty string.
+const UpdateJobStatusBody = z.object({
+  status: z.string().trim().min(1).max(100),
+  message: z.string().max(2000).optional(),
+  location: z.string().max(500).optional(),
+});
+
 router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
     const userId = (req as any).userId;
     const orderId = req.params.orderId as string;
-    const parse = UpdateOrderStatusBody.safeParse(req.body);
+    const parse = UpdateJobStatusBody.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: "Invalid input", details: parse.error.issues });
       return;

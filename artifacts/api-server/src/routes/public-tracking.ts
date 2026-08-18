@@ -32,7 +32,7 @@ const ServiceRequestBody = z.object({
 });
 
 function isSelfServiceClosed(status: string) {
-  return ["DELIVERED", "CANCELLED", "RETURNED", "Delivered", "Cancelled", "Returned"].includes(status);
+  return ["DELIVERED_COLLECTED", "DELIVERED", "CANCELLED", "RETURNED", "Delivered", "Cancelled", "Returned"].includes(status);
 }
 
 // Map internal status labels (free-form, defined in lib/order-statuses) to the
