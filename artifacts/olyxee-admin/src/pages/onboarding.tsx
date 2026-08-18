@@ -57,6 +57,9 @@ export default function OnboardingPage() {
   // separate setup trip to Settings. Entirely optional: blank fields save as
   // null and can be completed later in Settings → Invoice details.
   const [invoice, setInvoice] = useState<InvoiceProfile>(EMPTY_INVOICE_PROFILE);
+  // Collapsed by default so the setup screen stays short; the (already
+  // prefilled) invoice profile still saves whether or not it's expanded.
+  const [showInvoice, setShowInvoice] = useState(false);
   const updateInvoice = (key: keyof InvoiceProfile, value: string) =>
     setInvoice((p) => ({ ...p, [key]: value }));
   const pickInvoiceLogo = async (file: File) => {
@@ -203,35 +206,25 @@ export default function OnboardingPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Business name</Label>
-                    <Input
-                      id="name"
-                      required
-                      placeholder="Acme Logistics"
-                      value={form.name}
-                      onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      className="h-11"
-                      data-testid="input-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tagline">
-                      Tagline{" "}
-                      <span className="text-[11px] text-[hsl(220,9%,46%)] font-normal">
-                        (optional)
-                      </span>
-                    </Label>
-                    <Input
-                      id="tagline"
-                      placeholder="Fast, reliable delivery."
-                      maxLength={80}
-                      value={form.tagline}
-                      onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))}
-                      className="h-11"
-                    />
-                  </div>
+                {/* Business name is already captured at signup, so we don't
+                    ask for it again here - it flows through as form.name (used
+                    by the preview and saved on finish) and stays editable in
+                    Settings. */}
+                <div className="space-y-2">
+                  <Label htmlFor="tagline">
+                    Tagline{" "}
+                    <span className="text-[11px] text-[hsl(220,9%,46%)] font-normal">
+                      (optional)
+                    </span>
+                  </Label>
+                  <Input
+                    id="tagline"
+                    placeholder="Fast, reliable delivery."
+                    maxLength={80}
+                    value={form.tagline}
+                    onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))}
+                    className="h-11"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
@@ -352,32 +345,41 @@ export default function OnboardingPage() {
                 </div>
               </section>
 
-              {/* ─── Invoice details (optional) ─────────────────────────────
-                  Captured now so invoices are ready to send without a separate
-                  setup step. Everything here is optional and editable later in
-                  Settings → Invoice details. */}
+              {/* ─── Invoice details (optional, collapsed) ──────────────────
+                  Kept collapsed so the setup screen stays short. The profile is
+                  already prefilled from the account and saves on finish whether
+                  or not it's expanded; it's fully editable later in Settings. */}
               <section className="space-y-4 pt-2 border-t border-[hsl(220,9%,90%)]">
-                <div className="flex items-center justify-between pt-4">
-                  <h2 className="text-[13px] font-semibold uppercase tracking-wider text-[hsl(220,9%,30%)]">
-                    Invoice details
-                  </h2>
-                  <span className="text-[11px] text-[hsl(220,9%,46%)]">
-                    Optional · reused on every invoice
+                <button
+                  type="button"
+                  onClick={() => setShowInvoice((s) => !s)}
+                  className="flex w-full items-center justify-between gap-4 pt-4 text-left"
+                  aria-expanded={showInvoice}
+                  data-testid="toggle-invoice-details"
+                >
+                  <span>
+                    <span className="block text-[13px] font-semibold uppercase tracking-wider text-[hsl(220,9%,30%)]">
+                      Invoice details
+                    </span>
+                    <span className="mt-1 block text-[13px] text-[hsl(220,9%,46%)]">
+                      Optional — add billing &amp; bank details now so invoices
+                      are ready, or set it up later in Settings.
+                    </span>
                   </span>
-                </div>
-                <p className="text-[13px] text-[hsl(220,9%,46%)] -mt-1">
-                  Add your billing and bank details once and we’ll put them on
-                  every invoice and PDF automatically. You can skip this and
-                  finish it later in Settings.
-                </p>
-                <div className="rounded-xl border border-border">
-                  <InvoiceProfileFields
-                    profile={invoice}
-                    update={updateInvoice}
-                    pickLogo={pickInvoiceLogo}
-                    required={false}
-                  />
-                </div>
+                  <span className="shrink-0 rounded-lg border border-[hsl(220,9%,85%)] px-3 py-1.5 text-[13px] font-medium text-[hsl(220,20%,10%)]">
+                    {showInvoice ? "Hide" : "Add details"}
+                  </span>
+                </button>
+                {showInvoice ? (
+                  <div className="rounded-xl border border-border">
+                    <InvoiceProfileFields
+                      profile={invoice}
+                      update={updateInvoice}
+                      pickLogo={pickInvoiceLogo}
+                      required={false}
+                    />
+                  </div>
+                ) : null}
               </section>
 
               <Button
