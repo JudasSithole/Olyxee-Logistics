@@ -9,7 +9,8 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
   });
-  const money = (value: number) => `${p.currency} ${value.toFixed(2)}`;
+  const money = (value: number) =>
+    `${p.currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const date = (value: Date) => value.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
 
   if (p.logoUrl) {

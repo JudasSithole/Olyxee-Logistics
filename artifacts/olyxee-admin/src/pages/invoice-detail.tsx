@@ -40,7 +40,11 @@ export default function InvoiceDetailPage() {
   const customer = invoice.customer;
   const business = invoice.business;
   const brandColor = /^#[0-9a-f]{6}$/i.test(business?.primaryBrandColour || "") ? business.primaryBrandColour : "#10243e";
-  const money = (value: string | number) => `${invoice.currency} ${Number(value).toFixed(2)}`;
+  // Group thousands so large amounts read cleanly (e.g. ZAR 1,500,000.00
+  // instead of ZAR 1500000.00). Non-breaking space keeps the currency and
+  // number on the same line.
+  const money = (value: string | number) =>
+    `${invoice.currency} ${Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const displayStatus = invoice.status === "sent" ? "Pending Payment" : String(invoice.status).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const issueDate = new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
   const dueDate = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) : "On receipt";

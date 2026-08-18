@@ -49,10 +49,10 @@ export const plans: Record<PlanId, PlanConfig> = {
   },
 
   free: {
-    // Entry tier. Free for everyone during beta; R89/month once billing starts.
+    // Entry tier. Free for everyone during beta; R99/month once billing starts.
     // Plan id stays "free" (DB enum + generated types); only the label/price change.
     name: "Starter",
-    price: 89,
+    price: 99,
     orderLimit: null,
     emailLimit: 50,
     smsLimit: 0,

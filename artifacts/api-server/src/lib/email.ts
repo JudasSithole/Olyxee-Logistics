@@ -439,7 +439,7 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   if(!resend)return {success:false,error:"Email provider not configured"};
   const fromAddress=process.env.EMAIL_FROM_ADDRESS;
   if(!fromAddress)return {success:false,error:"Email sender not configured"};
-  const money=(value:number)=>`${p.currency} ${value.toFixed(2)}`;
+  const money=(value:number)=>`${p.currency} ${value.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   const date=(value:Date)=>value.toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"});
   const payment=escapeHtml(p.paymentDetails||"Contact the issuer for payment instructions.").replace(/\n/g,"<br />");
   const terms=escapeHtml(p.paymentTerms||"Payment due within agreed terms.");

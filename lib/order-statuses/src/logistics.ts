@@ -128,19 +128,19 @@ export interface LogisticsStatusCopy {
 }
 
 export const LOGISTICS_STATUS_COPY: Record<string, LogisticsStatusCopy> = {
-  ORDER_CONFIRMED:              { headline: "Your order is confirmed",              intro: "We've confirmed your order and will start preparing the shipment.",           accent: "#0284c7", tone: "neutral" },
-  PENDING_TRACKING_NUMBER:      { headline: "Pending tracking number",              intro: "Payment is confirmed. We're waiting for the China warehouse to receive your cargo and assign its shipment tracking number.", accent: "#d97706", tone: "neutral" },
-  RECEIVED_FROM_SUPPLIER:       { headline: "We've received your goods",            intro: "Your shipment has been received from the supplier and is being prepared.",   accent: "#7c3aed", tone: "neutral" },
-  EXPORT_CUSTOMS_CLEARED:       { headline: "Export customs cleared",               intro: "Your shipment has cleared customs at the origin and is ready to travel.",    accent: "#0ea5e9", tone: "positive" },
-  LOADED_ONTO_VESSEL:           { headline: "Loaded onto the vessel",               intro: "Your shipment is aboard and the vessel is preparing to depart.",             accent: "#2563eb", tone: "positive" },
-  VESSEL_DEPARTED:              { headline: "Your shipment has set sail",           intro: "The vessel has departed the origin port and is on its way.",                 accent: "#2563eb", tone: "positive" },
-  MID_OCEAN_TRANSIT:            { headline: "Crossing the ocean",                   intro: "Your shipment is in mid-ocean transit, steadily making progress.",           accent: "#2563eb", tone: "positive" },
-  APPROACHING_DESTINATION_PORT: { headline: "Nearly at the destination port",       intro: "The vessel is approaching the destination port.",                            accent: "#2563eb", tone: "positive" },
-  VESSEL_ARRIVED:               { headline: "The vessel has arrived",               intro: "Your shipment has reached the destination port.",                            accent: "#16a34a", tone: "positive" },
-  IN_TRANSIT:                   { headline: "Your shipment is in the air",          intro: "It's flying to the destination and will land soon.",                         accent: "#2563eb", tone: "positive" },
-  IMPORT_CUSTOMS_CLEARANCE:     { headline: "Going through import customs",         intro: "Your shipment is being cleared by customs at the destination.",              accent: "#d97706", tone: "neutral" },
-  OUT_FOR_DELIVERY:             { headline: "Out for delivery",                     intro: "Your shipment is on its way to you now.",                                    accent: "#ea580c", tone: "positive" },
-  DELIVERED:                    { headline: "Your shipment has arrived",            intro: "It's been delivered successfully. Thanks for trusting us!",                  accent: "#16a34a", tone: "positive" },
+  ORDER_CONFIRMED:              { headline: "Your shipment is confirmed",           intro: "Thank you — your shipment is booked, and we're getting everything ready to move it.",         accent: "#0284c7", tone: "neutral" },
+  PENDING_TRACKING_NUMBER:      { headline: "We're getting your shipment ready",     intro: "Everything is in order. We're arranging collection of your cargo and will share tracking as soon as it's on the move.", accent: "#d97706", tone: "neutral" },
+  RECEIVED_FROM_SUPPLIER:       { headline: "Your cargo is with us",                intro: "We've received your goods and they're being prepared for the journey ahead.",  accent: "#7c3aed", tone: "neutral" },
+  EXPORT_CUSTOMS_CLEARED:       { headline: "Cleared for export",                   intro: "Your shipment has cleared customs at the origin and is ready to travel.",     accent: "#0ea5e9", tone: "positive" },
+  LOADED_ONTO_VESSEL:           { headline: "Loaded and ready to sail",             intro: "Your cargo is safely aboard, and the vessel is preparing to depart.",         accent: "#2563eb", tone: "positive" },
+  VESSEL_DEPARTED:              { headline: "Your shipment has set sail",           intro: "The vessel has left the origin port and is on its way to you.",               accent: "#2563eb", tone: "positive" },
+  MID_OCEAN_TRANSIT:            { headline: "On the water and making progress",     intro: "Your shipment is crossing the ocean, steadily making its way to you.",        accent: "#2563eb", tone: "positive" },
+  APPROACHING_DESTINATION_PORT: { headline: "Almost at the destination port",       intro: "The vessel is nearing the destination port — arrival is close.",              accent: "#2563eb", tone: "positive" },
+  VESSEL_ARRIVED:               { headline: "Arrived at the destination port",      intro: "Your shipment has reached port and will begin customs clearance shortly.",    accent: "#16a34a", tone: "positive" },
+  IN_TRANSIT:                   { headline: "Your shipment is in the air",          intro: "It's on its flight to the destination and will land soon.",                   accent: "#2563eb", tone: "positive" },
+  IMPORT_CUSTOMS_CLEARANCE:     { headline: "Clearing customs at the destination",  intro: "Your shipment is being cleared by customs and will be released for delivery soon.", accent: "#d97706", tone: "neutral" },
+  OUT_FOR_DELIVERY:             { headline: "Out for delivery",                     intro: "Your shipment is on its way to you today — it's nearly there.",               accent: "#ea580c", tone: "positive" },
+  DELIVERED:                    { headline: "Delivered — thank you",                intro: "Your shipment has arrived safely. We really appreciate your business and look forward to helping again.", accent: "#16a34a", tone: "positive" },
 };
 
 // Also index the copy by friendly label ("Vessel Departed") so callers that

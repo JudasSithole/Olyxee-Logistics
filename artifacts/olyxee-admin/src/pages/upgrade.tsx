@@ -221,18 +221,27 @@ export default function UpgradePage() {
       <header className="border-b border-border pb-7 pt-2">
         <div className="max-w-3xl">
           <p className="text-sm font-medium text-muted-foreground">Pricing</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Two plans. Free during beta.</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Free for everyone until {SCALE_BILLING_START_LABEL}</h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">
-            {plans.free.name} covers your day-to-day freight work. {plans.business.name} adds Orgni automation as it's released.
+            Every business is using Olyxee free during the beta — there's nothing to pay right now. When the beta ends you simply choose the plan that fits: stay on {plans.free.name}, or move up to {plans.business.name}.
           </p>
         </div>
       </header>
 
-      <Card className="rounded-2xl border-primary/25 bg-primary/[0.04] p-4 shadow-none">
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{plans.business.name} billing starts {SCALE_BILLING_START_LABEL}.</span>{" "}
-          Join today, pay nothing until then. Every plan is free for the duration of the beta.
-        </p>
+      <Card className="rounded-2xl border-primary/25 bg-primary/[0.04] p-5 shadow-none">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex-1 rounded-xl bg-background/70 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Now → {SCALE_BILLING_START_LABEL}</p>
+            <p className="mt-1 text-sm font-semibold">Free for everyone</p>
+            <p className="text-xs text-muted-foreground">All features unlocked. No card, no charge.</p>
+          </div>
+          <div className="hidden text-muted-foreground sm:block">→</div>
+          <div className="flex-1 rounded-xl bg-background/70 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">From {SCALE_BILLING_START_LABEL}</p>
+            <p className="mt-1 text-sm font-semibold">Choose your plan</p>
+            <p className="text-xs text-muted-foreground">Keep {plans.free.name} at {formatPrice(plans.free.price)}/month, or move to {plans.business.name} at {formatPrice(plans.business.price)}/month. Change or cancel anytime.</p>
+          </div>
+        </div>
       </Card>
 
       {errorMsg && (
@@ -266,7 +275,7 @@ export default function UpgradePage() {
                     {formatPrice(p.price)}
                   </span>
                   {p.price > 0 && (
-                    <span className="text-sm text-muted-foreground">/month per company</span>
+                    <span className="text-sm text-muted-foreground">/month</span>
                   )}
                 </div>
                 {id === "business" && (
