@@ -1,9 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
-import { CalendarDays, Check, Headphones, Mail, PackageCheck, Phone, X, XCircle } from "lucide-react";
+import {
+  CalendarDays, Check, Headphones, Mail, PackageCheck, Phone, X, XCircle,
+  Package, ClipboardCheck, Warehouse, FileCheck, Plane, Ship, Navigation,
+  Truck, Clock, Undo2, PackageX,
+} from "lucide-react";
 
-const serif = { fontFamily: '"Lora", ui-serif, Georgia, serif', fontWeight: 500 };
+// Newsreader is the serif the app actually loads (see index.html). Lora was
+// referenced before but never loaded, so headings silently fell back to Georgia.
+const serif = { fontFamily: '"Newsreader", ui-serif, Georgia, serif', fontWeight: 500 };
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
+
+// Pick a meaningful icon for a shipment stage. Matches on the public status
+// code first, then falls back to keywords in the human label, so it stays
+// sensible for both air and sea flows without knowing every status up front.
+function iconForStep(status: string, label: string): ComponentType<{ className?: string }> {
+  const t = `${status || ""} ${label || ""}`.toLowerCase();
+  const has = (...k: string[]) => k.some((x) => t.includes(x));
+  if (has("delivered")) return PackageCheck;
+  if (has("out_for_delivery", "out for delivery")) return Truck;
+  if (has("customs", "cleared", "clearance")) return FileCheck;
+  if (has("vessel", "port", "ocean", "loaded", "sea")) return Ship;
+  if (has("air", "flight")) return Plane;
+  if (has("transit", "departed", "approaching")) return Navigation;
+  if (has("received", "supplier", "warehouse")) return Warehouse;
+  if (has("failed")) return PackageX;
+  if (has("returned")) return Undo2;
+  if (has("cancelled", "canceled")) return XCircle;
+  if (has("delayed")) return Clock;
+  if (has("confirmed", "created", "pending", "order", "job")) return ClipboardCheck;
+  return Package;
+}
 
 interface TrackingEvent {
   at: string;
@@ -149,31 +176,31 @@ export default function TrackPage() {
       <div className="w-full max-w-2xl flex items-center justify-between mb-7">
         <div className="flex items-center gap-3">
           {data?.business?.logoUrl ? <img src={data.business.logoUrl} alt="" className="h-9 w-9 rounded-xl object-contain bg-white border border-black/5" /> : <div className="h-9 w-9 rounded-xl bg-neutral-900 text-white grid place-items-center font-semibold">{data?.business?.name?.[0] || "O"}</div>}
-          <div><p className="text-sm font-semibold">{data?.business?.name || "Olyxee Logistics"}</p><p className="text-xs text-neutral-500">Customer tracking</p></div>
+          <div><p className="text-sm font-semibold">{data?.business?.name || "Olyxee Logistics"}</p><p className="text-xs text-neutral-500">Shipment tracking</p></div>
         </div>
-        <span className="rounded-full bg-white border border-black/5 px-3 py-1.5 text-xs text-neutral-500">Secure order page</span>
+        <span className="rounded-full bg-white border border-black/5 px-3 py-1.5 text-xs text-neutral-500">Secure shipment page</span>
       </div>
 
       <div className="w-full max-w-2xl">
         {loading && (
           <div className="bg-white border border-neutral-200 px-8 py-16 text-center">
             <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase">
-              Loading your order…
+              Loading your shipment…
             </p>
           </div>
         )}
 
         {!loading && error === "missing" && (
           <StateCard
-            title="No order to track"
-            body="This link is missing an order code. Please open the link directly from your email."
+            title="No shipment to track"
+            body="This link is missing a tracking code. Please open the link directly from your email."
           />
         )}
 
         {!loading && error === "notfound" && (
           <StateCard
-            title="Order not found"
-            body={`We couldn't find an order for "${code}". Double-check the link from your email, or reply to that email if you need help.`}
+            title="Shipment not found"
+            body={`We couldn't find a shipment for "${code}". Double-check the link from your email, or reply to that email if you need help.`}
           />
         )}
 
@@ -189,14 +216,16 @@ export default function TrackPage() {
             {/* Header */}
             <div className="px-6 sm:px-9 pt-8 pb-7 border-b border-neutral-100">
               <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-3">
-                Tracking ID
+                {data.business?.name ? `${data.business.name} Tracking ID` : "Tracking ID"}
               </p>
               <p style={mono} className="text-lg font-medium text-neutral-900 mb-5">
                 {data.trackingId}
               </p>
-              <div className="flex items-center gap-3">
-                <span className={`w-2.5 h-2.5 rounded-full ${toneFor(data.currentStatus).dot}`} />
-                <h1 style={serif} className="text-3xl sm:text-4xl leading-tight">
+              <div className="flex items-center gap-3.5">
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white ${toneFor(data.currentStatus).dot}`}>
+                  {(() => { const Icon = iconForStep(data.currentStatus, data.statusLabel); return <Icon className="h-5 w-5" />; })()}
+                </span>
+                <h1 style={serif} className="text-[28px] sm:text-[40px] leading-[1.08] tracking-[-0.01em]">
                   {data.statusLabel}
                 </h1>
               </div>
@@ -207,7 +236,7 @@ export default function TrackPage() {
               )}
               {data.reference && (
                 <p className="mt-3 text-sm text-neutral-500">
-                  Order reference: <span className="text-neutral-700">{data.reference}</span>
+                  Job Number: <span className="font-medium text-neutral-700">{data.reference}</span>
                 </p>
               )}
               {data.estimatedDeliveryDate && (
@@ -228,44 +257,46 @@ export default function TrackPage() {
                 <ol className="relative">
                   {data.flow.map((step, i) => {
                     const isLast = i === data.flow!.length - 1;
+                    const Icon = iconForStep(step.status, step.label);
+                    const done = step.state === "completed";
+                    const current = step.state === "current";
                     return (
-                      <li key={step.status} className="relative pl-8 pb-5 last:pb-0">
+                      <li key={step.status} className="relative pl-12 pb-6 last:pb-0">
                         {!isLast && (
                           <span
-                            className={`absolute left-[9px] top-5 bottom-0 w-px ${
-                              step.state === "completed" ? "bg-green-500" : "bg-neutral-200"
-                            }`}
+                            className={`absolute left-[17px] top-9 bottom-0 w-0.5 ${done ? "bg-green-500" : "bg-neutral-200"}`}
                           />
                         )}
-                        {step.state === "completed" && (
-                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full bg-green-600 text-white flex items-center justify-center text-[11px] leading-none">
-                            ✓
-                          </span>
-                        )}
-                        {step.state === "current" && (
-                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full border-2 border-green-600 flex items-center justify-center">
-                            <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />
-                          </span>
-                        )}
-                        {step.state === "upcoming" && (
-                          <span className="absolute left-0 top-0.5 w-[19px] h-[19px] rounded-full border-2 border-neutral-300" />
-                        )}
                         <span
-                          className={`text-sm ${
-                            step.state === "current"
-                              ? "font-semibold text-neutral-900"
-                              : step.state === "completed"
-                                ? "text-neutral-700"
-                                : "text-neutral-400"
+                          className={`absolute left-0 top-0 grid h-9 w-9 place-items-center rounded-full transition-colors ${
+                            done
+                              ? "bg-green-600 text-white"
+                              : current
+                                ? "border-2 border-green-600 bg-green-50 text-green-700"
+                                : "border-2 border-neutral-200 bg-white text-neutral-300"
                           }`}
                         >
-                          {step.label}
+                          {done ? <Check className="h-4 w-4" /> : <Icon className="h-[18px] w-[18px]" />}
+                          {current && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />}
                         </span>
-                        {step.state === "current" && (
-                          <span style={mono} className="ml-2 text-[10px] tracking-[0.15em] uppercase text-green-700">
-                            Current
+                        <div className="pt-1.5">
+                          <span
+                            className={`text-[15px] ${
+                              current
+                                ? "font-semibold text-neutral-900"
+                                : done
+                                  ? "text-neutral-700"
+                                  : "text-neutral-400"
+                            }`}
+                          >
+                            {step.label}
                           </span>
-                        )}
+                          {current && (
+                            <span style={mono} className="ml-2 align-middle text-[10px] tracking-[0.15em] uppercase text-green-700">
+                              Now
+                            </span>
+                          )}
+                        </div>
                       </li>
                     );
                   })}
@@ -340,7 +371,7 @@ export default function TrackPage() {
 
       {action && data && <div className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center" onMouseDown={(e)=>{if(e.target===e.currentTarget)setAction(null);}}>
         <div className="w-full max-w-md rounded-[26px] bg-white p-6 shadow-2xl">
-          <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{action === "cancel" ? "Request cancellation" : "Choose another date"}</h2><p className="mt-1 text-sm text-neutral-500">For order {data.trackingId}</p></div><button aria-label="Close" onClick={()=>setAction(null)} className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"><X className="h-4 w-4"/></button></div>
+          <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{action === "cancel" ? "Request cancellation" : "Choose another date"}</h2><p className="mt-1 text-sm text-neutral-500">For shipment {data.trackingId}</p></div><button aria-label="Close" onClick={()=>setAction(null)} className="h-9 w-9 rounded-full bg-neutral-100 grid place-items-center"><X className="h-4 w-4"/></button></div>
           {action === "cancel" ? <div className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">This sends a request to the business. Your order remains active until they confirm the cancellation.</div> : <label className="mt-5 block"><span className="text-sm font-medium">Preferred delivery date</span><input type="date" min={new Date().toISOString().slice(0,10)} value={requestedDate} onChange={e=>setRequestedDate(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-neutral-200 px-3 text-sm"/></label>}
           <label className="mt-4 block"><span className="text-sm font-medium">Note <span className="font-normal text-neutral-400">(optional)</span></span><textarea value={note} onChange={e=>setNote(e.target.value.slice(0,500))} rows={3} placeholder={action === "cancel" ? "Tell us why, if you’d like" : "Add delivery instructions"} className="mt-2 w-full rounded-xl border border-neutral-200 p-3 text-sm resize-none"/></label>
           <button onClick={submitRequest} disabled={submitting || (action === "reschedule" && !requestedDate)} className="mt-5 h-12 w-full rounded-xl text-white font-semibold disabled:opacity-40" style={{backgroundColor:data.business?.primaryColor || "#171717"}}>{submitting ? "Sending…" : "Send request"}</button>

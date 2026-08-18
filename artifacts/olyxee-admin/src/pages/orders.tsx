@@ -60,10 +60,14 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     search: debouncedSearch || undefined,
   });
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; label: string } | null>(null);
+  // Guided wizard: 1 = customer, 2 = shipment, 3 = billing. Keeps each screen
+  // small instead of one long form.
+  const [step, setStep] = useState(1);
   const invoiceTotal = (Number(form.invoiceSubtotal) || 0) + (Number(form.invoiceAdditionalCharges) || 0);
 
   React.useEffect(() => {
     if (open) {
+      setStep(1);
       setForm({
         customerId: "",
         jobNumber: "",
@@ -81,6 +85,11 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   }, [open]);
 
   const isPrepaid = form.billingType === "PREPAID";
+  // Per-step completeness so "Next" only enables once the step is valid.
+  const step1Ok = !!form.customerId;
+  const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && !!form.weight.trim();
+  const step3Ok = !!form.jobNumber.trim() && (!isPrepaid || !!form.invoiceSubtotal);
+  const STEP_LABELS = ["Customer", "Shipment", "Billing"];
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.jobNumber.trim()) {
@@ -140,11 +149,26 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-[760px]">
         <DialogHeader className="border-b border-border/60 px-6 pb-5 pt-6 text-left">
           <DialogTitle className="text-xl">Create a new Job</DialogTitle>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">Add the shipment details and choose how it's billed. Prepaid Jobs invoice the customer now; postpaid Jobs are invoiced after delivery.</p>
+          {/* Progress stepper */}
+          <div className="mt-3 flex items-center gap-2">
+            {STEP_LABELS.map((lbl, i) => {
+              const n = i + 1;
+              const done = n < step;
+              const active = n === step;
+              return (
+                <div key={lbl} className="flex flex-1 items-center gap-2">
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${active ? "bg-primary text-primary-foreground" : done ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{done ? "✓" : n}</span>
+                  <span className={`whitespace-nowrap text-xs font-medium ${active ? "text-foreground" : "text-muted-foreground"}`}>{lbl}</span>
+                  {n < 3 && <span className={`h-px flex-1 ${done ? "bg-primary/40" : "bg-border"}`} />}
+                </div>
+              );
+            })}
+          </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
+          {step === 1 && (
           <section className="space-y-4 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5 dark:border-blue-900/60 dark:bg-blue-950/20">
-            <div className="flex items-start gap-3"><span className="rounded-full bg-blue-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 1</span><div><h3 className="font-semibold text-blue-950 dark:text-blue-100">Customer</h3><p className="mt-1 text-xs text-blue-900/65 dark:text-blue-200/70">Choose who receives the invoice and shipment updates.</p></div></div>
+            <div><h3 className="font-semibold text-blue-950 dark:text-blue-100">Who is this Job for?</h3><p className="mt-1 text-xs text-blue-900/65 dark:text-blue-200/70">Choose the customer who receives the invoice and shipment updates.</p></div>
           <div className="space-y-2">
             <Label>Customer *</Label>
             <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
@@ -196,8 +220,10 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
               </PopoverContent>
             </Popover>
           </div></section>
+          )}
+          {step === 2 && (
           <section className="space-y-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-            <div className="flex items-start gap-3"><span className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 2</span><div><h3 className="font-semibold text-emerald-950 dark:text-emerald-100">Shipment and cargo</h3><p className="mt-1 text-xs text-emerald-900/65 dark:text-emerald-200/70">Add the route and details customers should see.</p></div></div>
+            <div><h3 className="font-semibold text-emerald-950 dark:text-emerald-100">Shipment and cargo</h3><p className="mt-1 text-xs text-emerald-900/65 dark:text-emerald-200/70">Add the route and details customers should see.</p></div>
           {(
             <div className="space-y-2">
               <Label>Transport mode *</Label>
@@ -215,8 +241,10 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
           <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Origin *</Label><Input value={form.origin} onChange={e=>setForm(f=>({...f,origin:e.target.value}))} placeholder="China" required/></div><div className="space-y-2"><Label>Destination *</Label><Input value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="South Africa" required/></div><div className="space-y-2"><Label>Cargo / invoice item *</Label><Input value={form.cargoType} onChange={e=>setForm(f=>({...f,cargoType:e.target.value}))} placeholder="e.g. Handbags" required /></div><div className="space-y-2"><Label>Service required *</Label><Input value={form.serviceRequired} onChange={e=>setForm(f=>({...f,serviceRequired:e.target.value}))} placeholder="e.g. Customs and tax" required /></div><div className="space-y-2"><Label>Weight *</Label><Input value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="e.g. 1.5 kg" required /></div><div className="space-y-2"><Label>Dimensions</Label><Input value={form.dimensions} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="e.g. 40 × 30 × 25 cm"/></div></div>
           <div className="space-y-2"><Label>Handling notes</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling, or other useful notes" /></div>
           </section>
+          )}
+          {step === 3 && (
           <section className="space-y-4 rounded-2xl border border-violet-200/80 bg-violet-50/60 p-5 dark:border-violet-900/60 dark:bg-violet-950/20">
-            <div className="flex items-start gap-3"><span className="rounded-full bg-violet-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 3</span><div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Job number and billing</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Give the Job your own reference and choose how it's billed.</p></div></div>
+            <div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Job number and billing</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Give the Job your own reference and choose how it's billed.</p></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Job Number *</Label>
@@ -270,9 +298,32 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             <div className="rounded-xl bg-blue-50 px-4 py-3 text-xs leading-relaxed text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">No invoice is created yet. The shipment can start immediately, and you'll invoice this Job after it's delivered.</div>
           )}
           </section>
-          <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px]" disabled={createMutation.isPending || !form.customerId || !form.jobNumber.trim() || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || (isPrepaid && !form.invoiceSubtotal)}>
-            {createMutation.isPending ? (isPrepaid ? "Creating and sending invoice..." : "Creating Job...") : (isPrepaid ? "Create Job & Send Invoice" : "Create Job")}
-          </Button>
+          )}
+          <div className="flex items-center gap-3 pt-1">
+            {step > 1 && (
+              <Button type="button" variant="outline" className="h-12 rounded-xl px-5" onClick={() => setStep(s => s - 1)}>Back</Button>
+            )}
+            {step < 3 ? (
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 flex-1 rounded-xl text-[15px]"
+                disabled={step === 1 ? !step1Ok : !step2Ok}
+                onClick={() => setStep(s => s + 1)}
+              >
+                Continue
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="lg"
+                className="h-12 flex-1 rounded-xl text-[15px]"
+                disabled={createMutation.isPending || !step1Ok || !step2Ok || !step3Ok}
+              >
+                {createMutation.isPending ? (isPrepaid ? "Creating and sending invoice..." : "Creating Job...") : (isPrepaid ? "Create Job & Send Invoice" : "Create Job")}
+              </Button>
+            )}
+          </div>
         </form>
       </DialogContent>
     </Dialog>
