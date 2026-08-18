@@ -47,7 +47,7 @@ export default function BusinessTypePage() {
           {/* Header */}
           <div className="mb-8">
             <p className="text-[11px] font-medium tracking-[0.2em] uppercase text-[hsl(220,9%,46%)]">
-              Step 1 of 2
+              Step 1 of 3
             </p>
             <h1 className="text-[26px] font-semibold text-[hsl(220,20%,10%)] tracking-tight mt-2">
               What kind of business are you?

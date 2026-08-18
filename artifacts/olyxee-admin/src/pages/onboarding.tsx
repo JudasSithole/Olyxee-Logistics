@@ -57,9 +57,10 @@ export default function OnboardingPage() {
   // separate setup trip to Settings. Entirely optional: blank fields save as
   // null and can be completed later in Settings → Invoice details.
   const [invoice, setInvoice] = useState<InvoiceProfile>(EMPTY_INVOICE_PROFILE);
-  // Collapsed by default so the setup screen stays short; the (already
-  // prefilled) invoice profile still saves whether or not it's expanded.
-  const [showInvoice, setShowInvoice] = useState(false);
+  // Onboarding is a 2-screen wizard: 1 = business details, 2 = invoice details.
+  // Splitting it keeps each screen short while making the invoice step a clear,
+  // unmissable stop before finishing.
+  const [step, setStep] = useState<1 | 2>(1);
   const updateInvoice = (key: keyof InvoiceProfile, value: string) =>
     setInvoice((p) => ({ ...p, [key]: value }));
   const pickInvoiceLogo = async (file: File) => {
@@ -163,17 +164,17 @@ export default function OnboardingPage() {
         <div className="w-full rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl ring-1 ring-black/5 px-8 py-10">
           <div className="mb-8">
             <p className="text-[11px] font-medium tracking-[0.2em] uppercase text-[hsl(220,9%,46%)]">
-              Step 2 of 2
+              {step === 1 ? "Step 2 of 3" : "Step 3 of 3"}
             </p>
             <h1 className="text-[26px] font-semibold text-[hsl(220,20%,10%)] tracking-tight mt-2">
-              Let's set up your workspace
+              {step === 1 ? "Let's set up your workspace" : "Invoice details"}
             </h1>
             <p className="text-[15px] text-[hsl(220,9%,46%)] mt-1.5">
-              Add your business name and logo so your dashboard, emails, and
-              tracking pages feel like yours from day one. You can change
-              anything later in Settings.
+              {step === 1
+                ? "Add your logo and business details so your dashboard, emails, and tracking pages feel like yours from day one. You can change anything later in Settings."
+                : "Add your billing and bank details so invoices are ready to send. This is optional — you can skip it and finish later in Settings."}
             </p>
-            {form.industry && (
+            {step === 1 && form.industry && (
               <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[hsl(220,9%,94%)] px-3 py-1 text-[13px]">
                 <span className="text-[hsl(220,9%,40%)]">
                   Business type:{" "}
@@ -194,6 +195,8 @@ export default function OnboardingPage() {
             <PageLoader />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-7" data-testid="form-onboarding">
+              {step === 1 && (
+              <>
               {/* ─── Branding block - leads the form because it's what the user
                   will see first when they enter the app. */}
               <section className="space-y-4">
@@ -345,51 +348,56 @@ export default function OnboardingPage() {
                 </div>
               </section>
 
-              {/* ─── Invoice details (optional, collapsed) ──────────────────
-                  Kept collapsed so the setup screen stays short. The profile is
-                  already prefilled from the account and saves on finish whether
-                  or not it's expanded; it's fully editable later in Settings. */}
-              <section className="space-y-4 pt-2 border-t border-[hsl(220,9%,90%)]">
-                <button
-                  type="button"
-                  onClick={() => setShowInvoice((s) => !s)}
-                  className="flex w-full items-center justify-between gap-4 pt-4 text-left"
-                  aria-expanded={showInvoice}
-                  data-testid="toggle-invoice-details"
-                >
-                  <span>
-                    <span className="block text-[13px] font-semibold uppercase tracking-wider text-[hsl(220,9%,30%)]">
-                      Invoice details
-                    </span>
-                    <span className="mt-1 block text-[13px] text-[hsl(220,9%,46%)]">
-                      Optional — add billing &amp; bank details now so invoices
-                      are ready, or set it up later in Settings.
-                    </span>
-                  </span>
-                  <span className="shrink-0 rounded-lg border border-[hsl(220,9%,85%)] px-3 py-1.5 text-[13px] font-medium text-[hsl(220,20%,10%)]">
-                    {showInvoice ? "Hide" : "Add details"}
-                  </span>
-                </button>
-                {showInvoice ? (
-                  <div className="rounded-xl border border-border">
-                    <InvoiceProfileFields
-                      profile={invoice}
-                      update={updateInvoice}
-                      pickLogo={pickInvoiceLogo}
-                      required={false}
-                    />
-                  </div>
-                ) : null}
+              {/* Step 1 primary action - advances to the invoice step. Must be
+                  type="button" so it never submits the form early. */}
+              <Button
+                type="button"
+                onClick={() => setStep(2)}
+                className="w-full h-11 bg-[hsl(220,20%,10%)] hover:bg-[hsl(220,20%,20%)] text-white font-medium text-[15px] mt-2"
+                data-testid="button-continue"
+              >
+                Continue
+              </Button>
+              </>
+              )}
+
+              {step === 2 && (
+              <>
+              {/* ─── Invoice details (its own step) ─────────────────────────
+                  Prefilled from the account; optional, so the user can finish
+                  with it blank and complete it later in Settings. */}
+              <section className="space-y-4">
+                <div className="rounded-xl border border-border">
+                  <InvoiceProfileFields
+                    profile={invoice}
+                    update={updateInvoice}
+                    pickLogo={pickInvoiceLogo}
+                    required={false}
+                  />
+                </div>
               </section>
 
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending}
-                className="w-full h-11 bg-[hsl(220,20%,10%)] hover:bg-[hsl(220,20%,20%)] text-white font-medium text-[15px] mt-2"
-                data-testid="button-finish"
-              >
-                {updateMutation.isPending ? "Saving…" : "Finish setup"}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="h-11 px-5 font-medium text-[15px]"
+                  data-testid="button-back"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="flex-1 h-11 bg-[hsl(220,20%,10%)] hover:bg-[hsl(220,20%,20%)] text-white font-medium text-[15px]"
+                  data-testid="button-finish"
+                >
+                  {updateMutation.isPending ? "Saving…" : "Finish setup"}
+                </Button>
+              </div>
+              </>
+              )}
             </form>
           )}
         </div>
