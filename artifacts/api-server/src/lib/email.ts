@@ -430,7 +430,7 @@ export interface SendInvoiceEmailParams {
   companyRegistration?: string; businessPhone?: string | null; businessAddress?: string | null;
   taxNumber?: string | null; logoUrl?: string | null; paymentDetails?: string | null;
   paymentTerms?: string | null; footerNote?: string | null; primaryColor?: string | null;
-  orderReference?: string | null; trackingId?: string | null; externalTrackingNumber?: string | null;
+  orderReference?: string | null; jobNumber?: string | null; trackingId?: string | null; externalTrackingNumber?: string | null;
   origin?: string | null; destination?: string | null; transportMode?: string | null; weight?: string | null;
 }
 

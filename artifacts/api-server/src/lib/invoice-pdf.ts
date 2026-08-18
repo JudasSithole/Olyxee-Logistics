@@ -56,9 +56,10 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.fillColor(ink).font("Helvetica").fontSize(10).text(date(p.createdAt), 360, 249).text(date(p.dueDate), 465, 249);
 
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(8).text("SHIPMENT SUMMARY", 48, 338, { characterSpacing: 1 });
+  const transportLabel = p.transportMode ? `${p.transportMode.charAt(0)}${p.transportMode.slice(1).toLowerCase()} Freight` : "Not provided";
   const shipment = [
     ["Cargo", p.description], ["Route", [p.origin,p.destination].filter(Boolean).join(" -> ") || "Not provided"],
-    ["Transport", p.transportMode ? `${p.transportMode} Freight` : "Not provided"], ["Order Reference", p.orderReference || "Not provided"],
+    ["Transport", transportLabel], ["Job Number", p.jobNumber || p.orderReference || "Not provided"],
   ];
   doc.roundedRect(48,350,499,50,4).fill(pale);
   shipment.forEach(([label, value], index) => { const x=60+index*122; doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x, 362, {width:112}); doc.fillColor(ink).font("Helvetica-Bold").fontSize(8.5).text(value, x, 377, {width:112,height:12,ellipsis:true}); });
@@ -67,7 +68,7 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.roundedRect(48, top, 499, 34, 3).fill(navy);
   doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8)
     .text("DESCRIPTION", 60, top + 13, { characterSpacing: 0.7 }).text("AMOUNT", 450, top + 13, { width: 85, align: "right" });
-  const chargeDescription=[p.transportMode?`${p.transportMode} Freight`:"Logistics service",p.description,p.weight].filter(Boolean).join(" - ");
+  const chargeDescription=[p.transportMode?transportLabel:"Logistics service",p.description,p.weight].filter(Boolean).join(" - ");
   doc.fillColor(ink).font("Helvetica-Bold").fontSize(10.5).text(chargeDescription, 60, top + 51, { width: 340 });
   doc.fillColor(ink).font("Helvetica-Bold").fontSize(10).text(money(p.subtotal), 450, top + 53, { width: 85, align: "right" });
   doc.moveTo(48, top + 91).lineTo(547, top + 91).strokeColor(line).stroke();
@@ -87,7 +88,6 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
   doc.moveTo(360,payY+18).lineTo(360,payY+94).lineWidth(1).strokeColor(line).stroke();
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text("PAYMENT REFERENCE", 382, payY + 20).fillColor(ink).fontSize(9).text(p.invoiceNumber,382,payY+34,{width:145});
   doc.fillColor(muted).font("Helvetica-Bold").fontSize(7).text("TERMS", 382, payY + 57).fillColor(ink).font("Helvetica").fontSize(8).text(p.paymentTerms || "Payment due on receipt.",382,payY+70,{width:145});
-  doc.fillColor(muted).font("Helvetica").fontSize(8).text("Shipment updates begin after payment is confirmed.",48,payY+126,{width:499,align:"center"});
 
   if (p.footerNote) doc.fillColor(muted).font("Helvetica").fontSize(8).text(p.footerNote, 48, 762, { width: 499, align: "center", height: 12, ellipsis: true });
   doc.moveTo(48, 778).lineTo(547, 778).strokeColor(line).stroke();
