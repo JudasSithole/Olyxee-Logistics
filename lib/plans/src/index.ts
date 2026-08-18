@@ -85,7 +85,11 @@ export const plans: Record<PlanId, PlanConfig> = {
 
   business: {
     name: "Scale",
-    price: 1499,
+    // R89/month. Free for everyone during beta; this price only starts being
+    // charged on SCALE_BILLING_START (30 September 2026). `price` is the single
+    // source of truth for both the pricing UI and the Paystack charge amount
+    // (planAmountMinor = price * 100).
+    price: 89,
     orderLimit: null,
     emailLimit: null,
     smsLimit: 0,
