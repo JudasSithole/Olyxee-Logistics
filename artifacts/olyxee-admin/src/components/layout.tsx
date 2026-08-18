@@ -70,7 +70,7 @@ function UserRow() {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
-  { href: "/orders", label: "Orders", icon: Package },
+  { href: "/orders", label: "Jobs", icon: Package },
   { href: "/invoices", label: "Invoices", icon: FileText },
 ];
 
