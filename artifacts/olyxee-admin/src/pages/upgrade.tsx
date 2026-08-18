@@ -221,9 +221,9 @@ export default function UpgradePage() {
       <header className="border-b border-border pb-7 pt-2">
         <div className="max-w-3xl">
           <p className="text-sm font-medium text-muted-foreground">Pricing</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Two plans. Start free.</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Two plans. Free during beta.</h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">
-            Free covers your day-to-day freight work. Scale adds Orgni automation as it's released.
+            {plans.free.name} covers your day-to-day freight work. {plans.business.name} adds Orgni automation as it's released.
           </p>
         </div>
       </header>
@@ -231,7 +231,7 @@ export default function UpgradePage() {
       <Card className="rounded-2xl border-primary/25 bg-primary/[0.04] p-4 shadow-none">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{plans.business.name} billing starts {SCALE_BILLING_START_LABEL}.</span>{" "}
-          Join today, pay nothing until then. Existing businesses stay on {plans.free.name} at no cost.
+          Join today, pay nothing until then. Every plan is free for the duration of the beta.
         </p>
       </Card>
 

@@ -218,7 +218,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           aria-pressed={isDark}
           title={isDark ? "Light mode" : "Dark mode"}
         >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
         </button>
       </div>
 
@@ -238,10 +238,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             aria-pressed={isDark}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Sun className="absolute left-2 h-3.5 w-3.5 text-muted-foreground" />
-            <Moon className="absolute right-2 h-3.5 w-3.5 text-muted-foreground" />
-            <span className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow-sm transition-transform duration-200 ${isDark ? "translate-x-7" : "translate-x-0"}`}>
-              {isDark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+            <Sun className="absolute left-2 h-3.5 w-3.5 text-amber-400" />
+            <Moon className="absolute right-2 h-3.5 w-3.5 text-indigo-400" />
+            <span className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ${isDark ? "translate-x-7" : "translate-x-0"}`}>
+              {isDark ? <Moon className="h-3.5 w-3.5 text-indigo-400" /> : <Sun className="h-3.5 w-3.5 text-amber-500" />}
             </span>
           </button>
         </div>

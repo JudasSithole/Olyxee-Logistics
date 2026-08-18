@@ -231,8 +231,14 @@ export default function OrderDetailPage() {
   const openOrderEdit=()=>{if(!order)return;setEditForm({orderReference:order.order_reference??"",description:order.description??"",cargoType:order.cargo_type??"",serviceRequired:order.service_required??"",origin:order.origin??"",destination:order.destination??"",weight:order.weight??"",dimensions:order.dimensions??"",estimatedDeliveryDate:order.estimated_delivery_date??""});setEditOpen(true);};
   const deleteOrder = useMutation({ mutationFn: () => apiFetch(`/api/orders/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["orders"] }); toast.success("Order and its linked invoice deleted"); navigate("/orders"); }, onError: (error: Error) => toast.error(error.message) });
   const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
-  const paymentConfirmed = !order?.invoice_id || invoiceStatus === "paid";
-  const shipmentUpdatesUnlocked = paymentConfirmed && (!order?.transport_mode || !!order?.supplier_tracking_number);
+  const isPostpaid = order?.billing_type === "POSTPAID";
+  const companyName = business?.name ?? "Company";
+  const isDelivered = order?.current_status === "DELIVERED";
+  // POSTPAID Jobs are never gated on payment - they're invoiced after delivery.
+  // PREPAID Jobs need a paid (or absent, for legacy) invoice.
+  const paymentConfirmed = isPostpaid || !order?.invoice_id || invoiceStatus === "paid";
+  // Supplier tracking is optional and never blocks shipment progression.
+  const shipmentUpdatesUnlocked = paymentConfirmed;
   const saveSupplierTracking = async () => {
     if (!id || !supplierTracking.trim()) return;
     setSavingSupplierTracking(true);
@@ -369,17 +375,17 @@ export default function OrderDetailPage() {
         <div className="bg-gradient-to-br from-primary/[0.09] via-background to-background p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Order overview</p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{order.order_reference ?? order.tracking_id}</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Job overview</p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{order.job_number ?? order.order_reference ?? order.tracking_id}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-mono">{order.tracking_id}</span><span>•</span><span>Created {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}</span>
+                <span className="font-mono">{companyName} Tracking ID: {order.tracking_id}</span><span>•</span><span>Created {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}</span>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2"><StatusBadge status={order.current_status} />{order.transport_mode && <span className="rounded-lg border bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}</span>}</div>
           </div>
         </div>
         <div className="grid border-t border-border/60 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Payment</div><p className={`mt-2 text-sm font-semibold ${paymentConfirmed ? "text-emerald-700" : "text-amber-700"}`}>{paymentConfirmed ? "Payment confirmed" : "Awaiting payment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
+          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing · {isPostpaid ? "After delivery" : "Before delivery"}</div><p className={`mt-2 text-sm font-semibold ${isPostpaid ? (invoiceStatus === "paid" ? "text-emerald-700" : "text-muted-foreground") : (paymentConfirmed ? "text-emerald-700" : "text-amber-700")}`}>{isPostpaid ? (!order.invoice_id ? "Invoice after delivery" : invoiceStatus === "paid" ? "Paid" : "Awaiting payment") : (paymentConfirmed ? "Payment confirmed" : "Awaiting payment")}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
           <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}</p>}</div>
           <div className="p-4 sm:p-5"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
@@ -685,29 +691,42 @@ export default function OrderDetailPage() {
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Last Updated</p>
                 <p className="text-sm">{format(new Date(order.updated_at), "MMM d, yyyy · HH:mm")}</p>
               </div>
-              {order.order_reference && (
-                <div>
-                  <p className="text-muted-foreground uppercase font-medium mb-0.5">Reference</p>
-                  <p className="text-sm font-mono">{order.order_reference}</p>
-                </div>
-              )}
               <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Public tracking ID</p>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Job Number</p>
+                <p className="text-sm font-mono">{order.job_number ?? order.order_reference ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Billing Type</p>
+                <p className="text-sm">{isPostpaid ? "Invoice After Delivery" : "Invoice Before Delivery"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">{companyName} Tracking ID</p>
                 <p className="text-sm font-mono">{order.tracking_id}</p>
               </div>
               <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Internal handling</p>
+                <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier Tracking Number</p>
                 {order.supplier_tracking_number ? (
-                  <div className="rounded-xl bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">Supplier tracking number · staff only</p><p className="mt-1 text-sm font-mono font-semibold">{order.supplier_tracking_number}</p></div>
+                  <div className="rounded-xl bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">From the supplier / warehouse / courier · staff only</p><p className="mt-1 text-sm font-mono font-semibold">{order.supplier_tracking_number}</p></div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-amber-700">{order.current_status === "PENDING_TRACKING_NUMBER" ? "Payment confirmed - waiting for the China warehouse to receive the cargo" : "Tracking number entry unlocks after payment confirmation"}</p>
-                    {order.transport_mode && order.current_status === "PENDING_TRACKING_NUMBER" ? <div className="space-y-2 rounded-xl border bg-muted/20 p-3"><Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Enter supplier tracking number"/><Button className="w-full rounded-xl" size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>Confirm cargo received</Button><p className="text-[11px] leading-4 text-muted-foreground">This number is internal and is never shown to the customer.</p></div> : null}
+                    <p className="text-sm text-muted-foreground">Optional. Add it whenever the supplier, warehouse, or courier provides one — it never blocks the shipment.</p>
+                    {/* Supplier tracking is optional and can be added at any pre-delivery
+                        stage. For PREPAID it still requires payment first (the API
+                        enforces that); POSTPAID can add it any time. */}
+                    {order.transport_mode && !isDelivered && (isPostpaid || paymentConfirmed) ? (
+                      <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+                        <Input value={supplierTracking} onChange={e => setSupplierTracking(e.target.value)} placeholder="Enter supplier tracking number"/>
+                        <Button className="w-full rounded-xl" size="sm" disabled={savingSupplierTracking || !supplierTracking.trim()} onClick={saveSupplierTracking}>{order.current_status === "PENDING_TRACKING_NUMBER" ? "Save & mark received from supplier" : "Save supplier tracking number"}</Button>
+                        <p className="text-[11px] leading-4 text-muted-foreground">This number is internal and is never shown to the customer.</p>
+                      </div>
+                    ) : !paymentConfirmed && !isPostpaid ? (
+                      <p className="text-[11px] text-amber-700">Confirm payment first to record a supplier tracking number.</p>
+                    ) : null}
                   </div>
                 )}
               </div>
               {order.invoice_id && <div className="space-y-2 rounded-xl border p-3"><p className="text-muted-foreground uppercase font-medium">Invoice</p><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid · manually confirmed" : "Pending payment · confirmation required"}</p><Link className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline" href={`/invoices/${order.invoice_id}`}>Open invoice <ExternalLink className="h-3 w-3" /></Link></div>}
-              {!order.invoice_id && <div className="space-y-2 border-t pt-3"><p className="text-muted-foreground uppercase font-medium">Generate invoice</p><Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>Generate draft invoice</Button></div>}
+              {!order.invoice_id && <div className={`space-y-2 rounded-xl border p-3 ${isPostpaid && isDelivered ? "border-primary/40 bg-primary/[0.04]" : "border-t"}`}><p className="text-muted-foreground uppercase font-medium">{isPostpaid && isDelivered ? "Invoice this delivery" : "Generate invoice"}</p>{isPostpaid && isDelivered && <p className="text-xs text-muted-foreground">Delivered — enter the final amount to invoice the customer.</p>}<Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>{isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button></div>}
               {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>
           </Card>

@@ -168,6 +168,8 @@ export interface Database {
           workflow_template_id: string | null;
           tracking_id: string;
           order_reference: string | null;
+          job_number: string | null;
+          billing_type: string;
           current_status: string;
           transport_mode: string | null;
           invoice_id: string | null;
@@ -196,6 +198,8 @@ export interface Database {
           workflow_template_id?: string | null;
           tracking_id?: string;
           order_reference?: string | null;
+          job_number?: string | null;
+          billing_type?: string;
           current_status?: string;
           transport_mode?: string | null;
           invoice_id?: string | null;

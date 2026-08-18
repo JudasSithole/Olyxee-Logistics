@@ -49,7 +49,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
 
 // Customer-facing labels for every logistics status code.
 export const LOGISTICS_STATUS_LABELS: Record<string, string> = {
-  ORDER_CONFIRMED: "Order Confirmed",
+  ORDER_CONFIRMED: "Job Confirmed",
   PENDING_TRACKING_NUMBER: "Pending Tracking Number",
   RECEIVED_FROM_SUPPLIER: "Received from Supplier",
   EXPORT_CUSTOMS_CLEARED: "Export Customs Cleared",

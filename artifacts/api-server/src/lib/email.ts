@@ -22,6 +22,13 @@ export interface SendStatusEmailParams {
   trackingLink: string;
   businessName: string;
   supportEmail: string;
+  // Company-defined Job Number (e.g. CFS-0024), shown to the customer alongside
+  // the tracking ID. Optional so older callers/tests still compile.
+  jobNumber?: string | null;
+  // Customer-facing shipment progress, oldest-first. Built from the Job's
+  // tracking events (customer-visible statuses only — never internal notes).
+  // Each label is a friendly status; `done` marks reached stages.
+  timeline?: { label: string; done: boolean }[];
   // Admin-customizable copy (from Settings). All optional; sensible defaults
   // are applied below so an empty value never produces an empty email.
   //   emailGreeting    - opening line, `{name}` is replaced with customer name.
@@ -92,15 +99,26 @@ function buildText(p: SendStatusEmailParams): string {
     c.headline + ".",
     c.intro,
     "",
-    `Tracking ID: ${p.trackingId}`,
-    `Status: ${p.status}`,
   ];
+  if (p.jobNumber && p.jobNumber.trim()) {
+    lines.push(`Job Number: ${p.jobNumber.trim()}`);
+  }
+  lines.push(
+    `${p.businessName} Tracking ID: ${p.trackingId}`,
+    `Status: ${p.status}`,
+  );
+  if (p.timeline && p.timeline.length) {
+    lines.push("", "Tracking progress:");
+    for (const t of p.timeline) {
+      lines.push(`${t.done ? "[x]" : "[ ]"} ${t.label}`);
+    }
+  }
   if (p.statusMessage && p.statusMessage.trim()) {
     lines.push("", "Note from our team:", p.statusMessage.trim());
   }
   const safeLink = safeTrackingLink(p.trackingLink);
   if (safeLink) {
-    lines.push("", "Track your order:", safeLink);
+    lines.push("", "View full tracking:", safeLink);
   }
   if (footerNote) {
     lines.push("", footerNote);
@@ -132,6 +150,22 @@ function buildHtml(p: SendStatusEmailParams): string {
     .replace(/\n/g, "<br />");
   const safeFooterNote = renderFooterNote(p.emailFooterNote)
     ? escapeHtml(renderFooterNote(p.emailFooterNote)).replace(/\n/g, "<br />")
+    : "";
+  const safeJobNumber = p.jobNumber?.trim() ? escapeHtml(p.jobNumber.trim()) : "";
+  // Customer-facing progress list. Reached stages show a green check; any
+  // not-yet-reached stages (if a caller passes them) show a muted circle.
+  const timeline = p.timeline ?? [];
+  const timelineHtml = timeline.length
+    ? `
+              <p style="margin:20px 0 8px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">Tracking progress</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 4px;">
+                ${timeline
+                  .map(
+                    (t) =>
+                      `<tr><td style="padding:3px 0;font-size:14px;color:${t.done ? "#16a34a" : "#a1a1aa"};white-space:nowrap;">${t.done ? "&#10003;" : "&#9675;"}&nbsp;&nbsp;<span style="color:${t.done ? "#27272a" : "#a1a1aa"};">${escapeHtml(t.label)}</span></td></tr>`,
+                  )
+                  .join("")}
+              </table>`
     : "";
 
   return `<!doctype html>
@@ -189,16 +223,22 @@ function buildHtml(p: SendStatusEmailParams): string {
             </td>
           </tr>` : ""}
 
-          <!-- Tracking ID + CTA -->
+          <!-- Identifiers + progress + CTA -->
           <tr>
             <td style="padding:24px 32px;">
-              <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">Tracking ID</p>
-              <p style="margin:0 0 20px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:16px;font-weight:600;color:#18181b;">
+              ${safeJobNumber ? `
+              <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">Job Number</p>
+              <p style="margin:0 0 16px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:16px;font-weight:600;color:#18181b;">
+                ${safeJobNumber}
+              </p>` : ""}
+              <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">${safeBusiness} Tracking ID</p>
+              <p style="margin:0 0 4px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:16px;font-weight:600;color:#18181b;">
                 ${safeTracking}
               </p>
+              ${timelineHtml}
               ${safeLink ? `
-              <a href="${safeLink}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">
-                Track your order &rarr;
+              <a href="${safeLink}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">
+                View full tracking &rarr;
               </a>
               <p style="margin:12px 0 0;font-size:12px;color:#a1a1aa;word-break:break-all;">
                 Or open: <a href="${safeLink}" style="color:#52525b;text-decoration:underline;">${safeLink}</a>
@@ -223,7 +263,7 @@ function buildHtml(p: SendStatusEmailParams): string {
                 ${safeFooterNote}
               </p>` : ""}
               <p style="margin:0 0 4px;font-size:13px;color:#52525b;">
-                Questions about your order?
+                Questions about your shipment?
               </p>
               <p style="margin:0;font-size:13px;color:#71717a;">
                 ${safeSupport

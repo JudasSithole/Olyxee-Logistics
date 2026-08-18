@@ -37,7 +37,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
-    orderReference: generateOrderReference(),
+    jobNumber: "",
+    billingType: "PREPAID" as "PREPAID" | "POSTPAID",
     description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
@@ -78,25 +79,54 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     }
   }, [open]);
 
+  const isPrepaid = form.billingType === "PREPAID";
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.jobNumber.trim()) {
+      toast.error("Please enter a Job Number");
+      return;
+    }
     if (!form.transportMode) {
       toast.error("Please select a transport mode");
       return;
     }
+    if (isPrepaid && !form.invoiceSubtotal) {
+      toast.error("Enter the invoice subtotal for a prepaid Job");
+      return;
+    }
     createMutation.mutate(
-      { business_id: businessId, customer_id: form.customerId, order_reference: form.orderReference || undefined, description: form.description || undefined, estimated_completion: form.estimatedDeliveryDate || undefined, cargo_type: form.cargoType || undefined, service_required: form.serviceRequired || undefined, origin: form.origin || undefined, destination: form.destination || undefined, weight: form.weight || undefined, dimensions: form.dimensions || undefined, transport_mode: form.transportMode, invoice_subtotal: form.invoiceSubtotal, invoice_additional_charges: form.invoiceAdditionalCharges },
+      {
+        business_id: businessId,
+        customer_id: form.customerId,
+        job_number: form.jobNumber.trim(),
+        billing_type: form.billingType,
+        description: form.description || undefined,
+        estimated_completion: form.estimatedDeliveryDate || undefined,
+        cargo_type: form.cargoType || undefined,
+        service_required: form.serviceRequired || undefined,
+        origin: form.origin || undefined,
+        destination: form.destination || undefined,
+        weight: form.weight || undefined,
+        dimensions: form.dimensions || undefined,
+        transport_mode: form.transportMode,
+        // PREPAID invoices at creation; POSTPAID is invoiced after delivery.
+        invoice_subtotal: isPrepaid ? form.invoiceSubtotal : undefined,
+        invoice_additional_charges: isPrepaid ? form.invoiceAdditionalCharges : undefined,
+      },
       {
         onSuccess: (created) => {
-          if ((created as typeof created & { invoice_email_status?: string }).invoice_email_status === "sent") {
-            toast.success("Order and pending invoice created - invoice emailed to customer");
+          const emailStatus = (created as typeof created & { invoice_email_status?: string }).invoice_email_status;
+          if (!isPrepaid) {
+            toast.success("Job created. Invoice it after delivery.");
+          } else if (emailStatus === "sent") {
+            toast.success("Job and pending invoice created - invoice emailed to customer");
           } else {
-            toast.warning("Order and invoice created, but email delivery failed. Open the invoice to resend it.");
+            toast.warning("Job and invoice created, but email delivery failed. Open the invoice to resend it.");
           }
           setOpen(false);
           onSuccess();
         },
-        onError: () => toast.error("Failed to create order"),
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to create Job"),
       }
     );
   };
@@ -104,12 +134,12 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" /> New Order</Button>
+        <Button className="gap-2"><Plus className="h-4 w-4" /> New Job</Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-[760px]">
         <DialogHeader className="border-b border-border/60 px-6 pb-5 pt-6 text-left">
-          <DialogTitle className="text-xl">Create a new order</DialogTitle>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">Add the accepted shipment details and invoice amount. The customer receives the pending invoice automatically.</p>
+          <DialogTitle className="text-xl">Create a new Job</DialogTitle>
+          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">Add the shipment details and choose how it's billed. Prepaid Jobs invoice the customer now; postpaid Jobs are invoiced after delivery.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
           <section className="space-y-4 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5 dark:border-blue-900/60 dark:bg-blue-950/20">
@@ -185,44 +215,62 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
           <div className="space-y-2"><Label>Handling notes</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling, or other useful notes" /></div>
           </section>
           <section className="space-y-4 rounded-2xl border border-violet-200/80 bg-violet-50/60 p-5 dark:border-violet-900/60 dark:bg-violet-950/20">
-            <div className="flex items-start gap-3"><span className="rounded-full bg-violet-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 3</span><div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Reference and invoice</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Confirm the accepted amount before creating the order.</p></div></div>
+            <div className="flex items-start gap-3"><span className="rounded-full bg-violet-600 px-3 py-1 text-[11px] font-bold uppercase tracking-[.08em] text-white">Step 3</span><div><h3 className="font-semibold text-violet-950 dark:text-violet-100">Job number and billing</h3><p className="mt-1 text-xs text-violet-900/65 dark:text-violet-200/70">Give the Job your own reference and choose how it's billed.</p></div></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Order Reference</Label>
-                <button
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, orderReference: generateOrderReference() }))}
-                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  title="Generate a new reference"
-                >
-                  Regenerate
-                </button>
-              </div>
+              <Label>Job Number *</Label>
               <Input
-                value={form.orderReference}
-                onChange={e => setForm(f => ({ ...f, orderReference: e.target.value }))}
-                placeholder="REF-250517-AB12"
+                value={form.jobNumber}
+                onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))}
+                placeholder="e.g. CFS-0024"
                 className="font-mono text-sm"
+                required
               />
+              <p className="text-[11px] text-muted-foreground">Your internal reference. Must be unique in your business.</p>
             </div>
             <div className="space-y-2">
               <Label>Est. Delivery Date</Label>
               <Input type="date" value={form.estimatedDeliveryDate} onChange={e => setForm(f => ({ ...f, estimatedDeliveryDate: e.target.value }))} />
             </div>
           </div>
-          <div className="rounded-xl border border-border bg-background p-4 space-y-4">
-            <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="mt-1 text-xs text-muted-foreground">Enter the quote already accepted by the customer. No online payment is taken.</p></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Service subtotal *</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
-              <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} placeholder="0.00" /></div>
+          <div className="space-y-2">
+            <Label>Billing Type *</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {([
+                ["PREPAID", "Invoice Before Delivery", "Invoice and payment are handled before shipment processing."],
+                ["POSTPAID", "Invoice After Delivery", "The shipment is completed first and invoiced after delivery."],
+              ] as const).map(([value, title, desc]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, billingType: value }))}
+                  className={`rounded-xl border p-4 text-left transition-colors ${form.billingType === value ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-border hover:border-violet-300"}`}
+                  data-testid={`billing-${value.toLowerCase()}`}
+                >
+                  <div className="text-sm font-semibold">{title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{desc}</div>
+                </button>
+              ))}
             </div>
-            <div className="flex items-center justify-between border-t border-border pt-3"><span className="text-sm text-muted-foreground">Invoice total</span><span className="text-xl font-bold">ZAR {invoiceTotal.toFixed(2)}</span></div>
           </div>
-          <div className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">The invoice starts as <strong>Pending Payment</strong>. Tracking updates stay locked until an admin confirms payment manually.</div>
+          {isPrepaid ? (
+            <>
+              <div className="rounded-xl border border-border bg-background p-4 space-y-4">
+                <div><Label className="font-semibold">Invoice amount (ZAR) *</Label><p className="mt-1 text-xs text-muted-foreground">Enter the quote already accepted by the customer. No online payment is taken.</p></div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2"><Label>Service subtotal *</Label><Input type="number" min="0" step="0.01" value={form.invoiceSubtotal} onChange={e=>setForm(f=>({...f,invoiceSubtotal:e.target.value}))} placeholder="600.00" required /></div>
+                  <div className="space-y-2"><Label>Additional charges</Label><Input type="number" min="0" step="0.01" value={form.invoiceAdditionalCharges} onChange={e=>setForm(f=>({...f,invoiceAdditionalCharges:e.target.value}))} placeholder="0.00" /></div>
+                </div>
+                <div className="flex items-center justify-between border-t border-border pt-3"><span className="text-sm text-muted-foreground">Invoice total</span><span className="text-xl font-bold">ZAR {invoiceTotal.toFixed(2)}</span></div>
+              </div>
+              <div className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">The invoice starts as <strong>Pending Payment</strong>. Shipment tracking stays locked until an admin confirms payment manually.</div>
+            </>
+          ) : (
+            <div className="rounded-xl bg-blue-50 px-4 py-3 text-xs leading-relaxed text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">No invoice is created yet. The shipment can start immediately, and you'll invoice this Job after it's delivered.</div>
+          )}
           </section>
-          <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px]" disabled={createMutation.isPending || !form.customerId || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || !form.invoiceSubtotal}>
-            {createMutation.isPending ? "Creating and sending invoice..." : "Create Order & Send Invoice"}
+          <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px]" disabled={createMutation.isPending || !form.customerId || !form.jobNumber.trim() || !form.transportMode || !form.cargoType.trim() || !form.serviceRequired.trim() || !form.weight.trim() || (isPrepaid && !form.invoiceSubtotal)}>
+            {createMutation.isPending ? (isPrepaid ? "Creating and sending invoice..." : "Creating Job...") : (isPrepaid ? "Create Job & Send Invoice" : "Create Job")}
           </Button>
         </form>
       </DialogContent>
@@ -288,16 +336,16 @@ export default function OrdersPage() {
         <div className="grid gap-5 lg:grid-cols-[minmax(240px,0.7fr)_minmax(420px,1.3fr)] lg:items-center">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              <ClipboardCheck className="h-4 w-4 text-primary" /> Orders
+              <ClipboardCheck className="h-4 w-4 text-primary" /> Jobs
             </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight">Manage orders</h1>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight">Manage jobs</h1>
             <p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">Create, find and update customer shipments.</p>
             <div className="mt-4"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
           </div>
 
           <div className="border-t border-border/60 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
             <div className="flex items-center justify-between gap-3">
-              <div><h2 className="text-sm font-semibold">Orders by status</h2><p className="text-xs text-muted-foreground">A quick workload snapshot</p></div>
+              <div><h2 className="text-sm font-semibold">Jobs by status</h2><p className="text-xs text-muted-foreground">A quick workload snapshot</p></div>
               {orderStats && <p className="whitespace-nowrap text-xs text-muted-foreground"><span className="font-semibold text-foreground">{orderStats.totalOrders}</span> total</p>}
             </div>
             <div className="mt-2">
@@ -310,14 +358,14 @@ export default function OrdersPage() {
       <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
         <CardHeader className="space-y-4 border-b border-border/60 bg-muted/20 p-4 sm:p-5">
           <div className="flex items-end justify-between gap-3">
-            <div><h2 className="text-lg font-semibold">All orders</h2><p className="mt-0.5 text-sm text-muted-foreground">{data?.total ?? 0} {data?.total === 1 ? "order" : "orders"}{hasActiveFilters ? " found" : " in your workspace"}</p></div>
+            <div><h2 className="text-lg font-semibold">All jobs</h2><p className="mt-0.5 text-sm text-muted-foreground">{data?.total ?? 0} {data?.total === 1 ? "job" : "jobs"}{hasActiveFilters ? " found" : " in your workspace"}</p></div>
             {hasActiveFilters && <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={clearFilters}><RotateCcw className="h-3.5 w-3.5" /> Clear</Button>}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <form onSubmit={handleSearch} className="flex flex-1 gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input className="h-11 rounded-xl border-border/80 bg-background pl-9" placeholder="Search ID, reference or customer" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input className="h-11 rounded-xl border-border/80 bg-background pl-9" placeholder="Search Job number, tracking ID, supplier, or customer" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <Button type="submit" variant="secondary" className="h-11 rounded-xl px-4">Search</Button>
             </form>
@@ -337,8 +385,8 @@ export default function OrdersPage() {
           ) : !data?.orders.length ? (
             <div className="px-5 py-14 text-center sm:py-20">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Package className="h-8 w-8" /></div>
-              <h3 className="mt-5 text-lg font-semibold">{hasActiveFilters ? "No matching orders" : "Your orders will appear here"}</h3>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{hasActiveFilters ? "Try a different search term or clear the filters to see all orders." : "Create an order once the customer accepts their quote. We’ll generate and send the invoice automatically."}</p>
+              <h3 className="mt-5 text-lg font-semibold">{hasActiveFilters ? "No matching jobs" : "Your jobs will appear here"}</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{hasActiveFilters ? "Try a different search term or clear the filters to see all jobs." : "Create a job once the customer accepts their quote. Prepaid jobs invoice automatically; postpaid jobs invoice after delivery."}</p>
               {hasActiveFilters && <Button variant="outline" className="mt-5 rounded-xl" onClick={clearFilters}>Clear filters</Button>}
             </div>
           ) : (
@@ -346,9 +394,10 @@ export default function OrdersPage() {
               <div className="hidden md:block"><Table>
                 <TableHeader>
                   <TableRow className="bg-muted/20 hover:bg-muted/20">
-                    <TableHead className="pl-5">Order</TableHead>
+                    <TableHead className="pl-5">Job</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Shipment</TableHead>
+                    <TableHead>Billing</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Est. Delivery</TableHead>
                     <TableHead className="text-right pr-4"></TableHead>
@@ -362,11 +411,12 @@ export default function OrdersPage() {
                       onClick={() => navigate(`/orders/${order.id}`)}
                     >
                       <TableCell className="py-4 pl-5">
-                        <span className="font-mono text-sm font-semibold">{order.order_reference ?? order.tracking_id}</span>
+                        <span className="font-mono text-sm font-semibold">{order.job_number ?? order.order_reference ?? order.tracking_id}</span>
                         <p className="mt-1 font-mono text-[11px] text-muted-foreground">{order.tracking_id}</p>
                       </TableCell>
                       <TableCell><p className="font-medium">{order.customers?.full_name ?? "Unknown customer"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {format(new Date(order.updated_at), "MMM d, HH:mm")}</p></TableCell>
                       <TableCell>{(() => { const Icon = transportIcon(order.transport_mode); return <div className="flex items-center gap-2 text-sm"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-4 w-4" /></span><span>{order.transport_mode ? TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode : "Not set"}</span></div>; })()}</TableCell>
+                      <TableCell><span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${order.billing_type === "POSTPAID" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"}`}>{order.billing_type === "POSTPAID" ? "After delivery" : "Before delivery"}</span></TableCell>
                       <TableCell><StatusBadge status={order.current_status} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
@@ -387,7 +437,7 @@ export default function OrdersPage() {
                 {data.orders.map(order => {
                   const Icon = transportIcon(order.transport_mode);
                   return <Link key={order.id} href={`/orders/${order.id}`} className="block p-4 transition-colors hover:bg-muted/30">
-                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-mono text-sm font-semibold">{order.order_reference ?? order.tracking_id}</p><p className="mt-1 truncate text-sm text-muted-foreground">{order.customers?.full_name ?? "Unknown customer"}</p></div><StatusBadge status={order.current_status} /></div>
+                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-mono text-sm font-semibold">{order.job_number ?? order.order_reference ?? order.tracking_id}</p><p className="mt-1 truncate text-sm text-muted-foreground">{order.customers?.full_name ?? "Unknown customer"}</p></div><StatusBadge status={order.current_status} /></div>
                     <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{order.transport_mode ? TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode : "Transport not set"}</span><span className="flex items-center gap-1 text-foreground">Open <ArrowRight className="h-3.5 w-3.5" /></span></div>
                   </Link>;
                 })}

@@ -1,8 +1,12 @@
-import { pgTable, text, timestamp, foreignKey, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, foreignKey, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { businessesTable } from "./businesses";
 import { customersTable } from "./customers";
+
+export const BILLING_TYPES = ["PREPAID", "POSTPAID"] as const;
+export type BillingType = (typeof BILLING_TYPES)[number];
 
 export const ORDER_STATUSES = [
   "Created",
@@ -29,6 +33,14 @@ export const ordersTable = pgTable(
     invoiceId: text("invoice_id"),
     trackingId: text("tracking_id").notNull().unique(),
     orderReference: text("order_reference"),
+    // Company-defined operational reference (Job Number, e.g. CFS-0024).
+    // Manually entered, required for new Jobs, unique per business (see the
+    // partial unique index below). Nullable so legacy rows stay valid.
+    jobNumber: text("job_number"),
+    // Per-Job billing model. PREPAID keeps the payment-first workflow; POSTPAID
+    // lets the shipment complete before invoicing. Defaults to PREPAID so every
+    // legacy order keeps today's behaviour.
+    billingType: text("billing_type", { enum: BILLING_TYPES }).notNull().default("PREPAID"),
     description: text("description"),
     currentStatus: text("current_status").notNull().default("Order received"),
     // Transport mode for LOGISTICS businesses ("AIR" | "SEA"). Null for
@@ -59,6 +71,10 @@ export const ordersTable = pgTable(
     }),
     orderReferenceIdx: index("orders_business_order_reference_idx").on(t.businessId, t.orderReference),
     supplierTrackingIdx: index("orders_business_supplier_tracking_idx").on(t.businessId, t.supplierTrackingNumber),
+    // Job Number is unique within a business (partial: legacy NULLs excluded).
+    jobNumberUnique: uniqueIndex("orders_business_job_number_unique")
+      .on(t.businessId, t.jobNumber)
+      .where(sql`${t.jobNumber} IS NOT NULL`),
   }),
 );
 

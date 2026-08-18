@@ -17,7 +17,18 @@ export default function InvoiceDetailPage() {
   const [editOpen,setEditOpen]=useState(false);const [editForm,setEditForm]=useState({subtotal:"",additionalCharges:"",dueDate:"",notes:""});
   const action = useMutation({
     mutationFn: (name: string) => apiFetch(`/api/invoices/${id}/${name}`, { method: "POST" }),
-    onSuccess: () => { toast.success("Invoice updated"); queryClient.invalidateQueries({ queryKey: ["invoice", id] }); },
+    onSuccess: (_data, name) => {
+      queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+      // After confirming payment, jump straight to the Job so the admin can
+      // carry on with the shipment (which just unlocked for prepaid Jobs).
+      if (name === "pay") {
+        toast.success("Payment confirmed — opening the Job");
+        const orderId = query.data?.orderId;
+        if (orderId) navigate(`/orders/${orderId}`);
+      } else {
+        toast.success("Invoice updated");
+      }
+    },
     onError: (error: Error) => toast.error(error.message),
   });
   const deleteInvoice = useMutation({ mutationFn: () => apiFetch(`/api/invoices/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success("Invoice deleted"); navigate("/invoices"); }, onError: (error: Error) => toast.error(error.message) });

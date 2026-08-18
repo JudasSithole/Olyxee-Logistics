@@ -49,8 +49,10 @@ export const plans: Record<PlanId, PlanConfig> = {
   },
 
   free: {
-    name: "Free",
-    price: 0,
+    // Entry tier. Free for everyone during beta; R89/month once billing starts.
+    // Plan id stays "free" (DB enum + generated types); only the label/price change.
+    name: "Starter",
+    price: 89,
     orderLimit: null,
     emailLimit: 50,
     smsLimit: 0,
@@ -85,11 +87,11 @@ export const plans: Record<PlanId, PlanConfig> = {
 
   business: {
     name: "Scale",
-    // R89/month. Free for everyone during beta; this price only starts being
+    // R999/month. Free for everyone during beta; this price only starts being
     // charged on SCALE_BILLING_START (30 September 2026). `price` is the single
     // source of truth for both the pricing UI and the Paystack charge amount
     // (planAmountMinor = price * 100).
-    price: 89,
+    price: 999,
     orderLimit: null,
     emailLimit: null,
     smsLimit: 0,

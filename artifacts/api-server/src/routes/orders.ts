@@ -22,10 +22,7 @@ import { effectiveEmailLimit } from "../lib/plan-enforcement";
 import { sendOrderSms } from "../lib/order-notifications";
 import { recordNotification, type DeliveryStatus } from "../lib/notifications";
 import { getPlan } from "@workspace/plans";
-import {
-  CreateOrderBody,
-  UpdateOrderStatusBody,
-} from "@workspace/api-zod";
+import { UpdateOrderStatusBody } from "@workspace/api-zod";
 import { z } from "zod";
 import {
   FSM_ORDER_STATUSES,
@@ -53,6 +50,71 @@ const router = Router();
 const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
 const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
 
+// Create-Job body. Replaces the generated CreateOrderBody (which had drifted
+// from openapi.yaml) so we can add jobNumber + billingType and enforce the
+// PREPAID-only invoice-amount rule in one place. jobNumber is required and
+// unique per business; billingType selects the workflow.
+const CreateJobBody = z
+  .object({
+    customerId: z.string().min(1),
+    jobNumber: z.string().trim().min(1).max(100),
+    transportMode: z.enum(["AIR", "SEA"]),
+    billingType: z.enum(["PREPAID", "POSTPAID"]),
+    cargoType: z.string().min(1),
+    serviceRequired: z.string().min(1),
+    weight: z.string().min(1),
+    orderReference: z.string().max(200).optional(),
+    description: z.string().max(5000).optional(),
+    estimatedDeliveryDate: z.string().max(100).optional(),
+    origin: z.string().max(500).optional(),
+    destination: z.string().max(500).optional(),
+    dimensions: z.string().max(200).optional(),
+    // Invoice pricing: required for PREPAID (enforced below), optional for
+    // POSTPAID where the amount is set when invoicing after delivery.
+    invoiceSubtotal: z.string().optional(),
+    invoiceAdditionalCharges: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.billingType === "PREPAID" && !data.invoiceSubtotal?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["invoiceSubtotal"],
+        message: "Invoice subtotal is required for prepaid Jobs.",
+      });
+    }
+  });
+
+// Self-healing schema guard (mirrors ensureAuthColumns in routes/auth.ts). A
+// production database deployed before the jobs/billing migration is missing the
+// `job_number` / `billing_type` columns, which would make every order query
+// fail. The DDL is additive and idempotent (IF NOT EXISTS), so it is safe to run
+// lazily before the first order request and is a no-op once the columns exist.
+// Memoized per warm process; the memo is cleared on failure so a later request
+// can retry. The checked-in migration (0003) remains the source of truth.
+let _jobsSchemaReady: Promise<void> | null = null;
+async function ensureJobsSchema(): Promise<void> {
+  if (_jobsSchemaReady) return _jobsSchemaReady;
+  _jobsSchemaReady = (async () => {
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "job_number" text`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_type" text NOT NULL DEFAULT 'PREPAID'`);
+    await db.execute(
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS "orders_business_job_number_unique" ON "orders" ("business_id", "job_number") WHERE "job_number" IS NOT NULL`,
+    );
+  })().catch((err) => {
+    _jobsSchemaReady = null;
+    throw err;
+  });
+  return _jobsSchemaReady;
+}
+
+// Run the self-heal once before any order route touches the new columns.
+router.use((req, res, next) => {
+  ensureJobsSchema().then(() => next()).catch((err) => {
+    req.log?.error({ err }, "Failed to ensure jobs schema");
+    res.status(503).json({ error: "Service temporarily unavailable" });
+  });
+});
+
 function invoiceDueDate(paymentTerms: string | null | undefined, issueDate = new Date()): Date {
   const match = paymentTerms?.match(/\b(\d{1,3})\s*days?\b/i);
   const days = match ? Math.min(Number(match[1]), 365) : 0;
@@ -69,25 +131,13 @@ const HOSTED_TRACKING_BASE = (
   process.env.PUBLIC_TRACKING_URL || "https://logistics.olyxee.com"
 ).replace(/\/$/, "");
 
-function buildTrackingLink(websiteUrl: string, trackingId: string): string {
-  // Normalize the business's website the same way the CORS origin derivation
-  // does: accept a bare domain (example.com) or a full URL, require http(s),
-  // and fall back to the Olyxee-hosted page if it's empty or unparseable. This
-  // guarantees the email template's safeTrackingLink() always sees a valid
-  // absolute URL, so the "Track your order" CTA is never silently dropped.
-  let base = HOSTED_TRACKING_BASE;
-  const raw = (websiteUrl || "").trim();
-  if (raw) {
-    try {
-      const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-      if (u.protocol === "http:" || u.protocol === "https:") {
-        base = (u.origin + u.pathname).replace(/\/$/, "");
-      }
-    } catch {
-      base = HOSTED_TRACKING_BASE;
-    }
-  }
-  return `${base}/track?code=${trackingId}`;
+function buildTrackingLink(_websiteUrl: string, trackingId: string): string {
+  // Customer tracking always points at the platform's own public tracking page
+  // for now: a tenant's own website may not be ready to host tracking yet, so
+  // linking there risks a dead end. The page is branded per business, so the
+  // customer never needs to know Olyxee powers it. (_websiteUrl kept for
+  // signature compatibility with existing call sites.)
+  return `${HOSTED_TRACKING_BASE}/track?code=${trackingId}`;
 }
 
 function serializeOrder(o: typeof ordersTable.$inferSelect) {
@@ -118,9 +168,12 @@ router.get("/orders", requireAuth, async (req, res) => {
     if (search) {
       whereConditions.push(
         or(
+          ilike(ordersTable.jobNumber, `%${search}%`),
           ilike(ordersTable.trackingId, `%${search}%`),
+          ilike(ordersTable.supplierTrackingNumber, `%${search}%`),
           ilike(ordersTable.orderReference, `%${search}%`),
           ilike(customersTable.fullName, `%${search}%`),
+          ilike(customersTable.email, `%${search}%`),
         ),
       );
     }
@@ -176,11 +229,15 @@ router.post("/orders", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
     const userId = (req as any).userId;
-    const parse = CreateOrderBody.safeParse(req.body);
+    const parse = CreateJobBody.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: "Invalid input", details: parse.error.issues });
       return;
     }
+
+    const billingType = parse.data.billingType;
+    const isPrepaid = billingType === "PREPAID";
+    const jobNumber = parse.data.jobNumber.trim();
 
     // Verify customer belongs to business
     const customer = await db.query.customersTable.findFirst({
@@ -191,6 +248,20 @@ router.post("/orders", requireAuth, async (req, res) => {
     });
     if (!customer) {
       res.status(400).json({ error: "Customer not found" });
+      return;
+    }
+
+    // Job Number is unique within this business (scoped, so it never reveals
+    // another tenant's data). The DB partial unique index is the race-safe
+    // backstop; this pre-check gives a clear message in the common case.
+    const jobNumberClash = await db.query.ordersTable.findFirst({
+      where: and(
+        eq(ordersTable.businessId, businessId),
+        eq(ordersTable.jobNumber, jobNumber),
+      ),
+    });
+    if (jobNumberClash) {
+      res.status(409).json({ error: `Job Number "${jobNumber}" is already in use. Enter a unique Job Number.` });
       return;
     }
 
@@ -212,11 +283,18 @@ router.post("/orders", requireAuth, async (req, res) => {
       return;
     }
 
+    // Both billing types start at ORDER_CONFIRMED ("Job Confirmed" to
+    // customers). PREPAID is gated on payment before it can advance; POSTPAID
+    // can progress freely and is invoiced after delivery.
     const initialStatus = "ORDER_CONFIRMED";
-    const initialMessage = "Order created - awaiting payment confirmation";
-    const subtotal = Number(parse.data.invoiceSubtotal);
+    const initialMessage = isPrepaid
+      ? "Job created - awaiting payment confirmation"
+      : "Job created";
+    // Invoice amounts only matter for PREPAID (required, validated above).
+    // POSTPAID enters its amount when invoicing after delivery.
+    const subtotal = Number(parse.data.invoiceSubtotal ?? "0");
     const additionalCharges = Number(parse.data.invoiceAdditionalCharges ?? "0");
-    if (!Number.isFinite(subtotal) || !Number.isFinite(additionalCharges) || subtotal < 0 || additionalCharges < 0) {
+    if (isPrepaid && (!Number.isFinite(subtotal) || !Number.isFinite(additionalCharges) || subtotal < 0 || additionalCharges < 0)) {
       res.status(400).json({ error: "Invoice amounts must be non-negative numbers" });
       return;
     }
@@ -235,6 +313,16 @@ router.post("/orders", requireAuth, async (req, res) => {
     const MAX_TRACKING_ATTEMPTS = 8;
     let inserted: typeof ordersTable.$inferSelect | undefined;
     let lastErr: unknown;
+    let jobNumberConflict = false;
+    // Walk the (possibly Drizzle-wrapped) error chain for the pg constraint name.
+    const constraintOf = (err: unknown): string => {
+      let cur = err as { constraint?: string; cause?: unknown } | undefined;
+      for (let i = 0; i < 6 && cur; i++) {
+        if (cur.constraint) return cur.constraint;
+        cur = cur.cause as typeof cur;
+      }
+      return "";
+    };
     for (let attempt = 0; attempt < MAX_TRACKING_ATTEMPTS; attempt++) {
       const candidate = generateTrackingId(prefix);
       try {
@@ -245,6 +333,8 @@ router.post("/orders", requireAuth, async (req, res) => {
             businessId,
             customerId: parse.data.customerId,
             trackingId: candidate,
+            jobNumber,
+            billingType,
             orderReference: parse.data.orderReference ?? null,
             description: parse.data.description ?? null,
             currentStatus: initialStatus,
@@ -265,11 +355,22 @@ router.post("/orders", requireAuth, async (req, res) => {
         // Postgres unique_violation. Any other error is real and should bubble.
         const code = (err as { code?: string } | undefined)?.code;
         if (code !== "23505") throw err;
+        // A job_number collision (lost the race against the pre-check) must NOT
+        // retry with a fresh tracking ID — the job_number is still a duplicate.
+        // Surface a clean 409 instead of exhausting attempts into a 500.
+        if (constraintOf(err) === "orders_business_job_number_unique") {
+          jobNumberConflict = true;
+          break;
+        }
         req.log.warn(
           { attempt, candidate },
           "Tracking ID collision on insert, retrying",
         );
       }
+    }
+    if (jobNumberConflict) {
+      res.status(409).json({ error: `Job Number "${jobNumber}" is already in use. Enter a unique Job Number.` });
+      return;
     }
     if (!inserted) {
       req.log.error({ err: lastErr }, "Exhausted tracking ID attempts");
@@ -278,6 +379,21 @@ router.post("/orders", requireAuth, async (req, res) => {
     }
     const o = inserted;
     const trackingId = o.trackingId;
+
+    // POSTPAID: no invoice and no invoice email at creation. Record the "Job
+    // created" tracking event so the shipment timeline starts, then return. The
+    // invoice is created later, after delivery, via POST /invoices (which links
+    // it back through orders.invoice_id).
+    if (!isPrepaid) {
+      await db.transaction(async (tx) => {
+        await tx.insert(trackingEventsTable).values({id:generateId(),orderId:o.id,status:initialStatus,message:initialMessage,createdBy:userId});
+        await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_JOB",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,jobNumber,billingType}});
+      });
+      res.status(201).json({...serializeOrder(o),invoiceId:null,invoiceEmailStatus:"skipped"});
+      return;
+    }
+
+    // PREPAID: create + link the invoice, then attempt to auto-send it.
     const invoiceId = generateId();
     const invoiceNo = `FSIL-INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,4).toUpperCase()}`;
     const dueDate = invoiceDueDate(business?.invoicePaymentTerms);
@@ -312,19 +428,31 @@ router.post("/orders/:orderId/supplier-tracking", requireAuth, async (req, res) 
     const orderId = String(req.params.orderId);
     const order = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)) });
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
-    if (!order.transportMode) { res.status(409).json({ error: "Supplier tracking is only available for air or sea orders" }); return; }
+    if (!order.transportMode) { res.status(409).json({ error: "Supplier tracking is only available for air or sea Jobs" }); return; }
     if (order.supplierTrackingNumber) { res.status(409).json({ error: "Supplier tracking number has already been recorded" }); return; }
-    const invoice = order.invoiceId ? await db.query.invoicesTable.findFirst({ where: and(eq(invoicesTable.id, order.invoiceId), eq(invoicesTable.businessId, businessId)) }) : null;
-    if (!invoice || invoice.status !== "paid") { res.status(409).json({ error: "Payment must be confirmed before adding the supplier tracking number" }); return; }
-    if (order.currentStatus !== "PENDING_TRACKING_NUMBER") { res.status(409).json({ error: "Order is not awaiting a supplier tracking number" }); return; }
+    // Supplier tracking is optional metadata added whenever it arrives - it must
+    // never block a Job. Only two guards: don't add after delivery, and (for
+    // PREPAID, pay-first) require the invoice to be paid first. POSTPAID has no
+    // payment gate here.
+    if (isLogisticsTerminal(order.currentStatus)) { res.status(409).json({ error: "This Job is already delivered; the supplier tracking number can no longer be added" }); return; }
+    if (order.billingType === "PREPAID" && order.invoiceId) {
+      const invoice = await db.query.invoicesTable.findFirst({ where: and(eq(invoicesTable.id, order.invoiceId), eq(invoicesTable.businessId, businessId)) });
+      if (!invoice || invoice.status !== "paid") { res.status(409).json({ error: "Payment must be confirmed before adding the supplier tracking number" }); return; }
+    }
     const supplierTrackingNumber = parsed.data.supplierTrackingNumber.toUpperCase();
     const duplicate = await db.query.ordersTable.findFirst({ where: and(eq(ordersTable.businessId, businessId), eq(ordersTable.supplierTrackingNumber, supplierTrackingNumber)) });
-    if (duplicate && duplicate.id !== orderId) { res.status(409).json({ error: `Supplier tracking number is already linked to order ${duplicate.orderReference ?? duplicate.id}` }); return; }
+    if (duplicate && duplicate.id !== orderId) { res.status(409).json({ error: `Supplier tracking number is already linked to Job ${duplicate.jobNumber ?? duplicate.orderReference ?? duplicate.id}` }); return; }
+    // If the Job is waiting on a tracking number, recording it advances the
+    // shipment to RECEIVED_FROM_SUPPLIER (with a customer-visible event).
+    // Otherwise we just record the number without touching the shipment stage.
+    const advancing = order.currentStatus === "PENDING_TRACKING_NUMBER";
     const now = new Date();
     const updated = await db.transaction(async(tx)=>{
-      const [nextOrder] = await tx.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, currentStatus:"RECEIVED_FROM_SUPPLIER", updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
-      await tx.insert(trackingEventsTable).values({id:generateId(),orderId,status:"RECEIVED_FROM_SUPPLIER",message:"Cargo received at the China warehouse; shipment tracking is now active",location:"China warehouse",createdBy:userId});
-      await tx.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber, addedAt: now.toISOString() } });
+      const [nextOrder] = await tx.update(ordersTable).set({ supplierTrackingNumber, supplierTrackingNumberAddedAt: now, supplierTrackingNumberAddedBy: userId, ...(advancing ? { currentStatus: "RECEIVED_FROM_SUPPLIER" } : {}), updatedAt: now }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId))).returning();
+      if (advancing) {
+        await tx.insert(trackingEventsTable).values({id:generateId(),orderId,status:"RECEIVED_FROM_SUPPLIER",message:"Cargo received at the China warehouse; shipment tracking is now active",location:"China warehouse",createdBy:userId});
+      }
+      await tx.insert(auditLogsTable).values({ id: generateId(), businessId, userId, action: "SET_SUPPLIER_TRACKING_NUMBER", entityType: "order", entityId: orderId, metadata: { previousValue: order.supplierTrackingNumber, newValue: supplierTrackingNumber, addedAt: now.toISOString(), advanced: advancing } });
       return nextOrder;
     });
     res.json(serializeOrder(updated));
@@ -464,18 +592,15 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       return;
     }
 
-    // New orders always have a linked invoice and must pass both gates.
-    // Pre-invoice legacy orders are grandfathered so this rollout does not
-    // strand or mutate existing customer/order records that predate the new
-    // invoice and supplier-tracking workflow.
-    if (order.invoiceId) {
+    // PREPAID Jobs must have a paid invoice before the shipment can progress.
+    // POSTPAID Jobs progress freely (they are invoiced after delivery).
+    // Supplier tracking number is OPTIONAL and never gates progression - a Job
+    // is never blocked just because no supplier number exists. Pre-invoice
+    // legacy PREPAID orders stay grandfathered (no invoice_id -> no gate).
+    if (order.billingType === "PREPAID" && order.invoiceId) {
       const invoice = await db.query.invoicesTable.findFirst({where:and(eq(invoicesTable.id,order.invoiceId),eq(invoicesTable.businessId,businessId))});
       if (!invoice || invoice.status !== "paid") {
         res.status(409).json({ error: "Payment must be confirmed before tracking updates can begin", invoiceStatus: invoice?.status ?? "missing" });
-        return;
-      }
-      if (!order.supplierTrackingNumber) {
-        res.status(409).json({ error: "Supplier tracking number must be added before shipment updates can begin", currentStatus: order.currentStatus });
         return;
       }
     }
@@ -568,15 +693,34 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     let emailLimit: number | undefined;
 
     if (customer && business) {
+      // Build a customer-facing progress timeline from this Job's tracking
+      // events. Only reached, customer-visible logistics statuses are included,
+      // and only their friendly LABEL is used — the event notes/messages (which
+      // can contain internal detail) are never exposed. Deduped, oldest-first.
+      let timeline: { label: string; done: boolean }[] = [];
+      if (order.transportMode) {
+        const events = await db
+          .select({ status: trackingEventsTable.status })
+          .from(trackingEventsTable)
+          .where(eq(trackingEventsTable.orderId, orderId))
+          .orderBy(trackingEventsTable.createdAt);
+        const seen = new Set<string>();
+        timeline = events
+          .filter((e) => isLogisticsStatus(e.status) && !seen.has(e.status) && seen.add(e.status))
+          .map((e) => ({ label: logisticsStatusLabel(e.status), done: true }));
+      }
+
       const emailParams = {
         customerEmail: customer.email,
         customerName: customer.fullName,
         trackingId: order.trackingId,
+        jobNumber: order.jobNumber,
         // For transport-aware orders the internal code (e.g. VESSEL_DEPARTED)
         // must never leak into customer emails — use the friendly label.
         status: order.transportMode ? logisticsStatusLabel(status) : status,
         statusMessage: message ?? null,
         trackingLink,
+        timeline,
         businessName: business.name,
         supportEmail: business.supportEmail,
         emailGreeting: business.emailGreeting,

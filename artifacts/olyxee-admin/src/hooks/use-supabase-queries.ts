@@ -100,6 +100,8 @@ interface ApiOrder {
   workflowTemplateId?: string | null;
   trackingId: string;
   orderReference?: string | null;
+  jobNumber?: string | null;
+  billingType?: string | null;
   currentStatus: string;
   currentStepPosition?: number;
   description?: string | null;
@@ -133,6 +135,8 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     workflow_template_id: o.workflowTemplateId ?? null,
     tracking_id: o.trackingId,
     order_reference: o.orderReference ?? null,
+    job_number: o.jobNumber ?? null,
+    billing_type: o.billingType ?? "PREPAID",
     current_status: o.currentStatus,
     transport_mode: o.transportMode ?? null,
     invoice_id: o.invoiceId ?? null,
@@ -584,11 +588,20 @@ export function useOrder(id: string | null | undefined) {
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: InsertOrder & { invoice_subtotal: string; invoice_additional_charges?: string }) => {
+    mutationFn: async (
+      input: InsertOrder & {
+        job_number: string;
+        billing_type: "PREPAID" | "POSTPAID";
+        invoice_subtotal?: string;
+        invoice_additional_charges?: string;
+      },
+    ) => {
       const data = await apiFetch<ApiOrder>("/api/orders", {
         method: "POST",
         body: {
           customerId: input.customer_id,
+          jobNumber: input.job_number,
+          billingType: input.billing_type,
           orderReference: input.order_reference ?? undefined,
           description: input.description ?? undefined,
           estimatedDeliveryDate: input.estimated_completion ?? undefined,
@@ -599,8 +612,9 @@ export function useCreateOrder() {
           destination: (input as { destination?: string }).destination ?? undefined,
           weight: (input as { weight?: string }).weight ?? undefined,
           dimensions: (input as { dimensions?: string }).dimensions ?? undefined,
-          invoiceSubtotal: (input as { invoice_subtotal?: string }).invoice_subtotal,
-          invoiceAdditionalCharges: (input as { invoice_additional_charges?: string }).invoice_additional_charges ?? "0",
+          // PREPAID sends the accepted amount; POSTPAID omits it (invoiced later).
+          invoiceSubtotal: input.invoice_subtotal || undefined,
+          invoiceAdditionalCharges: input.invoice_additional_charges || undefined,
         },
       });
       return { ...mapOrder(data), invoice_email_status: (data as ApiOrder & { invoiceEmailStatus?: string }).invoiceEmailStatus };
