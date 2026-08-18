@@ -248,12 +248,25 @@ export default function OrderDetailPage() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save supplier tracking number"); }
     finally { setSavingSupplierTracking(false); }
   };
-  const createInvoice = async () => {
+  const createInvoice = async (send = false) => {
     if (!id || !invoiceSubtotal.trim()) return;
     setCreatingInvoice(true);
     try {
       const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR" } });
-      toast.success("Draft invoice generated"); refetch(); window.location.href = `${import.meta.env.BASE_URL}invoices/${invoice.id}`;
+      if (send) {
+        // Close-the-job flow: create the invoice and email it to the customer
+        // in one action, then open it so the admin can confirm payment later.
+        try {
+          await apiFetch(`/api/invoices/${invoice.id}/send`, { method: "POST" });
+          toast.success("Invoice created and emailed to the customer");
+        } catch {
+          toast.warning("Invoice created, but the email couldn't be sent. Open it to resend.");
+        }
+      } else {
+        toast.success("Draft invoice generated");
+      }
+      refetch();
+      window.location.href = `${import.meta.env.BASE_URL}invoices/${invoice.id}`;
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to generate invoice"); }
     finally { setCreatingInvoice(false); }
   };
@@ -726,7 +739,14 @@ export default function OrderDetailPage() {
                 )}
               </div>
               {order.invoice_id && <div className="space-y-2 rounded-xl border p-3"><p className="text-muted-foreground uppercase font-medium">Invoice</p><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid · manually confirmed" : "Pending payment · confirmation required"}</p><Link className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline" href={`/invoices/${order.invoice_id}`}>Open invoice <ExternalLink className="h-3 w-3" /></Link></div>}
-              {!order.invoice_id && <div className={`space-y-2 rounded-xl border p-3 ${isPostpaid && isDelivered ? "border-primary/40 bg-primary/[0.04]" : "border-t"}`}><p className="text-muted-foreground uppercase font-medium">{isPostpaid && isDelivered ? "Invoice this delivery" : "Generate invoice"}</p>{isPostpaid && isDelivered && <p className="text-xs text-muted-foreground">Delivered — enter the final amount to invoice the customer.</p>}<Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/><Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/><Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={createInvoice}>{isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button></div>}
+              {!order.invoice_id && <div className={`space-y-2 rounded-xl border p-3 ${isPostpaid && isDelivered ? "border-primary/50 bg-primary/[0.05]" : "border-t"}`}>
+                <p className={`uppercase font-medium ${isPostpaid && isDelivered ? "text-primary" : "text-muted-foreground"}`}>{isPostpaid && isDelivered ? "Final step — invoice & close this Job" : "Generate invoice"}</p>
+                {isPostpaid && isDelivered && <p className="text-xs text-muted-foreground">Delivered. Enter the final amount and we’ll create the invoice and email it to the customer. Confirm payment afterwards to fully close the Job.</p>}
+                <Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/>
+                <Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/>
+                <Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={()=>createInvoice(isPostpaid && isDelivered)}>{creatingInvoice ? "Working…" : isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button>
+              </div>}
+              {isDelivered && order.invoice_id && invoiceStatus === "paid" && <div className="flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-950/30 dark:text-green-300"><CheckCircle2 className="h-4 w-4"/>Job complete — delivered &amp; paid.</div>}
               {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
             </CardContent>
           </Card>
