@@ -24,6 +24,7 @@ import { SettingsModal, SettingsModalContext, useSettingsModal } from "@/compone
 function TopUser() {
   const { user, signOut } = useAuth();
   const { data: business } = useBusiness(user?.businessId);
+  const { logoUrl, businessName } = useTheme();
   const { open: openSettings } = useSettingsModal();
   const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
@@ -49,13 +50,27 @@ function TopUser() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <div className="flex items-center gap-2.5 px-2 py-2">
-          <Avatar className="h-9 w-9 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-sm">{initial}</AvatarFallback></Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{fullName}</p>
-            {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
-            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{planLabel} plan</p>
+        {/* The business workspace this account belongs to. */}
+        <div className="flex items-center gap-2 px-2 pb-1.5 pt-2">
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="h-6 w-auto max-w-[72px] flex-shrink-0 object-contain" />
+          ) : (
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-foreground text-[10px] font-bold text-background">{(businessName || "B").charAt(0).toUpperCase()}</div>
+          )}
+          <span className="truncate text-sm font-semibold">{businessName}</span>
+        </div>
+        <DropdownMenuSeparator />
+        {/* Current signed-in user under that workspace. */}
+        <div className="px-2 py-2">
+          <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"><User className="h-3 w-3" /> Current user</p>
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-8 w-8 flex-shrink-0"><AvatarFallback className="bg-muted text-foreground text-xs">{initial}</AvatarFallback></Avatar>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{fullName}</p>
+              {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
+            </div>
           </div>
+          <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">{planLabel} plan</p>
         </div>
         {showUpgrade ? (
           <>
@@ -64,7 +79,6 @@ function TopUser() {
           </>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="link-profile"><User className="mr-2 h-4 w-4" /> Edit profile</DropdownMenuItem>
         <DropdownMenuItem onClick={() => openSettings()} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/login"); }} className="text-destructive focus:text-destructive" data-testid="button-signout"><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
