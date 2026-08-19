@@ -830,10 +830,13 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         await saveBusiness.mutateAsync({
           id: user.businessId,
           name: form.businessName.trim(),
-          support_email: form.mainEmail.trim() || null,
-          phone: form.phone.trim() || null,
-          website_url: form.website.trim() || null,
-          location: form.address.trim() || null,
+          // These fields are validated as string (not nullable) on the API, so
+          // send an empty string to clear — never null (which would 400 the
+          // whole save and block the business-name change).
+          support_email: form.mainEmail.trim(),
+          phone: form.phone.trim(),
+          website_url: form.website.trim(),
+          location: form.address.trim(),
           business_logo_url: form.logoUrl || null,
           primary_brand_colour: form.primaryColor || null,
         });
