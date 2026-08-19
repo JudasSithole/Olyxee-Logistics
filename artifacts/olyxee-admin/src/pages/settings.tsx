@@ -1012,7 +1012,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         </div>
 
         {/* Selected settings page. */}
-        <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-6 sm:px-8" : "")}>
+        <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-6 sm:px-8 lg:px-10 lg:py-8" : "")}>
           {(() => {
             switch (active) {
               case "business-profile":

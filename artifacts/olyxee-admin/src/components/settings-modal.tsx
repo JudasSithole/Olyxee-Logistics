@@ -35,7 +35,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
       {/* Fixed height + width so the modal never resizes when you switch tabs —
           the content area inside scrolls instead. */}
       <div
-        className="relative my-auto flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150"
+        className="relative my-auto flex h-[86vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 lg:h-[90vh] lg:max-w-6xl xl:max-w-[1240px]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
