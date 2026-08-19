@@ -396,7 +396,7 @@ router.post("/orders", requireAuth, async (req, res) => {
 
     // PREPAID: create + link the invoice, then attempt to auto-send it.
     const invoiceId = generateId();
-    const invoiceNo = `FSIL-INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,4).toUpperCase()}`;
+    const invoiceNo = `INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,6).toUpperCase()}`;
     const dueDate = invoiceDueDate(business?.invoicePaymentTerms);
     const total = subtotal + additionalCharges;
 
