@@ -11,6 +11,7 @@ import billingRouter from "./billing";
 import v1Router from "./v1";
 import callCentreRouter from "./call-centre";
 import invoicesRouter from "./invoices";
+import financeRouter from "./finance";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(billingRouter);
 router.use(v1Router);
 router.use(callCentreRouter);
 router.use(invoicesRouter);
+router.use(financeRouter);
 
 export default router;

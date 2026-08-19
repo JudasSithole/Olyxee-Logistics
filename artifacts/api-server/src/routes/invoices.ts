@@ -24,7 +24,10 @@ router.get("/invoices", requireAuth, async (req,res) => {
     invoice: invoicesTable,
     trackingId: ordersTable.trackingId,
     orderReference: ordersTable.orderReference,
+    jobNumber: ordersTable.jobNumber,
+    billingStatus: ordersTable.billingStatus,
     customerName: customersTable.fullName,
+    customerCompany: customersTable.companyName,
   }).from(invoicesTable)
     .leftJoin(ordersTable, eq(invoicesTable.orderId, ordersTable.id))
     .leftJoin(customersTable, eq(invoicesTable.customerId, customersTable.id))

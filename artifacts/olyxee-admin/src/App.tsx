@@ -29,7 +29,7 @@ import UpgradePage from "@/pages/upgrade";
 import BillingCallbackPage from "@/pages/billing-callback";
 import NotFound from "@/pages/not-found";
 import InvoiceDetailPage from "@/pages/invoice-detail";
-import InvoicesPage from "@/pages/invoices";
+import FinancePage from "@/pages/finance";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -175,7 +175,13 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
-      <Route path="/invoices" component={() => <Protected component={InvoicesPage} />} />
+      {/* Finance workspace: one page with Invoices | Job Costs | Job Profit
+          sub-tabs, plus the "Needs financial attention" header. */}
+      <Route path="/finance" component={() => <Protected component={() => <FinancePage tab="invoices" />} />} />
+      <Route path="/finance/costs" component={() => <Protected component={() => <FinancePage tab="costs" />} />} />
+      <Route path="/finance/profit" component={() => <Protected component={() => <FinancePage tab="profit" />} />} />
+      {/* Legacy /invoices → Finance. Invoice detail keeps its /invoices/:id URL. */}
+      <Route path="/invoices"><Redirect to="/finance" /></Route>
       <Route path="/invoices/:id" component={() => <Protected component={InvoiceDetailPage} />} />
       {/* Legacy /audit-logs URL - bounce to the new Settings → Activity tab. */}
       <Route path="/audit-logs">

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import {
-  LayoutDashboard, Users, Package, FileText,
+  LayoutDashboard, Users, Package, Wallet,
   Menu, Moon, Sun, Settings, LogOut,
   ArrowUpCircle,
 } from "lucide-react";
@@ -71,7 +71,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Jobs", icon: Package },
-  { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/finance", label: "Finance", icon: Wallet },
 ];
 
 // Launch-prep nav: pricing.
@@ -148,7 +148,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               href={item.href}
               label={item.label}
               icon={item.icon}
-              active={location === item.href || location.startsWith(item.href + "/")}
+              active={
+                location === item.href ||
+                location.startsWith(item.href + "/") ||
+                // Invoice detail still lives at /invoices/:id; keep Finance lit.
+                (item.href === "/finance" && location.startsWith("/invoices"))
+              }
             />
           ))}
         </div>

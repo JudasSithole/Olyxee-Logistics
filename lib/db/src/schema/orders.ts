@@ -64,6 +64,11 @@ export const ordersTable = pgTable(
     weight: text("weight"),
     dimensions: text("dimensions"),
     estimatedDeliveryDate: text("estimated_delivery_date"),
+    // Actual delivered/collected timestamp, set when the Job reaches its
+    // terminal AIR/SEA status (DELIVERED_COLLECTED / legacy DELIVERED). Distinct
+    // from estimatedDeliveryDate (a free-text ETA). Nullable: only set once
+    // delivered, and backfilled best-effort for existing terminal orders.
+    deliveredAt: timestamp("delivered_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

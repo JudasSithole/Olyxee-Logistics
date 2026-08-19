@@ -97,6 +97,7 @@ async function ensureJobsSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "job_number" text`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_type" text NOT NULL DEFAULT 'PREPAID'`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_status" text NOT NULL DEFAULT 'NOT_INVOICED'`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "delivered_at" timestamp`);
     await db.execute(
       sql`CREATE UNIQUE INDEX IF NOT EXISTS "orders_business_job_number_unique" ON "orders" ("business_id", "job_number") WHERE "job_number" IS NOT NULL`,
     );
@@ -679,9 +680,18 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         })
         .returning();
 
+      // Stamp the actual delivery time the first time a Job reaches its terminal
+      // state (new AIR/SEA DELIVERED_COLLECTED or legacy DELIVERED). Never clears
+      // it and never keys off non-terminal legacy strings.
+      const nowTs = new Date();
+      const markDelivered = isLogisticsTerminal(status) && !order.deliveredAt;
       const updatedOrder = await tx
         .update(ordersTable)
-        .set({ currentStatus: status, updatedAt: new Date() })
+        .set({
+          currentStatus: status,
+          updatedAt: nowTs,
+          ...(markDelivered ? { deliveredAt: nowTs } : {}),
+        })
         .where(
           and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)),
         )
