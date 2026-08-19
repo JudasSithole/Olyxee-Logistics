@@ -240,10 +240,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <TopUser />
         </div>
         <div className="flex-1 overflow-auto">
-          <div
-            key={location}
-            className="animate-page mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10"
-          >
+          {/* No per-navigation entrance animation — pages swap instantly instead
+              of sliding/scaling the whole frame in on every route change. */}
+          <div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10">
             {children}
           </div>
         </div>
