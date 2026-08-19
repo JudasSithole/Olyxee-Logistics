@@ -61,7 +61,7 @@ function TopUser() {
         {showUpgrade ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setLocation("/upgrade")} className="font-medium text-[#0a84ff] focus:text-[#0a84ff]" data-testid="link-upgrade"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Scale</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLocation("/upgrade")} className="font-medium" data-testid="link-upgrade"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Scale</DropdownMenuItem>
           </>
         ) : null}
         <DropdownMenuSeparator />

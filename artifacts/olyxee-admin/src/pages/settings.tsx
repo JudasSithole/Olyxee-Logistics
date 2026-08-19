@@ -693,13 +693,13 @@ function InvoiceProfileSection() {
 // Starter). Coming soon = not built yet (never purchasable, no upgrade CTA).
 
 function ScaleBadge() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-[#0a84ff]/10 px-2 py-0.5 text-[11px] font-semibold text-[#0a84ff]"><Sparkles className="h-3 w-3" /> Scale</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.07] px-2 py-0.5 text-[11px] font-semibold text-foreground"><Sparkles className="h-3 w-3" /> Scale</span>;
 }
 function ComingSoonBadge() {
   return <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Coming soon</span>;
 }
 function UpgradeButton() {
-  return <Link href="/upgrade"><Button size="sm" className="gap-1.5 bg-[#0a84ff] hover:bg-[#0a84ff]/90"><Sparkles className="h-3.5 w-3.5" /> Upgrade to Scale</Button></Link>;
+  return <Link href="/upgrade"><Button size="sm" className="gap-1.5 bg-foreground text-background hover:bg-foreground/90"><Sparkles className="h-3.5 w-3.5" /> Upgrade to Scale</Button></Link>;
 }
 
 // Frosts + disables the intended UI (still visible) and overlays an unlock card.
@@ -709,7 +709,7 @@ function ScaleLock({ children }: { children: ReactNode }) {
       <div className="pointer-events-none select-none opacity-40" aria-hidden>{children}</div>
       <div className="absolute inset-0 flex items-start justify-center bg-background/40 p-4 pt-16 backdrop-blur-[1px]">
         <div className="max-w-sm rounded-2xl border border-border bg-background p-5 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#0a84ff]/10"><Lock className="h-5 w-5 text-[#0a84ff]" /></div>
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted"><Lock className="h-5 w-5 text-foreground" /></div>
           <p className="text-sm font-semibold">Team collaboration is available on Scale</p>
           <p className="mt-1 text-xs text-muted-foreground">Invite teammates, assign roles and control who can access your workspace.</p>
           <div className="mt-4 flex justify-center"><UpgradeButton /></div>
@@ -742,7 +742,7 @@ function TeamManager({ ownerName, ownerEmail }: { ownerName: string; ownerEmail:
       </div>
       <div className="flex items-center justify-between px-5 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">{initial}</div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">{initial}</div>
           <div><p className="text-sm font-medium">{ownerName}</p><p className="text-xs text-muted-foreground">{ownerEmail} · Full access</p></div>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Owner</span>
@@ -983,12 +983,12 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                         onClick={() => go(it.id)}
                         className={cn(
                           "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                          on ? "bg-[#0a84ff]/10 font-medium text-[#0a84ff]" : "text-foreground hover:bg-muted",
+                          on ? "bg-foreground/[0.06] font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
                       >
-                        <Icon className={cn("h-4 w-4", on ? "text-[#0a84ff]" : "text-muted-foreground")} />
+                        <Icon className={cn("h-4 w-4", on ? "text-foreground" : "text-muted-foreground")} />
                         <span className="flex-1 text-left">{it.label}</span>
-                        {scale ? <span className={cn("text-[10px] font-semibold", on ? "text-[#0a84ff]" : "text-[#0a84ff]/70")}>Scale</span> : null}
+                        {scale ? <span className="text-[10px] font-semibold text-muted-foreground">Scale</span> : null}
                         {pageDirty[it.id] ? <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Unsaved changes" /> : null}
                       </button>
                     );
@@ -1041,7 +1041,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                         <div><h3 className="text-sm font-semibold">Business type</h3><p className="mt-1 text-xs text-muted-foreground">The industry that best describes your business.</p></div>
                         <BusinessTypeSelector value={form.businessType} onChange={(t) => setForm((f) => ({ ...f, businessType: t }))} compact />
                       </section>
-                      <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">Legal name, tax numbers and banking details for invoices live under <button type="button" onClick={() => go("invoicing")} className="font-medium text-[#0a84ff] hover:underline">Invoice Settings</button>.</p>
+                      <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">Legal name, tax numbers and banking details for invoices live under <button type="button" onClick={() => go("invoicing")} className="font-medium text-foreground underline underline-offset-2 hover:no-underline">Invoice Settings</button>.</p>
                     </div>
                   </div>
                 );
