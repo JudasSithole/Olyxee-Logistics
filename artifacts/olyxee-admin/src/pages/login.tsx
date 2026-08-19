@@ -172,7 +172,7 @@ export default function LoginPage() {
               className={fieldClass}
               data-testid="input-business-name"
             />
-            <p className={hintClass}>This is what your customers see on emails and tracking pages.</p>
+            <p className={hintClass}>This is what your customers see on status updates and tracking pages.</p>
           </div>
         )}
 

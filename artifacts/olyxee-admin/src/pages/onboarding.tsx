@@ -365,16 +365,17 @@ export default function OnboardingPage() {
               <>
               {/* ─── Invoice details (its own step) ─────────────────────────
                   Prefilled from the account; optional, so the user can finish
-                  with it blank and complete it later in Settings. */}
-              <section className="space-y-4">
-                <div className="rounded-xl border border-border">
-                  <InvoiceProfileFields
-                    profile={invoice}
-                    update={updateInvoice}
-                    pickLogo={pickInvoiceLogo}
-                    required={false}
-                  />
-                </div>
+                  with it blank and complete it later in Settings. Readiness
+                  meter is hidden here so an optional step never feels like a
+                  scored checklist. */}
+              <section className="-mx-2 sm:-mx-3">
+                <InvoiceProfileFields
+                  profile={invoice}
+                  update={updateInvoice}
+                  pickLogo={pickInvoiceLogo}
+                  required={false}
+                  showReadiness={false}
+                />
               </section>
 
               <div className="flex items-center gap-3">
@@ -396,6 +397,14 @@ export default function OnboardingPage() {
                   {updateMutation.isPending ? "Saving…" : "Finish setup"}
                 </Button>
               </div>
+              <button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="mx-auto block text-[13px] font-medium text-[hsl(220,9%,46%)] hover:text-[hsl(220,20%,10%)] transition-colors"
+                data-testid="button-skip-invoice"
+              >
+                Skip for now — I’ll add this later in Settings
+              </button>
               </>
               )}
             </form>
