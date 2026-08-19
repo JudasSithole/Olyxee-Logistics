@@ -23,7 +23,6 @@ import { SettingsModal, SettingsModalContext, useSettingsModal } from "@/compone
 // everything account/display-related lives in one place.
 function TopUser() {
   const { user, signOut } = useAuth();
-  const { isDark, setIsDark } = useTheme();
   const { data: business } = useBusiness(user?.businessId);
   const { open: openSettings } = useSettingsModal();
   const [, setLocation] = useLocation();
@@ -67,15 +66,6 @@ function TopUser() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="link-profile"><User className="mr-2 h-4 w-4" /> Edit profile</DropdownMenuItem>
         <DropdownMenuItem onClick={() => openSettings()} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {/* Appearance — segmented control stays open while switching. */}
-        <div className="px-2 py-1.5">
-          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Appearance</p>
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            <button type="button" onClick={() => setIsDark(false)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${!isDark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Sun className="h-3.5 w-3.5 text-amber-500" /> Light</button>
-            <button type="button" onClick={() => setIsDark(true)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${isDark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Moon className="h-3.5 w-3.5 text-indigo-400" /> Dark</button>
-          </div>
-        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/login"); }} className="text-destructive focus:text-destructive" data-testid="button-signout"><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
       </DropdownMenuContent>
@@ -122,6 +112,31 @@ function NavLink({
   );
 }
 
+// Signed-in user shown at the top of the sidebar (avatar + name), linking to
+// the profile page. Falls back to a placeholder when no user is loaded yet.
+function SidebarUser() {
+  const { user } = useAuth();
+  const fullName = user?.name || user?.email || "User";
+  const email = user?.email ?? "";
+  const initial = (fullName || "U").charAt(0).toUpperCase();
+  return (
+    <Link
+      href="/profile"
+      className="mx-2 mt-2 flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-sidebar-accent"
+      title="View your profile"
+      data-testid="sidebar-user"
+    >
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">{initial}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-sidebar-foreground">{fullName}</p>
+        <p className="truncate text-xs text-sidebar-foreground/50">{email || "View profile"}</p>
+      </div>
+    </Link>
+  );
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isDark, setIsDark, logoUrl, businessName } = useTheme();
@@ -149,6 +164,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {businessName}
         </span>
       </div>
+
+      {/* Signed-in user, right at the top of the sidebar. Links to the profile. */}
+      <SidebarUser />
 
       {/* Primary nav - the three core workspace destinations sit at the top on
           their own so the everyday navigation stays uncluttered. */}
