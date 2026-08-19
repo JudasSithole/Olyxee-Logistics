@@ -9,9 +9,10 @@ import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw,
   Code2, Copy, Download, Globe, Tag, CreditCard, FileText,
-  Palette, Users, MapPin, Lock, Sparkles, ChevronRight,
+  Palette, Users, MapPin, Lock, Sparkles, ChevronRight, User,
 } from "lucide-react";
 import { BUSINESS_TYPES, BusinessTypeSelector } from "@/components/business-type-selector";
+import ProfilePage from "@/pages/profile";
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -770,6 +771,7 @@ const NAV_GROUPS = [
     { id: "invoicing", label: "Invoice Settings", icon: FileText },
   ]},
   { group: "Account", items: [
+    { id: "profile", label: "Profile", icon: User },
     { id: "subscription", label: "Olyxee Subscription", icon: CreditCard },
     { id: "appearance", label: "Appearance", icon: SunMoon },
   ]},
@@ -1075,6 +1077,13 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 return <EmailCustomizationSection businessName={form.businessName} onDirtyChange={setEmailDirty} />;
               case "invoicing":
                 return <InvoiceProfileSection />;
+              case "profile":
+                return (
+                  <div>
+                    <PageHeader title="Profile" description="Your personal account — name, email, password and sign-out. Separate from the business." />
+                    <ProfilePage />
+                  </div>
+                );
               case "subscription":
                 return <BillingSection />;
               case "appearance":
