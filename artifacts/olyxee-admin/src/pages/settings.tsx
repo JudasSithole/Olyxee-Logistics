@@ -763,7 +763,6 @@ const NAV_GROUPS = [
   { group: "Account", items: [
     { id: "profile", label: "Profile", icon: User },
     { id: "subscription", label: "Olyxee Subscription", icon: CreditCard },
-    { id: "appearance", label: "Appearance", icon: SunMoon },
   ]},
 ] as const;
 const SETTINGS_PAGES = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
@@ -811,7 +810,6 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
   const dirtyProfile =
     form.businessName !== initial.businessName ||
     form.businessTagline !== initial.businessTagline ||
-    form.businessType !== initial.businessType ||
     form.mainEmail !== initial.mainEmail ||
     form.phone !== initial.phone ||
     form.website !== initial.website ||
@@ -832,7 +830,6 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         await saveBusiness.mutateAsync({
           id: user.businessId,
           name: form.businessName.trim(),
-          business_type: form.businessType || undefined,
           support_email: form.mainEmail.trim() || null,
           phone: form.phone.trim() || null,
           website_url: form.website.trim() || null,
@@ -926,7 +923,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
   }
 
   return (
-    <div className={cn("settings-ios mx-auto min-h-full max-w-5xl", inModal ? "pb-4" : "pb-32")}>
+    <div className={cn("settings-ios", inModal ? "flex h-full w-full flex-col" : "mx-auto min-h-full max-w-5xl pb-32")}>
       <style>{`
         .settings-ios input:not([type="color"]):not([type="range"]),
         .settings-ios textarea,
@@ -945,21 +942,23 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         .settings-ios select { width: 100%; padding-inline: .75rem; }
         .settings-ios fieldset { border-color: hsl(var(--border) / .65); background: hsl(var(--muted) / .12); }
       `}</style>
-      {/* Page header - kept generous; this is the moment the page "establishes
-          itself" before the content groups begin. */}
-      <header className="mb-6 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-500">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-[.16em] text-muted-foreground">Workspace</p>
-        <h1 className="text-[34px] font-bold tracking-[-0.035em]">Settings</h1>
-        <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-          Set up how your business looks, bills customers, and works for your team.
-        </p>
+      {/* Page header. In the modal it's a fixed top bar; on the full page it's
+          the generous page title. */}
+      <header className={cn(inModal ? "shrink-0 border-b border-border/60 px-6 py-4 sm:px-8" : "mb-6")}>
+        {!inModal && <p className="mb-1 text-xs font-semibold uppercase tracking-[.16em] text-muted-foreground">Workspace</p>}
+        <h1 className={cn("font-bold tracking-tight", inModal ? "text-xl" : "text-[34px] tracking-[-0.035em]")}>Settings</h1>
+        {!inModal && (
+          <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+            Set up how your business looks, bills customers, and works for your team.
+          </p>
+        )}
       </header>
 
-      {/* Tabs - replace the long scroll. Only the active panel renders, so
-          there's no off-screen content competing for attention. */}
-      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+      {/* Body. In the modal: fixed sidebar + independently-scrolling content, so
+          switching tabs never changes the popup's size. On the page: a grid. */}
+      <div className={cn(inModal ? "flex min-h-0 flex-1 flex-col lg:flex-row" : "grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]")}>
         {/* Persistent Settings sidebar (desktop). */}
-        <nav className="sticky top-4 hidden self-start lg:block" aria-label="Settings sections">
+        <nav className={cn("hidden lg:block", inModal ? "shrink-0 overflow-y-auto border-border/60 px-3 py-5 lg:w-[224px] lg:border-r" : "sticky top-4 self-start")} aria-label="Settings sections">
           <div className="space-y-5">
             {NAV_GROUPS.map((g) => (
               <div key={g.group}>
@@ -992,7 +991,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         </nav>
 
         {/* Compact selector on mobile/tablet. */}
-        <div className="lg:hidden">
+        <div className={cn("lg:hidden", inModal ? "shrink-0 px-6 pt-4" : "")}>
           <label className="relative block">
             <select
               value={active}
@@ -1013,7 +1012,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         </div>
 
         {/* Selected settings page. */}
-        <div className="min-w-0">
+        <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-6 sm:px-8" : "")}>
           {(() => {
             switch (active) {
               case "business-profile":
@@ -1029,18 +1028,19 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                         <div className="space-y-2"><Label htmlFor="bizWebsite">Website</Label><Input id="bizWebsite" type="url" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://yourcompany.co.za" /></div>
                         <div className="space-y-2"><Label htmlFor="bizAddress">Business address</Label><Input id="bizAddress" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Johannesburg, South Africa" /></div>
                       </div>
-                      <section className="space-y-3 border-t border-border/60 pt-6">
-                        <div><h3 className="text-sm font-semibold">Business type</h3><p className="mt-1 text-xs text-muted-foreground">The industry that best describes your business.</p></div>
-                        <BusinessTypeSelector value={form.businessType} onChange={(t) => setForm((f) => ({ ...f, businessType: t }))} compact />
-                      </section>
+                      <div className="border-t border-border/60 pt-6">
+                        <Label className="text-xs font-normal text-muted-foreground">Business type</Label>
+                        <div className="mt-1.5 flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{form.businessType || "Not set"}</div>
+                        <p className="mt-1 text-[11px] text-muted-foreground">Chosen when your account was created — it can't be changed here.</p>
+                      </div>
                       <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">Legal name, tax numbers and banking details for invoices live under <button type="button" onClick={() => go("invoicing")} className="font-medium text-foreground underline underline-offset-2 hover:no-underline">Invoice Settings</button>.</p>
                     </div>
                   </div>
                 );
               case "branding":
                 return (
-                  <div>
-                    <PageHeader title="Branding" description="Your logo, browser icon and company colour — used across the app, customer messages and invoices." />
+                  <div className="space-y-8">
+                    <PageHeader title="Branding & Appearance" description="Your logo, colour, browser icon and the light / dark theme." />
                     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,.8fr)]">
                       <div className="space-y-8">
                         <section className="space-y-4"><div><h3 className="text-sm font-semibold">Brand images</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your main logo in the app and a smaller icon in browser tabs.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label>Logo</Label><LogoUpload variant="logo" businessName={form.businessName} value={form.logoUrl} onFile={handleLogoPicked} onRemove={() => setForm((f) => ({ ...f, logoUrl: "" }))} /></div><div className="space-y-2"><Label>Browser icon</Label><LogoUpload variant="favicon" businessName={form.businessName} value={form.faviconUrl} onFile={handleFaviconPicked} onRemove={() => setForm((f) => ({ ...f, faviconUrl: "" }))} /></div></div></section>
@@ -1048,6 +1048,13 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                       </div>
                       <div className="lg:sticky lg:top-5"><BrandIdentityPreview businessName={form.businessName} tagline={form.businessTagline} logoUrl={form.logoUrl} faviconUrl={form.faviconUrl} primaryColor={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} /></div>
                     </div>
+                    <section className="space-y-3 border-t border-border/60 pt-7">
+                      <div><h3 className="text-sm font-semibold">Appearance</h3><p className="mt-1 text-xs text-muted-foreground">Light or dark theme. Stays in sync with the top-bar toggle and account menu.</p></div>
+                      <div className="grid max-w-md grid-cols-2 gap-3">
+                        <ThemeOption active={!theme.isDark} onClick={() => theme.setIsDark(false)} icon={Sun} label="Light" bg="bg-white" fg="bg-zinc-900" muted="bg-zinc-200" />
+                        <ThemeOption active={theme.isDark} onClick={() => theme.setIsDark(true)} icon={Moon} label="Dark" bg="bg-zinc-900" fg="bg-zinc-200" muted="bg-zinc-700" />
+                      </div>
+                    </section>
                   </div>
                 );
               case "team":
@@ -1076,18 +1083,6 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 );
               case "subscription":
                 return <BillingSection />;
-              case "appearance":
-                return (
-                  <div>
-                    <PageHeader title="Appearance" description="Choose the look that feels best to use. Stays in sync with the top-bar toggle and account menu." />
-                    <div className="max-w-md">
-                      <div className="grid grid-cols-2 gap-3">
-                        <ThemeOption active={!theme.isDark} onClick={() => theme.setIsDark(false)} icon={Sun} label="Light" bg="bg-white" fg="bg-zinc-900" muted="bg-zinc-200" />
-                        <ThemeOption active={theme.isDark} onClick={() => theme.setIsDark(true)} icon={Moon} label="Dark" bg="bg-zinc-900" fg="bg-zinc-200" muted="bg-zinc-700" />
-                      </div>
-                    </div>
-                  </div>
-                );
               default:
                 return null;
             }
@@ -1098,17 +1093,18 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
       {/* ─── Sticky save bar ───────────────────────────────────────────────
           Floats above the content with a soft backdrop blur. Slides in only
           when there are real changes - the empty state would feel like noise. */}
+      {(!inModal || hasChanges) && (
       <div
         className={cn(
           "z-30 border-t bg-background/90 backdrop-blur-md transition-all duration-300 ease-out",
-          // In the modal the bar sticks to the bottom of the scroll area; on the
-          // full page it's fixed to the viewport (offset past the app sidebar).
+          // In the modal the bar is a fixed footer at the bottom of the frame; on
+          // the full page it's fixed to the viewport (offset past the app sidebar).
           inModal
-            ? "sticky bottom-0 -mx-5 rounded-b-2xl sm:-mx-8"
+            ? "shrink-0 rounded-b-2xl border-border"
             : "fixed bottom-0 left-0 right-0 md:left-56",
-          hasChanges
+          !inModal && (hasChanges
             ? "translate-y-0 opacity-100 border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]"
-            : "translate-y-full opacity-0 border-transparent pointer-events-none",
+            : "translate-y-full opacity-0 border-transparent pointer-events-none"),
         )}
         role="region"
         aria-label="Unsaved changes"
@@ -1137,6 +1133,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

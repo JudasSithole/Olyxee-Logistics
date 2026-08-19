@@ -46,7 +46,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
+        <div className="flex min-h-0 flex-1">
           <SettingsPage inModal />
         </div>
       </div>
