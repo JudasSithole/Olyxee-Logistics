@@ -776,7 +776,7 @@ const NAV_GROUPS = [
 ] as const;
 const SETTINGS_PAGES = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
 
-export default function SettingsPage() {
+export default function SettingsPage({ inModal = false }: { inModal?: boolean } = {}) {
   const theme = useTheme();
   const { user } = useAuth();
   const { data: settingsBusiness } = useBusiness(user?.businessId);
@@ -934,7 +934,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="settings-ios mx-auto min-h-full max-w-5xl pb-32">
+    <div className={cn("settings-ios mx-auto min-h-full max-w-5xl", inModal ? "pb-4" : "pb-32")}>
       <style>{`
         .settings-ios input:not([type="color"]):not([type="range"]),
         .settings-ios textarea,
@@ -1101,7 +1101,12 @@ export default function SettingsPage() {
           when there are real changes - the empty state would feel like noise. */}
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 md:left-56 z-30 border-t bg-background/85 backdrop-blur-md transition-all duration-300 ease-out",
+          "z-30 border-t bg-background/90 backdrop-blur-md transition-all duration-300 ease-out",
+          // In the modal the bar sticks to the bottom of the scroll area; on the
+          // full page it's fixed to the viewport (offset past the app sidebar).
+          inModal
+            ? "sticky bottom-0 -mx-5 rounded-b-2xl sm:-mx-8"
+            : "fixed bottom-0 left-0 right-0 md:left-56",
           hasChanges
             ? "translate-y-0 opacity-100 border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]"
             : "translate-y-full opacity-0 border-transparent pointer-events-none",

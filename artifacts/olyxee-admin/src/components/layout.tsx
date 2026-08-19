@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package, Wallet,
   Menu, Moon, Sun, Settings, LogOut, User, ChevronDown,
-  ArrowUpCircle, Sparkles,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -16,6 +16,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useBusiness } from "@/hooks/use-supabase-queries";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
+import { SettingsModal, SettingsModalContext, useSettingsModal } from "@/components/settings-modal";
 
 // The account menu, top-right on every page. Click the avatar chip to open a
 // dropdown with profile, settings, appearance (light/dark) and sign-out — so
@@ -24,6 +25,7 @@ function TopUser() {
   const { user, signOut } = useAuth();
   const { isDark, setIsDark } = useTheme();
   const { data: business } = useBusiness(user?.businessId);
+  const { open: openSettings } = useSettingsModal();
   const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
   const email = user?.email ?? "";
@@ -64,7 +66,7 @@ function TopUser() {
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="link-profile"><User className="mr-2 h-4 w-4" /> Edit profile</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => openSettings()} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
         {/* Appearance — segmented control stays open while switching. */}
         <div className="px-2 py-1.5">
@@ -86,11 +88,6 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/orders", label: "Jobs", icon: Package },
   { href: "/finance", label: "Finance", icon: Wallet },
-];
-
-// Launch-prep nav: pricing.
-const GROWTH_ITEMS = [
-  { href: "/upgrade", label: "Upgrade plan", icon: ArrowUpCircle },
 ];
 
 // A single nav row used for every sidebar link so the active treatment -
@@ -128,6 +125,7 @@ function NavLink({
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isDark, setIsDark, logoUrl, businessName } = useTheme();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -173,22 +171,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Secondary navigation. Settings now lives in the account menu (top-right). */}
-      <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-sidebar-border">
-        <div className="space-y-0.5">
-          {GROWTH_ITEMS.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              active={location === item.href || location.startsWith(item.href + "/")}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Footer — profile now lives in the top bar, so just branding here. */}
+      {/* Footer — profile + plan + settings now live in the top-bar account menu. */}
       <div className="flex-shrink-0 border-t border-sidebar-border px-5 py-2.5">
         <p className="text-[10px] text-sidebar-foreground/25 tracking-widest uppercase">Powered by Olyxee</p>
       </div>
@@ -196,8 +179,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
+    <SettingsModalContext.Provider value={{ open: () => setSettingsOpen(true) }}>
     <div className="flex h-screen bg-background">
       <InstallAppPrompt />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-56 flex-col border-r border-border flex-shrink-0">
         <SidebarContent />
@@ -264,5 +249,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
     </div>
+    </SettingsModalContext.Provider>
   );
 }
