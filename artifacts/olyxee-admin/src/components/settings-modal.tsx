@@ -32,8 +32,10 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
       aria-label="Settings"
       onMouseDown={onClose}
     >
+      {/* Fixed height + width so the modal never resizes when you switch tabs —
+          the content area inside scrolls instead. */}
       <div
-        className="relative my-auto w-full max-w-5xl rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150"
+        className="relative my-auto flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
@@ -44,7 +46,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="max-h-[88vh] overflow-y-auto px-5 py-6 sm:px-8">
+        <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
           <SettingsPage inModal />
         </div>
       </div>
