@@ -110,8 +110,7 @@ export default function OnboardingPage() {
     }
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function finishOnboarding() {
     try {
       await updateMutation.mutateAsync({
         id: user!.businessId,
@@ -146,6 +145,13 @@ export default function OnboardingPage() {
     }
   }
 
+  // Step 1's form submit (Enter key / the Continue fallback) just finishes; the
+  // invoice wizard drives its own Back/Continue/Finish without a form submit.
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await finishOnboarding();
+  }
+
   // Mini live preview of how the workspace will look the moment the user
   // hits "Finish setup" - makes the logo upload feel concrete instead of
   // an abstract field. Falls back to the first initial when no logo is set.
@@ -162,19 +168,18 @@ export default function OnboardingPage() {
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[720px] items-center justify-center px-4 py-12">
         <div className="w-full rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl ring-1 ring-black/5 px-8 py-10">
+          {step === 1 && (
           <div className="mb-8">
             <p className="text-[11px] font-medium tracking-[0.2em] uppercase text-[hsl(220,9%,46%)]">
-              {step === 1 ? "Step 2 of 3" : "Step 3 of 3"}
+              Step 2 of 3
             </p>
             <h1 className="text-[26px] font-semibold text-[hsl(220,20%,10%)] tracking-tight mt-2">
-              {step === 1 ? "Let's set up your workspace" : "Invoice details"}
+              Let's set up your workspace
             </h1>
             <p className="text-[15px] text-[hsl(220,9%,46%)] mt-1.5">
-              {step === 1
-                ? "Add your logo and business details so your dashboard, emails, and tracking pages feel like yours from day one. You can change anything later in Settings."
-                : "Add your billing and bank details so invoices are ready to send. This is optional — you can skip it and finish later in Settings."}
+              Add your logo and business details so your dashboard, emails, and tracking pages feel like yours from day one. You can change anything later in Settings.
             </p>
-            {step === 1 && form.industry && (
+            {form.industry && (
               <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[hsl(220,9%,94%)] px-3 py-1 text-[13px]">
                 <span className="text-[hsl(220,9%,40%)]">
                   Business type:{" "}
@@ -190,6 +195,7 @@ export default function OnboardingPage() {
               </div>
             )}
           </div>
+          )}
 
           {isLoading ? (
             <PageLoader />
@@ -361,51 +367,19 @@ export default function OnboardingPage() {
               </>
               )}
 
+              {/* ─── Invoice details — its own short 4-step wizard. Entirely
+                  optional: the user can Continue past empty steps or Skip out
+                  and finish later in Settings. It drives its own Back/Continue/
+                  Finish, so it lives outside the step-1 form flow. */}
               {step === 2 && (
-              <>
-              {/* ─── Invoice details (its own step) ─────────────────────────
-                  Prefilled from the account; optional, so the user can finish
-                  with it blank and complete it later in Settings. Readiness
-                  meter is hidden here so an optional step never feels like a
-                  scored checklist. */}
-              <section className="-mx-2 sm:-mx-3">
                 <InvoiceProfileFields
                   profile={invoice}
                   update={updateInvoice}
                   pickLogo={pickInvoiceLogo}
-                  required={false}
-                  showReadiness={false}
+                  onBack={() => setStep(1)}
+                  onComplete={finishOnboarding}
+                  submitting={updateMutation.isPending}
                 />
-              </section>
-
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(1)}
-                  className="h-11 px-5 font-medium text-[15px]"
-                  data-testid="button-back"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="flex-1 h-11 bg-[hsl(220,20%,10%)] hover:bg-[hsl(220,20%,20%)] text-white font-medium text-[15px]"
-                  data-testid="button-finish"
-                >
-                  {updateMutation.isPending ? "Saving…" : "Finish setup"}
-                </Button>
-              </div>
-              <button
-                type="submit"
-                disabled={updateMutation.isPending}
-                className="mx-auto block text-[13px] font-medium text-[hsl(220,9%,46%)] hover:text-[hsl(220,20%,10%)] transition-colors"
-                data-testid="button-skip-invoice"
-              >
-                Skip for now — I’ll add this later in Settings
-              </button>
-              </>
               )}
             </form>
           )}
