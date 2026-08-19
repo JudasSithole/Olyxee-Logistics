@@ -94,45 +94,20 @@ function NavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex items-center gap-2.5 pl-3.5 pr-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
+      className={`group relative flex items-center gap-2.5 pl-3.5 pr-3 py-2 text-sm rounded-lg transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
         active
-          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+          : "font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
       }`}
     >
       <span
         aria-hidden="true"
         className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full transition-all duration-200 ${
-          active ? "h-5 bg-sidebar-primary-foreground" : "h-0 bg-transparent group-hover:h-3 group-hover:bg-sidebar-foreground/30"
+          active ? "h-5 bg-sidebar-foreground/45" : "h-0 bg-transparent group-hover:h-3 group-hover:bg-sidebar-foreground/25"
         }`}
       />
       <Icon className="h-4 w-4 flex-shrink-0" />
       {label}
-    </Link>
-  );
-}
-
-// Signed-in user shown at the top of the sidebar (avatar + name), linking to
-// the profile page. Falls back to a placeholder when no user is loaded yet.
-function SidebarUser() {
-  const { user } = useAuth();
-  const fullName = user?.name || user?.email || "User";
-  const email = user?.email ?? "";
-  const initial = (fullName || "U").charAt(0).toUpperCase();
-  return (
-    <Link
-      href="/profile"
-      className="mx-2 mt-2 flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-sidebar-accent"
-      title="View your profile"
-      data-testid="sidebar-user"
-    >
-      <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">{initial}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-sidebar-foreground">{fullName}</p>
-        <p className="truncate text-xs text-sidebar-foreground/50">{email || "View profile"}</p>
-      </div>
     </Link>
   );
 }
@@ -164,9 +139,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {businessName}
         </span>
       </div>
-
-      {/* Signed-in user, right at the top of the sidebar. Links to the profile. */}
-      <SidebarUser />
 
       {/* Primary nav - the three core workspace destinations sit at the top on
           their own so the everyday navigation stays uncluttered. */}
