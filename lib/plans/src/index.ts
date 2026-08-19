@@ -42,10 +42,14 @@ export interface PlanConfig {
 
 export const plans: Record<PlanId, PlanConfig> = {
   beta: {
+    // Beta is simply Starter made free during the launch period: same feature
+    // set and the same monthly status-update allowance (100), just R0. Its
+    // emailLimit therefore matches Starter's so the send-time cap is identical.
     name: "BETA",
     price: 0,
     active: true,
     enforceLimits: false,
+    emailLimit: 100,
   },
 
   free: {
@@ -55,7 +59,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     name: "Starter",
     price: 89,
     orderLimit: null,
-    emailLimit: 50,
+    emailLimit: 100,
     smsLimit: 0,
     advancedCustomization: false,
     removeOlyxeeBranding: false,
@@ -68,7 +72,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Shipment tracking",
       "Branded customer tracking",
       "Delivery and collection management",
-      "Up to 50 automated emails per month",
+      "Up to 100 status updates per month",
     ],
   },
 
@@ -94,7 +98,7 @@ export const plans: Record<PlanId, PlanConfig> = {
     // (planAmountMinor = price * 100).
     price: 999,
     orderLimit: null,
-    emailLimit: null,
+    emailLimit: 500,
     smsLimit: 0,
     callMinutesLimit: 0,
     advancedCustomization: true,
@@ -106,7 +110,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Handle more cross-border freight with less admin and better control over every job. Save controller time, reduce mistakes, and protect your margins.",
     features: [
       "Everything in Starter",
-      "Higher email allowance",
+      "Up to 500 status updates per month",
     ],
     // Outcome-first roadmap, written for a freight owner (never internal/AI
     // jargon). None of these are released yet, so every item renders with a

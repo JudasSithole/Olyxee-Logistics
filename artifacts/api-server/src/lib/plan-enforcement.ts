@@ -77,8 +77,9 @@ export function checkLimit(
 // ─── Email allowance ─────────────────────────────────────────────────────────
 // The monthly email cap that actually applies at send time. It is the tighter
 // of the per-business column (`monthlyEmailLimit`, an ops-tunable safety cap)
-// and the plan catalog's `emailLimit` (Free = 50; Scale/beta = unlimited from
-// the plan side). This applies ALWAYS — independent of the dormant
+// and the plan catalog's `emailLimit` — the monthly status-update allowance
+// (Beta & Starter = 100; Scale = 500). This applies ALWAYS — independent of the
+// dormant
 // planEnforcement flag — because the email cap is a live product rule, not an
 // unfinished foundation.
 export function effectiveEmailLimit(

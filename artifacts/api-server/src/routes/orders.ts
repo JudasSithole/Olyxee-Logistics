@@ -841,9 +841,9 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
           status: emailStatus === "sent" ? "sent" : "failed",
           failureReason:
             emailStatus === "limit_reached"
-              ? "Monthly email limit reached"
+              ? "Monthly status-update limit reached"
               : emailStatus === "failed"
-                ? "Email provider send failed"
+                ? "Status update couldn't be sent"
                 : null,
         });
       }
@@ -1064,7 +1064,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
       res.json({
         success: false,
         emailNotificationId: notif[0]?.id,
-        message: `Monthly email limit reached (${emailUsage}/${emailLimit}). Upgrade to send more emails.`,
+        message: `Monthly status-update limit reached (${emailUsage}/${emailLimit}). Upgrade to send more.`,
         emailStatus: "limit_reached",
         emailUsage,
         emailLimit,

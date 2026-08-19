@@ -85,7 +85,7 @@ export function ActivityFeed() {
           <History className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm font-medium">Nothing's happened here yet</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Once you create orders, update statuses, or send emails, you'll see them here.
+            Once you create jobs, update statuses, or notify customers, you'll see them here.
           </p>
         </div>
       ) : (

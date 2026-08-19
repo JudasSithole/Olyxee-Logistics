@@ -493,7 +493,7 @@ const FREE_VALUE = [
   { title: "Convert accepted quotes to orders" },
   { title: "Air and sea freight orders" },
   { title: "Shipment status history and documents" },
-  { title: "Public customer tracking and email updates" },
+  { title: "Public customer tracking and status updates" },
   { title: "Invoices and payment status" },
 ];
 
@@ -511,7 +511,7 @@ const FREE_PLAN_ITEMS = [
   "Basic invoices and payment status",
   "Documents",
   "Dashboard and reporting",
-  "Up to 50 automated emails per month",
+  "Up to 100 status updates per month",
 ];
 
 // ─── Operational pain rows ───────────────────────────────────────────────────

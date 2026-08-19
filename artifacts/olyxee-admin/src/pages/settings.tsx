@@ -480,7 +480,7 @@ function BrandIdentityPreview({
 
         {/* Customer email line - full width */}
         <div className="space-y-1.5 sm:col-span-2">
-          <p className="text-[10px] text-muted-foreground">On customer emails</p>
+          <p className="text-[10px] text-muted-foreground">On status updates</p>
           <div className="border border-border bg-background px-3 py-2.5 rounded-lg">
             <p className="text-sm font-semibold text-foreground leading-tight">{name}</p>
             {tagline.trim() ? (
@@ -528,12 +528,19 @@ function BillingSection() {
     plan.features && plan.features.length > 0
       ? plan.features
       : [
-          "Unlimited orders",
-          "Unlimited customer emails",
+          "Unlimited jobs",
+          "Up to 100 status updates per month",
           "Unlimited customers",
         ];
 
   const emailsSent = business?.email_usage_this_month ?? 0;
+  // The monthly status-update allowance actually applied at send time: the
+  // tighter of the plan's cap and the per-business safety cap. Mirrors the
+  // server's effectiveEmailLimit so the number here matches what's enforced.
+  const statusUpdateLimit =
+    plan.emailLimit == null
+      ? business?.monthly_email_limit ?? 500
+      : Math.min(plan.emailLimit, business?.monthly_email_limit ?? 500);
 
   return (
     <SectionShell
@@ -585,17 +592,17 @@ function BillingSection() {
         </ul>
       </div>
 
-      {/* Usage snapshot - emails are unlimited on every current plan, so this is
-          purely informational rather than a cap. */}
+      {/* Usage snapshot - the monthly status-update allowance included with the
+          plan, and how many have gone out this month. */}
       <div className="px-4 py-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">Customer emails this month</p>
+          <p className="text-sm font-medium text-foreground">Status updates this month</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Included with your plan · resets on the 1st.
           </p>
         </div>
         <span className="flex-shrink-0 font-mono text-sm text-foreground">
-          {emailsSent.toLocaleString()}
+          {emailsSent.toLocaleString()} / {statusUpdateLimit.toLocaleString()}
         </span>
       </div>
 
@@ -1095,8 +1102,8 @@ function EmailCustomizationSection({
       id="emails"
       icon={Mail}
       tint={TINTS.pink}
-      title="Customer emails"
-      description="Customize the greeting, sign-off, and footer on status emails."
+      title="Status updates"
+      description="Customize the greeting, sign-off, and footer on status updates."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
     >
       {/* Token legend */}
@@ -1108,20 +1115,24 @@ function EmailCustomizationSection({
         <span className="text-muted-foreground/70">your business</span>
       </div>
 
-      {/* Emails this month - unlimited on every plan, so this is an
-          informational count only (no cap, no upgrade prompt). */}
+      {/* Status updates this month - usage against the plan's monthly allowance
+          (the tighter of the plan cap and the per-business safety cap). */}
       {(() => {
         const used = business?.email_usage_this_month ?? 0;
+        const planId = (business?.plan as PlanId | undefined) ?? "beta";
+        const planLimit = (plans[planId] ?? plans.beta).emailLimit;
+        const cap = business?.monthly_email_limit ?? 500;
+        const limit = planLimit == null ? cap : Math.min(planLimit, cap);
         return (
           <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
             <div className="min-w-0">
-              <span className="font-medium text-foreground">Emails this month</span>
+              <span className="font-medium text-foreground">Status updates this month</span>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Unlimited on your plan · resets on the 1st.
+                Included with your plan · resets on the 1st.
               </p>
             </div>
             <span className="flex-shrink-0 font-mono text-muted-foreground">
-              {used.toLocaleString()}
+              {used.toLocaleString()} / {limit.toLocaleString()}
             </span>
           </div>
         );
@@ -1139,7 +1150,7 @@ function EmailCustomizationSection({
         <>
           <SectionRow
             label="Greeting"
-            hint="The first line of every status email."
+            hint="The first line of every status update."
             htmlFor="emailGreeting"
           >
             <Input

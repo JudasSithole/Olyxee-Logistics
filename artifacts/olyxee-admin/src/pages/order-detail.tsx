@@ -297,10 +297,10 @@ export default function OrderDetailPage() {
         onSuccess: (data) => {
           if (data?.emailStatus === "limit_reached") {
             toast.warning(
-              `Status updated, but the email wasn't sent - you've reached this month's email limit (${data.emailUsage ?? ""}/${data.emailLimit ?? ""}). Upgrade to keep notifying customers.`,
+              `Status updated, but the status update wasn't sent - you've reached this month's status-update limit (${data.emailUsage ?? ""}/${data.emailLimit ?? ""}). Upgrade to keep notifying customers.`,
             );
           } else if (data?.emailStatus === "failed") {
-            toast.warning(`Status updated to "${statusForm.status}", but the email failed to send.`);
+            toast.warning(`Status updated to "${statusForm.status}", but the status update failed to send.`);
           } else {
             toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
           }
@@ -320,16 +320,16 @@ export default function OrderDetailPage() {
           if (data?.emailStatus === "limit_reached") {
             toast.warning(
               data.message ||
-                "Monthly email limit reached. Upgrade to send more emails.",
+                "Monthly status-update limit reached. Upgrade to send more.",
             );
           } else if (!data?.success) {
-            toast.error(data?.message || "Failed to resend email");
+            toast.error(data?.message || "Failed to resend status update");
           } else {
-            toast.success("Email resent to customer");
+            toast.success("Status update resent to customer");
           }
           refetch();
         },
-        onError: () => toast.error("Failed to resend email"),
+        onError: () => toast.error("Failed to resend status update"),
       }
     );
   };
@@ -388,7 +388,7 @@ export default function OrderDetailPage() {
           disabled={resendMutation.isPending}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? "animate-spin" : ""}`} />
-          Resend email
+          Resend update
         </Button><Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-1 h-3.5 w-3.5"/>Delete</Button></div>
       </div>
 
@@ -597,7 +597,7 @@ export default function OrderDetailPage() {
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-base font-semibold">Email History</span>
+                    <span className="text-base font-semibold">Status updates</span>
                     <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 border">
                       {notificationLogs?.length ?? 0}
                     </span>
@@ -608,7 +608,7 @@ export default function OrderDetailPage() {
               <CollapsibleContent>
                 <CardContent className="space-y-2 pt-0">
                   {!notificationLogs?.length ? (
-                    <p className="text-sm text-muted-foreground">No emails sent yet.</p>
+                    <p className="text-sm text-muted-foreground">No status updates sent yet.</p>
                   ) : (
                     notificationLogs.map((notif: any) => (
                       <div key={notif.id} className="flex items-start justify-between gap-3 p-3 border bg-muted/20">
