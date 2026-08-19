@@ -175,11 +175,13 @@ function AppRoutes() {
       <Route path="/customers/:id" component={() => <Protected component={CustomerDetailPage} />} />
       <Route path="/orders" component={() => <Protected component={OrdersPage} />} />
       <Route path="/orders/:id" component={() => <Protected component={OrderDetailPage} />} />
-      {/* Finance workspace: one page with Invoices | Job Costs | Job Profit
-          sub-tabs, plus the "Needs financial attention" header. */}
+      {/* Finance workspace: Invoices | Jobs sub-tabs, a Gross-profit KPI and the
+          "Needs attention" list. Older /finance/costs and /finance/profit URLs
+          fold into the merged Jobs tab. */}
       <Route path="/finance" component={() => <Protected component={() => <FinancePage tab="invoices" />} />} />
-      <Route path="/finance/costs" component={() => <Protected component={() => <FinancePage tab="costs" />} />} />
-      <Route path="/finance/profit" component={() => <Protected component={() => <FinancePage tab="profit" />} />} />
+      <Route path="/finance/jobs" component={() => <Protected component={() => <FinancePage tab="jobs" />} />} />
+      <Route path="/finance/costs"><Redirect to="/finance/jobs" /></Route>
+      <Route path="/finance/profit"><Redirect to="/finance/jobs" /></Route>
       {/* Legacy /invoices → Finance. Invoice detail keeps its /invoices/:id URL. */}
       <Route path="/invoices"><Redirect to="/finance" /></Route>
       <Route path="/invoices/:id" component={() => <Protected component={InvoiceDetailPage} />} />

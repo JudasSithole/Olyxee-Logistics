@@ -12,56 +12,36 @@ import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 
-function UserRow() {
+// Compact profile chip for the top bar (avatar + name → profile) plus sign-out.
+// Sits next to the theme toggle so account access is top-right on every page.
+function TopUser() {
   const { user, signOut } = useAuth();
-  const [location, setLocation] = useLocation();
-
-  // AuthUser exposes `name` + `email` directly (set by the auth context from
-  // /auth/me). The previous `user_metadata` shape was a leftover from an
-  // earlier Supabase implementation and never existed on this type.
+  const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
-  const email = user?.email ?? "";
   const initial = (fullName || "U").charAt(0).toUpperCase();
-  const isOnProfile = location === "/profile";
 
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3">
-      {/* Avatar + name double as the link to the profile page so the user
-          can click their name in the sidebar to manage their account. */}
+    <div className="flex items-center gap-1">
       <Link
         href="/profile"
-        className={`flex items-center gap-2.5 flex-1 min-w-0 -mx-1 px-1 py-1 transition-colors ${
-          isOnProfile
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-        }`}
+        className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 transition-colors hover:bg-muted sm:pr-2.5"
         title="Edit your profile"
         data-testid="link-profile"
       >
         <Avatar className="h-7 w-7 flex-shrink-0">
-          <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-            {initial}
-          </AvatarFallback>
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium truncate">{fullName}</p>
-          {email ? (
-            <p className="text-xs text-sidebar-foreground/50 truncate">{email}</p>
-          ) : null}
-        </div>
+        <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">{fullName}</span>
       </Link>
       <button
         type="button"
-        onClick={async () => {
-          await signOut();
-          setLocation("/login");
-        }}
-        className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors p-1"
+        onClick={async () => { await signOut(); setLocation("/login"); }}
+        className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-label="Sign out"
         title="Sign out"
         data-testid="button-signout"
       >
-        <LogOut className="h-3.5 w-3.5" />
+        <LogOut className="h-4 w-4" />
       </button>
     </div>
   );
@@ -181,15 +161,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       </div>
 
-      {/* Footer */}
-      <div className="flex-shrink-0 border-t border-sidebar-border">
-        {/* User row */}
-        <UserRow />
-
-        {/* Olyxee branding */}
-        <div className="px-5 py-2 border-t border-sidebar-border">
-          <p className="text-[10px] text-sidebar-foreground/25 tracking-widest uppercase">Powered by Olyxee</p>
-        </div>
+      {/* Footer — profile now lives in the top bar, so just branding here. */}
+      <div className="flex-shrink-0 border-t border-sidebar-border px-5 py-2.5">
+        <p className="text-[10px] text-sidebar-foreground/25 tracking-widest uppercase">Powered by Olyxee</p>
       </div>
     </div>
   );
@@ -225,6 +199,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
           {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
         </button>
+        <TopUser />
       </div>
 
       {/* Main Content.
@@ -234,7 +209,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           can still use the full container width on a 27" screen.
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">
-        <div className="hidden h-14 shrink-0 items-center justify-end border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
+        <div className="hidden h-14 shrink-0 items-center justify-end gap-3 border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
           <button
             type="button"
             onClick={() => setIsDark(!isDark)}
@@ -249,6 +224,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {isDark ? <Moon className="h-3.5 w-3.5 text-indigo-400" /> : <Sun className="h-3.5 w-3.5 text-amber-500" />}
             </span>
           </button>
+          <div className="h-6 w-px bg-border" />
+          <TopUser />
         </div>
         <div className="flex-1 overflow-auto">
           <div

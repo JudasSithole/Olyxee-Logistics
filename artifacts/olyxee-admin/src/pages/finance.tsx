@@ -1,10 +1,11 @@
 import { useMemo, useState, type ElementType } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   AlertTriangle, Clock, PackageCheck, TrendingDown, ReceiptText,
   Plane, Ship, Plus, Trash2, ArrowRight, Wallet, CheckCircle2,
-  Send, Printer, Package,
+  Send, Printer, Package, TrendingUp,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +31,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORIES = Object.keys(CATEGORY_LABELS);
 
-// Never mixes currencies — every amount is rendered with its own currency code.
 function money(currency: string, n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return "—";
   return `${currency} ${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -44,6 +44,8 @@ function ModeIcon({ mode }: { mode: string | null }) {
   if (mode === "SEA") return <Ship className="h-3.5 w-3.5 text-muted-foreground" />;
   return null;
 }
+
+const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -68,6 +70,10 @@ interface JobRow {
 interface Summary {
   primaryCurrency: string; mixedCurrencies: boolean; lowMarginThreshold: number;
   totals: { invoiced: number; received: number; outstanding: number; overdueValue: number; overdueCount: number };
+  grossProfit: {
+    currency: string; total: number; revenue: number; cost: number; marginPct: number | null; jobCount: number;
+    trend: { month: string; value: number }[];
+  };
   attention: {
     overdue: { invoiceId: string; invoiceNumber: string; orderId: string; customerName: string; total: number; currency: string; daysOverdue: number }[];
     awaitingConfirmation: { invoiceId: string; invoiceNumber: string; orderId: string; customerName: string; total: number; currency: string }[];
@@ -77,8 +83,8 @@ interface Summary {
   };
 }
 
-// Derive the customer-facing invoice status, computing Overdue dynamically (the
-// DB never persists `overdue` reliably — see finance.ts).
+// Derive the invoice status shown to the user, computing Overdue dynamically
+// (the DB never persists `overdue` reliably — see finance.ts).
 function invoiceStatus(inv: { status: string; dueDate: string | null }): { label: string; cls: string } {
   const past = !!inv.dueDate && new Date(inv.dueDate).getTime() < Date.now();
   if (inv.status === "paid") return { label: "Paid", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" };
@@ -89,55 +95,83 @@ function invoiceStatus(inv: { status: string; dueDate: string | null }): { label
   return { label: inv.status, cls: "bg-muted text-muted-foreground" };
 }
 
-const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
+// ─── The one Finance KPI: Gross profit (chart) ───────────────────────────────
+// Deliberately the only headline metric, and one the dashboard does NOT have
+// (the dashboard shows revenue, never cost/profit).
 
-// ─── Needs financial attention + totals header ───────────────────────────────
+function GrossProfitKPI({ gp }: { gp: Summary["grossProfit"] }) {
+  const [, navigate] = useLocation();
+  const cur = gp.currency;
+  const positive = gp.total >= 0;
+  const line = positive ? "#10b981" : "#dc2626";
 
-function Stat({ label, value, accent, note }: { label: string; value: string; accent?: string; note?: string }) {
   return (
-    <div className="px-5 py-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${accent ?? ""}`}>{value}</p>
-      {note ? <p className="mt-0.5 text-[11px] text-muted-foreground">{note}</p> : null}
+    <div className="rounded-2xl border border-border/70 bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <TrendingUp className="h-3.5 w-3.5" /> Gross profit
+          </p>
+          <p className={`mt-1 text-[26px] font-bold tracking-tight tabular-nums ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"}`}>{money(cur, gp.total)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {gp.jobCount > 0
+              ? <>{gp.marginPct ?? 0}% margin · {money(cur, gp.revenue)} revenue − {money(cur, gp.cost)} costs · {gp.jobCount} job{gp.jobCount > 1 ? "s" : ""}</>
+              : "Across invoiced jobs that have costs recorded"}
+          </p>
+        </div>
+      </div>
+
+      {gp.jobCount === 0 ? (
+        <div className="mt-4 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 py-8 text-center">
+          <Wallet className="h-7 w-7 text-muted-foreground/40" />
+          <p className="text-sm font-medium">No profit to show yet</p>
+          <p className="max-w-xs text-xs text-muted-foreground">Add costs to an invoiced job and its profit appears here.</p>
+          <Button size="sm" variant="outline" className="mt-1" onClick={() => navigate("/finance/jobs")}>Go to jobs</Button>
+        </div>
+      ) : (
+        <div className="mt-4" style={{ height: 168 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={gp.trend} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gpFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={line} stopOpacity={0.28} />
+                  <stop offset="95%" stopColor={line} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.2} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} width={36} tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
+              <Tooltip formatter={(v: number) => [money(cur, Number(v)), "Gross profit"]} />
+              <Area type="monotone" dataKey="value" stroke={line} strokeWidth={2.5} fill="url(#gpFill)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
 
-interface Attn { key: string; href: string; icon: ElementType; tone: string; title: string; sub: string; }
+// ─── Needs attention (opens the right dialog in place) ───────────────────────
 
-// One flat, priority-ordered list of things the owner should act on. Overdue
-// money first, then jobs to invoice, then awaiting payment, missing costs, low
-// margin. Each links straight to the invoice or job.
-function buildAttention(s: Summary): Attn[] {
-  const a = s.attention;
-  const out: Attn[] = [];
-  for (const o of a.overdue) out.push({ key: "ov" + o.invoiceId, href: `/invoices/${o.invoiceId}`, icon: AlertTriangle, tone: "text-red-500", title: `${o.customerName} owes ${money(o.currency, o.total)}`, sub: `${o.invoiceNumber} · ${o.daysOverdue} day${o.daysOverdue === 1 ? "" : "s"} overdue` });
-  for (const j of a.completedNotInvoiced) out.push({ key: "cni" + j.orderId, href: `/orders/${j.orderId}`, icon: PackageCheck, tone: "text-blue-500", title: `${j.jobNumber} is delivered — invoice it`, sub: j.customerName + (j.route ? ` · ${j.route}` : "") });
-  for (const o of a.awaitingConfirmation) out.push({ key: "aw" + o.invoiceId, href: `/invoices/${o.invoiceId}`, icon: Clock, tone: "text-amber-500", title: `${o.customerName} — awaiting payment`, sub: `${o.invoiceNumber} · ${money(o.currency, o.total)}` });
-  for (const j of a.missingCosts) out.push({ key: "mc" + j.orderId, href: "/finance/costs", icon: ReceiptText, tone: "text-violet-500", title: `${j.jobNumber} has no costs recorded`, sub: `${j.customerName} · add costs to see profit` });
-  for (const j of a.lowMargin) out.push({ key: "lm" + j.orderId, href: "/finance/profit", icon: TrendingDown, tone: "text-rose-500", title: `${j.jobNumber} is low margin (${j.marginPct}%)`, sub: j.customerName });
-  return out;
-}
+interface Attn { key: string; icon: ElementType; tone: string; title: string; sub: string; open: () => void; }
 
-function FinanceHeader({ summary }: { summary: Summary | undefined }) {
-  if (!summary) return <Skeleton className="h-[104px] w-full rounded-2xl" />;
-  const { totals, primaryCurrency: cur } = summary;
-  const items = buildAttention(summary);
+function FinanceHeader({ summary, onOpenInvoice, onOpenCosts }: { summary: Summary | undefined; onOpenInvoice: (id: string) => void; onOpenCosts: (orderId: string) => void }) {
+  const [, navigate] = useLocation();
+  if (!summary) return <Skeleton className="h-64 w-full rounded-2xl" />;
+
+  const a = summary.attention;
+  const items: Attn[] = [];
+  for (const o of a.overdue) items.push({ key: "ov" + o.invoiceId, icon: AlertTriangle, tone: "text-red-500", title: `${o.customerName} owes ${money(o.currency, o.total)}`, sub: `${o.invoiceNumber} · ${o.daysOverdue} day${o.daysOverdue === 1 ? "" : "s"} overdue`, open: () => onOpenInvoice(o.invoiceId) });
+  for (const j of a.completedNotInvoiced) items.push({ key: "cni" + j.orderId, icon: PackageCheck, tone: "text-blue-500", title: `${j.jobNumber} is delivered — invoice it`, sub: j.customerName + (j.route ? ` · ${j.route}` : ""), open: () => navigate(`/orders/${j.orderId}`) });
+  for (const o of a.awaitingConfirmation) items.push({ key: "aw" + o.invoiceId, icon: Clock, tone: "text-amber-500", title: `${o.customerName} — awaiting payment`, sub: `${o.invoiceNumber} · ${money(o.currency, o.total)}`, open: () => onOpenInvoice(o.invoiceId) });
+  for (const j of a.missingCosts) items.push({ key: "mc" + j.orderId, icon: ReceiptText, tone: "text-violet-500", title: `${j.jobNumber} has no costs recorded`, sub: `${j.customerName} · add costs to see profit`, open: () => onOpenCosts(j.orderId) });
+  for (const j of a.lowMargin) items.push({ key: "lm" + j.orderId, icon: TrendingDown, tone: "text-rose-500", title: `${j.jobNumber} is low margin (${j.marginPct}%)`, sub: `${j.customerName} · review its costs`, open: () => onOpenCosts(j.orderId) });
   const shown = items.slice(0, 5);
 
   return (
-    <div className="space-y-4">
-      {/* Money position — the three numbers that actually drive decisions. */}
-      <div className="grid grid-cols-3 divide-x divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-card">
-        <Stat label="Outstanding" value={money(cur, totals.outstanding)} accent={totals.outstanding > 0 ? "text-amber-600 dark:text-amber-400" : ""} note="owed to you" />
-        <Stat label="Overdue" value={money(cur, totals.overdueValue)} accent={totals.overdueValue > 0 ? "text-red-600 dark:text-red-400" : ""} note={totals.overdueCount ? `${totals.overdueCount} invoice${totals.overdueCount > 1 ? "s" : ""}` : "none"} />
-        <Stat label="Received" value={money(cur, totals.received)} accent="text-emerald-600 dark:text-emerald-400" note="paid to date" />
-      </div>
-      {summary.mixedCurrencies ? (
-        <p className="px-1 text-xs text-muted-foreground">Showing {cur} only — other currencies are excluded so totals never mix.</p>
-      ) : null}
+    <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+      <GrossProfitKPI gp={summary.grossProfit} />
 
-      {/* Needs attention — only rendered when there's something to do. */}
       {items.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
           <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
@@ -146,19 +180,23 @@ function FinanceHeader({ summary }: { summary: Summary | undefined }) {
           </div>
           <div className="divide-y divide-border/50">
             {shown.map((it) => (
-              <Link key={it.key} href={it.href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
+              <button key={it.key} onClick={it.open} className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40">
                 <it.icon className={`h-4 w-4 shrink-0 ${it.tone}`} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{it.title}</span>
                   <span className="block truncate text-xs text-muted-foreground">{it.sub}</span>
                 </span>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
+              </button>
             ))}
           </div>
           {items.length > shown.length ? <p className="px-4 py-2 text-xs text-muted-foreground">+{items.length - shown.length} more</p> : null}
         </div>
-      ) : null}
+      ) : (
+        <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card px-4 text-sm text-muted-foreground">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Nothing needs attention right now.
+        </div>
+      )}
     </div>
   );
 }
@@ -168,8 +206,7 @@ function FinanceHeader({ summary }: { summary: Summary | undefined }) {
 function SubTabs({ active }: { active: string }) {
   const tabs = [
     { key: "invoices", label: "Invoices", href: "/finance" },
-    { key: "costs", label: "Job Costs", href: "/finance/costs" },
-    { key: "profit", label: "Job Profit", href: "/finance/profit" },
+    { key: "jobs", label: "Jobs", href: "/finance/jobs" },
   ];
   return (
     <div className="inline-flex gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
@@ -183,7 +220,7 @@ function SubTabs({ active }: { active: string }) {
   );
 }
 
-// ─── Invoice quick-view popup ────────────────────────────────────────────────
+// ─── Invoice quick-view popup (real branded invoice) ─────────────────────────
 
 function InvoiceDialog({ invoiceId, onClose }: { invoiceId: string; onClose: () => void }) {
   const [, navigate] = useLocation();
@@ -196,93 +233,28 @@ function InvoiceDialog({ invoiceId, onClose }: { invoiceId: string; onClose: () 
   };
   const action = useMutation({
     mutationFn: (name: "send" | "pay") => apiFetch(`/api/invoices/${invoiceId}/${name}`, { method: "POST" }),
-    onSuccess: (_d, name) => {
-      toast.success(name === "pay" ? "Payment confirmed" : "Invoice sent to the customer");
-      invalidate();
-      if (name === "pay") onClose();
-    },
+    onSuccess: (_d, name) => { toast.success(name === "pay" ? "Payment confirmed" : "Invoice sent to the customer"); invalidate(); if (name === "pay") onClose(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const inv = q.data;
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      {/* Wide + scrollable so the real branded A4 invoice shows in full. */}
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[860px]">
-        {/* Action bar — hidden when printing so only the invoice prints. Clear,
-            labelled buttons; the main action for this invoice's state comes first. */}
         <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/95 px-4 py-3 pr-12 backdrop-blur print:hidden">
-          <DialogHeader className="space-y-0">
-            <DialogTitle className="font-mono text-sm">{inv?.invoiceNumber ?? "Invoice"}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader className="space-y-0"><DialogTitle className="font-mono text-sm">{inv?.invoiceNumber ?? "Invoice"}</DialogTitle></DialogHeader>
           <div className="flex flex-wrap gap-2">
-            {inv?.status === "draft" ? (
-              <Button size="sm" className="gap-1.5" disabled={action.isPending} onClick={() => action.mutate("send")}><Send className="h-3.5 w-3.5" /> Send to customer</Button>
-            ) : null}
-            {inv?.status === "sent" ? (
-              <Button size="sm" className="gap-1.5" disabled={action.isPending} onClick={() => action.mutate("pay")}><CheckCircle2 className="h-3.5 w-3.5" /> Confirm payment</Button>
-            ) : null}
+            {inv?.status === "draft" ? <Button size="sm" className="gap-1.5" disabled={action.isPending} onClick={() => action.mutate("send")}><Send className="h-3.5 w-3.5" /> Send to customer</Button> : null}
+            {inv?.status === "sent" ? <Button size="sm" className="gap-1.5" disabled={action.isPending} onClick={() => action.mutate("pay")}><CheckCircle2 className="h-3.5 w-3.5" /> Confirm payment</Button> : null}
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => window.print()}><Printer className="h-3.5 w-3.5" /> Print / PDF</Button>
             {inv ? <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(`/orders/${inv.orderId}`)}><Package className="h-3.5 w-3.5" /> Open job</Button> : null}
           </div>
         </div>
-        {/* Grey mat behind the white page, like a real invoice preview. */}
         <div className="bg-slate-100 p-4 dark:bg-neutral-900 sm:p-6">
-          {q.isLoading ? (
-            <Skeleton className="mx-auto h-[600px] w-full max-w-[794px]" />
-          ) : inv ? (
-            <InvoiceDocument invoice={inv} />
-          ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Invoice not found.</p>
-          )}
+          {q.isLoading ? <Skeleton className="mx-auto h-[600px] w-full max-w-[794px]" /> : inv ? <InvoiceDocument invoice={inv} /> : <p className="py-8 text-center text-sm text-muted-foreground">Invoice not found.</p>}
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// ─── Invoices tab ────────────────────────────────────────────────────────────
-
-function InvoicesTab() {
-  const q = useQuery({ queryKey: ["invoices"], queryFn: () => apiFetch<{ data: InvoiceRow[]; total: number }>("/api/invoices") });
-  const [selected, setSelected] = useState<string | null>(null);
-  if (q.isLoading) return <div className="space-y-3 p-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>;
-  if (q.isError) return <Card><CardContent className="p-8 text-center"><p className="font-medium">Unable to load invoices</p><Button className="mt-4" variant="outline" onClick={() => q.refetch()}>Retry</Button></CardContent></Card>;
-  const rows = q.data?.data ?? [];
-  if (!rows.length) return <Card><CardContent className="p-0"><EmptyState icon={<ReceiptText className="h-12 w-12" />} title="No invoices yet" description="Open a job to generate its first invoice." /></CardContent></Card>;
-
-  return (
-    <>
-    <Card><CardContent className="p-0 overflow-x-auto">
-      <Table>
-        <TableHeader><TableRow>
-          <TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Job</TableHead>
-          <TableHead className="text-right">Amount</TableHead><TableHead>Due</TableHead>
-          <TableHead>Status</TableHead><TableHead className="text-right" />
-        </TableRow></TableHeader>
-        <TableBody>
-          {rows.map((inv) => {
-            const st = invoiceStatus(inv);
-            const job = inv.jobNumber || inv.orderReference || inv.trackingId || "—";
-            return (
-              <TableRow key={inv.id} className="cursor-pointer" onClick={() => setSelected(inv.id)}>
-                <TableCell className="font-mono text-sm font-semibold">{inv.invoiceNumber}</TableCell>
-                <TableCell>{inv.customerCompany || inv.customerName || "—"}</TableCell>
-                <TableCell><Link href={`/orders/${inv.orderId}`} onClick={(e) => e.stopPropagation()} className="font-mono text-sm text-muted-foreground hover:text-primary hover:underline">{job}</Link></TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{money(inv.currency, Number(inv.total))}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{inv.dueDate ? fmtDate(inv.dueDate) : "On receipt"}</TableCell>
-                <TableCell><Badge className={st.cls}>{st.label}</Badge></TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button size="sm" variant="ghost" className="text-primary hover:text-primary" onClick={() => setSelected(inv.id)}>Open</Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </CardContent></Card>
-    {selected ? <InvoiceDialog invoiceId={selected} onClose={() => setSelected(null)} /> : null}
-    </>
   );
 }
 
@@ -329,10 +301,7 @@ function JobCostEditor({ orderId, onClose }: { orderId: string; onClose: () => v
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-[600px] rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="font-mono">{order?.jobNumber ?? "Job"}</span>
-            {order?.transportMode ? <ModeIcon mode={order.transportMode} /> : null}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><span className="font-mono">{order?.jobNumber ?? "Job"}</span>{order?.transportMode ? <ModeIcon mode={order.transportMode} /> : null}</DialogTitle>
           <p className="text-sm text-muted-foreground">{order?.customerName}{order?.route ? ` · ${order.route}` : ""}</p>
         </DialogHeader>
 
@@ -340,7 +309,6 @@ function JobCostEditor({ orderId, onClose }: { orderId: string; onClose: () => v
           <div className="space-y-2 py-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : (
           <div className="space-y-4">
-            {/* existing cost lines — direct-edit, auto-save on blur */}
             <div className="space-y-2">
               {costs.length === 0 ? <p className="text-sm text-muted-foreground">No costs recorded yet. Add the first one below.</p> : null}
               {costs.map((c) => (
@@ -348,37 +316,31 @@ function JobCostEditor({ orderId, onClose }: { orderId: string; onClose: () => v
                   <select className={field} value={c.category} onChange={(e) => patchCost.mutate({ id: c.id, body: { category: e.target.value } })}>
                     {CATEGORIES.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
                   </select>
-                  <Input type="number" min="0" step="0.01" defaultValue={c.amount}
-                    className="h-10 rounded-lg text-right"
+                  <Input type="number" min="0" step="0.01" defaultValue={c.amount} className="h-10 rounded-lg text-right"
                     onBlur={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && v !== c.amount) patchCost.mutate({ id: c.id, body: { amount: v } }); }} />
                   <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => delCost.mutate(c.id)} aria-label="Delete cost"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
-              {costs.map((c) => c.note ? (
-                <p key={`n-${c.id}`} className="pl-1 text-xs text-muted-foreground">{CATEGORY_LABELS[c.category]}: {c.note}</p>
-              ) : null)}
+              {costs.map((c) => c.note ? <p key={`n-${c.id}`} className="pl-1 text-xs text-muted-foreground">{CATEGORY_LABELS[c.category]}: {c.note}</p> : null)}
             </div>
 
-            {/* add row */}
             <div className="grid grid-cols-[1fr_120px_auto] items-center gap-2 border-t border-border pt-3">
               <select className={field} value={cat} onChange={(e) => setCat(e.target.value)}>
                 {CATEGORIES.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
               </select>
               <Input type="number" min="0" step="0.01" placeholder="Amount" value={amount} className="h-10 rounded-lg text-right"
-                onChange={(e) => setAmount(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && amount) addCost.mutate(); }} />
+                onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && amount) addCost.mutate(); }} />
               <Button size="icon" className="h-9 w-9" disabled={!amount || addCost.isPending} onClick={() => addCost.mutate()} aria-label="Add cost"><Plus className="h-4 w-4" /></Button>
             </div>
             <Input placeholder="Optional note for the cost above" value={note} className="h-9 rounded-lg text-sm" onChange={(e) => setNote(e.target.value)} />
 
-            {/* totals */}
             <div className="space-y-1.5 rounded-xl bg-muted/40 p-4 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Total costs</span><span className="font-semibold">{money(cur, total)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total costs</span><span className="font-semibold tabular-nums">{money(cur, total)}</span></div>
               {revenue != null ? (
                 <>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Revenue (invoice)</span><span>{money(cur, revenue)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Revenue (invoice)</span><span className="tabular-nums">{money(cur, revenue)}</span></div>
                   {profit != null ? (
-                    <div className="flex justify-between border-t border-border pt-1.5"><span className="font-medium">Gross profit</span><span className={`font-semibold ${profit < 0 ? "text-red-600" : "text-emerald-600"}`}>{money(cur, profit)}{margin != null ? ` · ${margin}%` : ""}</span></div>
+                    <div className="flex justify-between border-t border-border pt-1.5"><span className="font-medium">Gross profit</span><span className={`font-semibold tabular-nums ${profit < 0 ? "text-red-600" : "text-emerald-600"}`}>{money(cur, profit)}{margin != null ? ` · ${margin}%` : ""}</span></div>
                   ) : <p className="border-t border-border pt-1.5 text-xs text-muted-foreground">Add costs to see profit.</p>}
                 </>
               ) : (
@@ -392,67 +354,72 @@ function JobCostEditor({ orderId, onClose }: { orderId: string; onClose: () => v
   );
 }
 
-// ─── Job Costs tab ───────────────────────────────────────────────────────────
+// ─── Invoices tab ────────────────────────────────────────────────────────────
 
-function JobCostsTab() {
-  const q = useQuery({ queryKey: ["finance", "jobs"], queryFn: () => apiFetch<{ data: JobRow[] }>("/api/finance/jobs") });
-  const [editing, setEditing] = useState<string | null>(null);
+function InvoicesTab({ onOpen }: { onOpen: (id: string) => void }) {
+  const q = useQuery({ queryKey: ["invoices"], queryFn: () => apiFetch<{ data: InvoiceRow[]; total: number }>("/api/invoices") });
   if (q.isLoading) return <div className="space-y-3 p-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>;
+  if (q.isError) return <Card><CardContent className="p-8 text-center"><p className="font-medium">Unable to load invoices</p><Button className="mt-4" variant="outline" onClick={() => q.refetch()}>Retry</Button></CardContent></Card>;
   const rows = q.data?.data ?? [];
-  if (!rows.length) return <Card><CardContent className="p-0"><EmptyState icon={<Wallet className="h-12 w-12" />} title="No jobs yet" description="Create a job to start recording its costs." /></CardContent></Card>;
+  if (!rows.length) return <Card><CardContent className="p-0"><EmptyState icon={<ReceiptText className="h-12 w-12" />} title="No invoices yet" description="Open a job to generate its first invoice." /></CardContent></Card>;
 
   return (
-    <>
-      <Card><CardContent className="p-0 overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow>
-            <TableHead>Job</TableHead><TableHead>Customer</TableHead>
-            <TableHead className="text-right">Costs</TableHead><TableHead>Status</TableHead><TableHead className="text-right" />
-          </TableRow></TableHeader>
-          <TableBody>
-            {rows.map((j) => (
-              <TableRow key={j.orderId}>
-                <TableCell className="font-mono text-sm font-semibold"><span className="inline-flex items-center gap-1.5"><ModeIcon mode={j.transportMode} />{j.jobNumber}</span></TableCell>
-                <TableCell>{j.customerName}</TableCell>
-                <TableCell className="text-right tabular-nums">{j.costCount ? money(j.currency, j.totalCost) : <span className="text-muted-foreground">—</span>}</TableCell>
-                <TableCell>{j.invoiceId ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Invoiced</Badge> : <Badge className="bg-muted text-muted-foreground">Not invoiced</Badge>}</TableCell>
-                <TableCell className="text-right"><Button size="sm" variant={j.costCount ? "ghost" : "secondary"} className={j.costCount ? "text-primary hover:text-primary" : ""} onClick={() => setEditing(j.orderId)}>{j.costCount ? "Edit" : "Add costs"}</Button></TableCell>
+    <Card><CardContent className="p-0 overflow-x-auto">
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Job</TableHead>
+          <TableHead className="text-right">Amount</TableHead><TableHead>Due</TableHead><TableHead>Status</TableHead><TableHead className="text-right" />
+        </TableRow></TableHeader>
+        <TableBody>
+          {rows.map((inv) => {
+            const st = invoiceStatus(inv);
+            const job = inv.jobNumber || inv.orderReference || inv.trackingId || "—";
+            return (
+              <TableRow key={inv.id} className="cursor-pointer" onClick={() => onOpen(inv.id)}>
+                <TableCell className="font-mono text-sm font-semibold">{inv.invoiceNumber}</TableCell>
+                <TableCell>{inv.customerCompany || inv.customerName || "—"}</TableCell>
+                <TableCell><Link href={`/orders/${inv.orderId}`} onClick={(e) => e.stopPropagation()} className="font-mono text-sm text-muted-foreground hover:text-primary hover:underline">{job}</Link></TableCell>
+                <TableCell className="text-right font-medium tabular-nums">{money(inv.currency, Number(inv.total))}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{inv.dueDate ? fmtDate(inv.dueDate) : "On receipt"}</TableCell>
+                <TableCell><Badge className={st.cls}>{st.label}</Badge></TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" className="text-primary hover:text-primary" onClick={() => onOpen(inv.id)}>Open</Button>
+                </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent></Card>
-      {editing ? <JobCostEditor orderId={editing} onClose={() => setEditing(null)} /> : null}
-    </>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </CardContent></Card>
   );
 }
 
-// ─── Job Profit tab ──────────────────────────────────────────────────────────
+// ─── Jobs tab (money per job + inline cost entry) ────────────────────────────
 
-type ProfitFilter = "all" | "high" | "low" | "missing" | "AIR" | "SEA";
+type JobFilter = "all" | "invoiced" | "missing" | "low" | "AIR" | "SEA";
 
-function JobProfitTab() {
+function JobsTab({ onEditCosts }: { onEditCosts: (orderId: string) => void }) {
   const q = useQuery({ queryKey: ["finance", "jobs"], queryFn: () => apiFetch<{ data: JobRow[]; lowMarginThreshold: number }>("/api/finance/jobs") });
-  const [filter, setFilter] = useState<ProfitFilter>("all");
+  const [filter, setFilter] = useState<JobFilter>("all");
   const threshold = q.data?.lowMarginThreshold ?? 15;
 
   const rows = useMemo(() => {
-    const invoiced = (q.data?.data ?? []).filter((r) => r.revenue != null);
+    const all = q.data?.data ?? [];
     switch (filter) {
-      case "high": return invoiced.filter((r) => r.marginPct != null && r.marginPct > threshold);
-      case "low": return invoiced.filter((r) => r.marginPct != null && r.marginPct <= threshold);
-      case "missing": return invoiced.filter((r) => !r.hasCosts);
-      case "AIR": return invoiced.filter((r) => r.transportMode === "AIR");
-      case "SEA": return invoiced.filter((r) => r.transportMode === "SEA");
-      default: return invoiced;
+      case "invoiced": return all.filter((r) => r.revenue != null);
+      case "missing": return all.filter((r) => r.revenue != null && !r.hasCosts);
+      case "low": return all.filter((r) => r.marginPct != null && r.marginPct <= threshold);
+      case "AIR": return all.filter((r) => r.transportMode === "AIR");
+      case "SEA": return all.filter((r) => r.transportMode === "SEA");
+      default: return all;
     }
   }, [q.data, filter, threshold]);
 
   if (q.isLoading) return <div className="space-y-3 p-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>;
 
-  const filters: { key: ProfitFilter; label: string }[] = [
-    { key: "all", label: "All" }, { key: "high", label: "High margin" }, { key: "low", label: "Low margin" },
-    { key: "missing", label: "Missing costs" }, { key: "AIR", label: "Air" }, { key: "SEA", label: "Sea" },
+  const filters: { key: JobFilter; label: string }[] = [
+    { key: "all", label: "All" }, { key: "invoiced", label: "Invoiced" }, { key: "missing", label: "Missing costs" },
+    { key: "low", label: "Low margin" }, { key: "AIR", label: "Air" }, { key: "SEA", label: "Sea" },
   ];
 
   return (
@@ -460,37 +427,31 @@ function JobProfitTab() {
       <div className="flex flex-wrap gap-1.5">
         {filters.map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-            {f.label}
-          </button>
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{f.label}</button>
         ))}
       </div>
       <Card><CardContent className="p-0 overflow-x-auto">
         {!rows.length ? (
-          <EmptyState icon={<Wallet className="h-12 w-12" />} title="No invoiced jobs to show" description="Profit appears once a job has an invoice. Adjust the filter or invoice a completed job." />
+          <EmptyState icon={<Wallet className="h-12 w-12" />} title="No jobs to show" description="Create a job, then record its costs and invoice to track profit." />
         ) : (
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Job</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Revenue</TableHead>
-              <TableHead className="text-right">Costs</TableHead><TableHead className="text-right">Gross profit</TableHead><TableHead className="text-right">Margin</TableHead>
+              <TableHead>Job</TableHead><TableHead>Customer</TableHead>
+              <TableHead className="text-right">Revenue</TableHead><TableHead className="text-right">Costs</TableHead>
+              <TableHead className="text-right">Profit</TableHead><TableHead className="text-right">Margin</TableHead><TableHead className="text-right" />
             </TableRow></TableHeader>
             <TableBody>
               {rows.map((j) => (
                 <TableRow key={j.orderId}>
                   <TableCell className="font-mono text-sm font-semibold"><span className="inline-flex items-center gap-1.5"><ModeIcon mode={j.transportMode} />{j.jobNumber}</span></TableCell>
                   <TableCell>{j.customerName}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(j.currency, j.revenue)}</TableCell>
-                  {j.hasCosts ? (
-                    <>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">{money(j.currency, j.totalCost)}</TableCell>
-                      <TableCell className={`text-right font-semibold tabular-nums ${(j.grossProfit ?? 0) < 0 ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>{money(j.currency, j.grossProfit)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className={j.marginPct != null && j.marginPct <= threshold ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"}>{j.marginPct}%</Badge>
-                      </TableCell>
-                    </>
-                  ) : (
-                    <TableCell colSpan={3} className="text-right"><span className="text-xs text-amber-600 dark:text-amber-400">Add costs to see profit</span></TableCell>
-                  )}
+                  <TableCell className="text-right tabular-nums">{j.revenue != null ? money(j.currency, j.revenue) : <span className="text-muted-foreground">Not invoiced</span>}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">{j.costCount ? money(j.currency, j.totalCost) : "—"}</TableCell>
+                  <TableCell className={`text-right font-semibold tabular-nums ${j.grossProfit == null ? "" : j.grossProfit < 0 ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {j.grossProfit != null ? money(j.currency, j.grossProfit) : j.revenue != null ? <span className="text-xs font-normal text-amber-600 dark:text-amber-400">Add costs</span> : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-right">{j.marginPct != null ? <Badge className={j.marginPct <= threshold ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"}>{j.marginPct}%</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="text-right"><Button size="sm" variant={j.costCount ? "ghost" : "secondary"} className={j.costCount ? "text-primary hover:text-primary" : ""} onClick={() => onEditCosts(j.orderId)}>{j.costCount ? "Edit costs" : "Add costs"}</Button></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -503,19 +464,24 @@ function JobProfitTab() {
 
 // ─── Page shell ──────────────────────────────────────────────────────────────
 
-export default function FinancePage({ tab }: { tab: "invoices" | "costs" | "profit" }) {
+export default function FinancePage({ tab }: { tab: "invoices" | "jobs" }) {
   const summaryQ = useQuery({ queryKey: ["finance", "summary"], queryFn: () => apiFetch<Summary>("/api/finance/summary") });
+  const [invoiceFor, setInvoiceFor] = useState<string | null>(null);
+  const [costsFor, setCostsFor] = useState<string | null>(null);
 
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
 
-      <FinanceHeader summary={summaryQ.data} />
+      <FinanceHeader summary={summaryQ.data} onOpenInvoice={setInvoiceFor} onOpenCosts={setCostsFor} />
 
       <div className="space-y-3">
         <SubTabs active={tab} />
-        {tab === "invoices" ? <InvoicesTab /> : tab === "costs" ? <JobCostsTab /> : <JobProfitTab />}
+        {tab === "invoices" ? <InvoicesTab onOpen={setInvoiceFor} /> : <JobsTab onEditCosts={setCostsFor} />}
       </div>
+
+      {invoiceFor ? <InvoiceDialog invoiceId={invoiceFor} onClose={() => setInvoiceFor(null)} /> : null}
+      {costsFor ? <JobCostEditor orderId={costsFor} onClose={() => setCostsFor(null)} /> : null}
     </div>
   );
 }

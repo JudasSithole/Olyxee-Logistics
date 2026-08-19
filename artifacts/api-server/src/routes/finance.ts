@@ -236,6 +236,39 @@ router.get("/finance/summary", requireAuth, async (req, res) => {
       }))
       .sort((a, b) => (a.marginPct ?? 0) - (b.marginPct ?? 0));
 
+    // The one Finance-unique KPI (the dashboard has revenue but no cost/profit):
+    // gross profit across fully-costed invoiced jobs, in the primary currency,
+    // plus a per-job breakdown for the chart. Jobs missing costs are excluded so
+    // profit is never overstated.
+    const profitRows = rows.filter((r) => r.revenue != null && r.hasCosts && r.currency === primaryCurrency);
+    const gpTotal = round2(profitRows.reduce((s, r) => s + (r.grossProfit ?? 0), 0));
+    const gpRevenue = round2(profitRows.reduce((s, r) => s + (r.revenue ?? 0), 0));
+
+    // Monthly gross-profit trend (last 6 months) for the line chart. Each job's
+    // profit is attributed to the month its invoice was issued.
+    const invByOrder = new Map(data.invoices.map((i) => [i.orderId, i]));
+    const now = new Date();
+    const trend = Array.from({ length: 6 }, (_, idx) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
+      let value = 0;
+      for (const r of profitRows) {
+        const inv = invByOrder.get(r.orderId);
+        const when = inv?.createdAt;
+        if (when && when.getFullYear() === d.getFullYear() && when.getMonth() === d.getMonth()) value += r.grossProfit ?? 0;
+      }
+      return { month: d.toLocaleString("en-ZA", { month: "short" }), value: round2(value) };
+    });
+
+    const grossProfit = {
+      currency: primaryCurrency,
+      total: gpTotal,
+      revenue: gpRevenue,
+      cost: round2(gpRevenue - gpTotal),
+      marginPct: marginPct(gpRevenue, gpTotal),
+      jobCount: profitRows.length,
+      trend,
+    };
+
     res.json({
       primaryCurrency,
       mixedCurrencies,
@@ -247,6 +280,7 @@ router.get("/finance/summary", requireAuth, async (req, res) => {
         overdueValue: round2(overdueValue),
         overdueCount,
       },
+      grossProfit,
       attention: { overdue, awaitingConfirmation, completedNotInvoiced, missingCosts, lowMargin },
     });
   } catch (err) {
