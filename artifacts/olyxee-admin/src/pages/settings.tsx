@@ -317,32 +317,22 @@ function SectionShell({
   // Accent color for the section's icon badge. Defaults to neutral gray.
   tint?: string;
 }) {
+  // Flat page (no inner card): the Settings popup is already the card, so each
+  // page reads as its own page — a heading plus divider-separated rows.
+  void Icon; void tint;
   return (
-    <section
-      id={id}
-      // scroll-mt accounts for the sticky page header so anchor jumps land
-      // with breathing room above the section title.
-      className="scroll-mt-24 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500"
-    >
-      <header className="mb-3 flex items-start justify-between gap-3 px-1.5">
-        <div className="min-w-0 flex items-center gap-3">
-          <span
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5"
-            style={{ backgroundColor: tint }}
-          >
-            <Icon className="h-[19px] w-[19px] text-white" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-foreground">{title}</h2>
-            {description && (
-              <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
-            )}
-          </div>
+    <section id={id} className="scroll-mt-24">
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+          {description && (
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          )}
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}
       </header>
 
-      <div className="overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.04)] divide-y divide-border/60">
+      <div className="divide-y divide-border/60">
         {children}
       </div>
     </section>
@@ -736,7 +726,7 @@ function PageHeader({ title, description, badge }: { title: string; description?
 function TeamManager({ ownerName, ownerEmail }: { ownerName: string; ownerEmail: string }) {
   const initial = (ownerName || "U").charAt(0).toUpperCase();
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-xl border border-border/60">
       <div className="border-b border-border/60 px-5 py-3.5">
         <p className="text-sm font-semibold">Team members</p>
         <p className="mt-0.5 text-xs text-muted-foreground">Invite teammates, assign roles and control access.</p>
@@ -1030,7 +1020,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 return (
                   <div>
                     <PageHeader title="Business Profile" description="Your company details, shown across the app and on customer-facing messages." />
-                    <div className="space-y-6 rounded-2xl border border-border bg-card p-6 sm:p-7">
+                    <div className="space-y-6">
                       <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-2"><Label htmlFor="businessName">Business name</Label><Input id="businessName" value={form.businessName} onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))} placeholder="Your business name" autoComplete="organization" /></div>
                         <div className="space-y-2"><Label htmlFor="businessTagline">Tagline</Label><Input id="businessTagline" value={form.businessTagline} onChange={(e) => setForm((f) => ({ ...f, businessTagline: e.target.value.slice(0, 80) }))} placeholder="Fast, reliable cross-border logistics" maxLength={80} /></div>
@@ -1052,7 +1042,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                   <div>
                     <PageHeader title="Branding" description="Your logo, browser icon and company colour — used across the app, customer messages and invoices." />
                     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,.8fr)]">
-                      <div className="space-y-8 rounded-2xl border border-border bg-card p-6 sm:p-7">
+                      <div className="space-y-8">
                         <section className="space-y-4"><div><h3 className="text-sm font-semibold">Brand images</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your main logo in the app and a smaller icon in browser tabs.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label>Logo</Label><LogoUpload variant="logo" businessName={form.businessName} value={form.logoUrl} onFile={handleLogoPicked} onRemove={() => setForm((f) => ({ ...f, logoUrl: "" }))} /></div><div className="space-y-2"><Label>Browser icon</Label><LogoUpload variant="favicon" businessName={form.businessName} value={form.faviconUrl} onFile={handleFaviconPicked} onRemove={() => setForm((f) => ({ ...f, faviconUrl: "" }))} /></div></div></section>
                         <section className="space-y-4 border-t border-border/60 pt-7"><div><h3 className="text-sm font-semibold">Company colour</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Used for buttons, highlights, customer messages, and invoices.</p></div><div className="flex flex-col gap-4 sm:flex-row sm:items-end"><div className="space-y-2"><Label htmlFor="brandColor">Colour</Label><input id="brandColor" type="color" value={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} onChange={(e) => setForm((f) => ({ ...f, primaryColor: e.target.value }))} className="block h-11 w-full cursor-pointer rounded-xl border border-border bg-background p-1 sm:w-16" /></div><div className="min-w-[160px] flex-1 space-y-2"><Label htmlFor="brandHex">Hex value</Label><Input id="brandHex" value={form.primaryColor} onChange={(e) => { const next = normalizeHex(e.target.value); setForm((f) => ({ ...f, primaryColor: next || e.target.value })); }} placeholder="#2b2b2b" className="font-mono uppercase" /></div><Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setForm((f) => ({ ...f, primaryColor: DEFAULT_PRIMARY }))}><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Reset</Button></div></section>
                       </div>
@@ -1090,7 +1080,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 return (
                   <div>
                     <PageHeader title="Appearance" description="Choose the look that feels best to use. Stays in sync with the top-bar toggle and account menu." />
-                    <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="max-w-md">
                       <div className="grid grid-cols-2 gap-3">
                         <ThemeOption active={!theme.isDark} onClick={() => theme.setIsDark(false)} icon={Sun} label="Light" bg="bg-white" fg="bg-zinc-900" muted="bg-zinc-200" />
                         <ThemeOption active={theme.isDark} onClick={() => theme.setIsDark(true)} icon={Moon} label="Dark" bg="bg-zinc-900" fg="bg-zinc-200" muted="bg-zinc-700" />
