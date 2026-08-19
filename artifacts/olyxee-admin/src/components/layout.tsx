@@ -113,7 +113,7 @@ function NavLink({
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { logoUrl, businessName } = useTheme();
+  const { isDark, setIsDark, logoUrl, businessName } = useTheme();
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -202,6 +202,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">{businessName}</span>
+        <button
+          type="button"
+          onClick={() => setIsDark(!isDark)}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-pressed={isDark}
+          title={isDark ? "Light mode" : "Dark mode"}
+        >
+          {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
+        </button>
         <TopUser />
       </div>
 
@@ -212,7 +222,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           can still use the full container width on a 27" screen.
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">
-        <div className="hidden h-14 shrink-0 items-center justify-end border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
+        <div className="hidden h-14 shrink-0 items-center justify-end gap-3 border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
+          <button
+            type="button"
+            onClick={() => setIsDark(!isDark)}
+            className="relative flex h-9 w-[68px] items-center rounded-full border border-border bg-muted/60 p-1 shadow-sm transition-colors hover:bg-muted"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={isDark}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <Sun className="absolute left-2 h-3.5 w-3.5 text-amber-400" />
+            <Moon className="absolute right-2 h-3.5 w-3.5 text-indigo-400" />
+            <span className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ${isDark ? "translate-x-7" : "translate-x-0"}`}>
+              {isDark ? <Moon className="h-3.5 w-3.5 text-indigo-400" /> : <Sun className="h-3.5 w-3.5 text-amber-500" />}
+            </span>
+          </button>
+          <div className="h-6 w-px bg-border" />
           <TopUser />
         </div>
         <div className="flex-1 overflow-auto">
