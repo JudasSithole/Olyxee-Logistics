@@ -1,0 +1,247 @@
+<!doctype html>
+<!--
+  Olyxee Logistics — drop-in shipment tracking page for YOUR website.
+
+  HOW TO USE
+  1) Set OLYXEE_API_BASE below to your Olyxee base URL (default is fine for most).
+  2) Publish this file at a stable path on your site, e.g. https://yourshop.co.za/track
+  3) Make sure your website's origin is saved in Olyxee → Settings (this authorises
+     your site to read the public tracking API). www and non-www count separately.
+  4) Link customers to:  https://yourshop.co.za/track?code=THEIR-TRACKING-ID
+
+  No build step, no dependencies, no API key. Everything below is plain HTML/CSS/JS.
+  Restyle freely — the look is driven by the CSS variables in :root.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track your shipment</title>
+  <style>
+    :root {
+      /* ---- Brand these to match your site ---- */
+      --brand: #10243e;          /* accent / current step */
+      --ink: #1d2733;            /* main text */
+      --muted: #6b7683;          /* secondary text */
+      --line: #e6e9ee;           /* borders */
+      --bg: #f6f7f9;             /* page background */
+      --card: #ffffff;           /* card background */
+      --ok: #12855b;             /* completed step */
+      --radius: 16px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font);
+      -webkit-font-smoothing: antialiased; line-height: 1.5;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 64px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+    .card + .card { margin-top: 16px; }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    /* Header */
+    .head { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+    .head img { height: 40px; width: auto; max-width: 160px; object-fit: contain; }
+    .head .name { font-weight: 600; font-size: 18px; }
+
+    /* Status hero */
+    .hero .label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .hero h1 { margin: 6px 0 0; font-size: 26px; letter-spacing: -.01em; }
+    .pill { display: inline-block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; }
+    .meta b { font-weight: 600; }
+
+    /* Timeline (the flow checklist) */
+    h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+    .steps { list-style: none; margin: 0; padding: 0; }
+    .step { display: flex; gap: 12px; padding: 2px 0; }
+    .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+           border: 2px solid var(--line); background: var(--card); font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .rail { flex: 0 0 auto; width: 2px; background: var(--line); margin: 0 10px; }
+    .step .body { padding-bottom: 18px; }
+    .step:last-child .body { padding-bottom: 0; }
+    .step .title { font-weight: 600; }
+    .step.completed .dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .step.current .dot { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .step.current .title { color: var(--brand); }
+    .step.upcoming .title { color: var(--muted); font-weight: 500; }
+
+    /* Event history */
+    .event { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .event:first-child { border-top: 0; }
+    .event .when { flex: 0 0 auto; width: 120px; font-size: 13px; color: var(--muted); }
+    .event .what .t { font-weight: 600; }
+    .event .what .m { font-size: 14px; color: var(--muted); }
+
+    /* States */
+    .center { text-align: center; padding: 48px 20px; }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--brand);
+               border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hide { display: none !important; }
+    a.contact { color: var(--brand); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Loading -->
+    <div id="loading" class="card center">
+      <div class="spinner"></div>
+      <div class="muted">Fetching your shipment…</div>
+    </div>
+
+    <!-- Error / not found -->
+    <div id="error" class="card center hide">
+      <h1 id="error-title" style="margin:0 0 6px;font-size:20px;">We couldn't find that shipment</h1>
+      <p id="error-body" class="muted" style="margin:0;"></p>
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="hide">
+      <div class="head">
+        <img id="biz-logo" alt="" class="hide" />
+        <div class="name" id="biz-name"></div>
+      </div>
+
+      <div class="card hero">
+        <div class="label">Shipment status</div>
+        <h1 id="status-label">—</h1>
+        <div class="pill"><span class="mono" id="tracking-id"></span> <span id="mode-pill"></span></div>
+        <div class="meta">
+          <span id="ref-wrap" class="hide"><b>Reference</b> <span id="reference"></span></span>
+          <span id="eta-wrap" class="hide"><b>Estimated delivery</b> <span id="eta"></span></span>
+          <span><b>Updated</b> <span id="updated"></span></span>
+        </div>
+      </div>
+
+      <div class="card" id="flow-card">
+        <h2>Journey</h2>
+        <ul class="steps" id="steps"></ul>
+      </div>
+
+      <div class="card" id="events-card">
+        <h2>History</h2>
+        <div id="events"></div>
+      </div>
+
+      <div class="card" id="contact-card" style="text-align:center;">
+        <span class="muted">Need help with this shipment? </span>
+        <span id="contact-links"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG — set this to your Olyxee base URL ======
+    var OLYXEE_API_BASE = "https://logistics.olyxee.com";
+    // =======================================================
+
+    // Read the tracking code: supports ?code=XXX (email format), ?trackingId=XXX,
+    // or a trailing path segment (/track/XXX).
+    function getCode() {
+      var q = new URLSearchParams(location.search);
+      var code = q.get("code") || q.get("trackingId");
+      if (code) return code.trim();
+      var parts = location.pathname.split("/").filter(Boolean);
+      var i = parts.indexOf("track");
+      if (i >= 0 && parts[i + 1]) return decodeURIComponent(parts[i + 1]).trim();
+      return "";
+    }
+
+    function el(id) { return document.getElementById(id); }
+    function show(id) { el(id).classList.remove("hide"); }
+    function hide(id) { el(id).classList.add("hide"); }
+    function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+    function fmtDate(iso) { if (!iso) return ""; var d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }); }
+    function fmtDateTime(iso) { if (!iso) return ""; var d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+
+    function fail(title, body) {
+      hide("loading"); hide("result");
+      el("error-title").textContent = title;
+      el("error-body").textContent = body;
+      show("error");
+    }
+
+    function render(data) {
+      // Branding
+      if (data.business) {
+        if (data.business.primaryColor) document.documentElement.style.setProperty("--brand", data.business.primaryColor);
+        if (data.business.logoUrl) { el("biz-logo").src = data.business.logoUrl; show("biz-logo"); }
+        el("biz-name").textContent = data.business.name || "";
+      }
+
+      // Hero
+      el("status-label").textContent = data.statusLabel || "Pending";
+      el("tracking-id").textContent = data.trackingId || "";
+      if (data.transportModeLabel) el("mode-pill").textContent = "· " + data.transportModeLabel;
+      if (data.reference) { el("reference").textContent = data.reference; show("ref-wrap"); }
+      if (data.estimatedDeliveryDate) { el("eta").textContent = fmtDate(data.estimatedDeliveryDate); show("eta-wrap"); }
+      el("updated").textContent = fmtDateTime(data.lastUpdated);
+
+      // Journey (flow checklist). Fall back to hiding the card if absent.
+      var steps = el("steps");
+      if (Array.isArray(data.flow) && data.flow.length) {
+        steps.innerHTML = data.flow.map(function (s) {
+          var mark = s.state === "completed" ? "✓" : s.state === "current" ? "●" : "";
+          return '<li class="step ' + esc(s.state) + '">' +
+                   '<span class="dot">' + mark + '</span>' +
+                   '<span class="body"><span class="title">' + esc(s.label) + '</span></span>' +
+                 '</li>';
+        }).join("");
+      } else {
+        hide("flow-card");
+      }
+
+      // History
+      var events = el("events");
+      if (Array.isArray(data.events) && data.events.length) {
+        events.innerHTML = data.events.map(function (e) {
+          var loc = e.location ? ' · ' + esc(e.location) : '';
+          var msg = e.message ? '<div class="m">' + esc(e.message) + '</div>' : '';
+          return '<div class="event">' +
+                   '<div class="when">' + esc(fmtDateTime(e.at)) + '</div>' +
+                   '<div class="what"><div class="t">' + esc(e.label) + loc + '</div>' + msg + '</div>' +
+                 '</div>';
+        }).join("");
+      } else {
+        hide("events-card");
+      }
+
+      // Contact
+      var links = [];
+      if (data.business && data.business.phone) links.push('<a class="contact" href="tel:' + esc(data.business.phone) + '">Call</a>');
+      if (data.business && data.business.email) links.push('<a class="contact" href="mailto:' + esc(data.business.email) + '?subject=Help%20with%20' + encodeURIComponent(data.trackingId || "") + '">Email</a>');
+      if (links.length) el("contact-links").innerHTML = links.join(" &nbsp;·&nbsp; ");
+      else hide("contact-card");
+
+      hide("loading"); hide("error"); show("result");
+    }
+
+    (function init() {
+      var code = getCode();
+      if (!code) {
+        fail("Missing tracking code", "This link doesn't include a tracking code. Please open the link from your email or message.");
+        return;
+      }
+      fetch(OLYXEE_API_BASE.replace(/\/$/, "") + "/api/public/track/" + encodeURIComponent(code))
+        .then(function (res) {
+          if (res.status === 404) throw { kind: "notfound" };
+          if (!res.ok) throw { kind: "error", status: res.status };
+          return res.json();
+        })
+        .then(render)
+        .catch(function (err) {
+          if (err && err.kind === "notfound") {
+            fail("Shipment not found", 'We couldn\'t find a shipment for "' + code + '". Double-check the link, or contact us if you need help.');
+          } else {
+            // A CORS block also lands here — check that this site's origin is
+            // saved in Olyxee → Settings (www and non-www count separately).
+            fail("Tracking is unavailable right now", "Please try again in a moment. If this keeps happening, contact us and we'll help.");
+          }
+        });
+    })();
+  </script>
+</body>
+</html>
