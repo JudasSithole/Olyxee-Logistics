@@ -1,4 +1,4 @@
-import { useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useMemo, useState, type ElementType } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -93,111 +93,72 @@ const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(
 
 // ─── Needs financial attention + totals header ───────────────────────────────
 
-function StatTile({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function Stat({ label, value, accent, note }: { label: string; value: string; accent?: string; note?: string }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-lg font-semibold tracking-tight ${accent ?? ""}`}>{value}</p>
+    <div className="px-5 py-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${accent ?? ""}`}>{value}</p>
+      {note ? <p className="mt-0.5 text-[11px] text-muted-foreground">{note}</p> : null}
     </div>
   );
 }
 
-function AttentionGroup({
-  icon: Icon, tone, title, count, children,
-}: { icon: ElementType; tone: string; title: string; count: number; children: ReactNode }) {
-  if (!count) return null;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2 text-[13px] font-semibold">
-        <Icon className={`h-4 w-4 ${tone}`} /> {title} <span className="text-muted-foreground">· {count}</span>
-      </div>
-      <div className="space-y-1 pl-6">{children}</div>
-    </div>
-  );
-}
+interface Attn { key: string; href: string; icon: ElementType; tone: string; title: string; sub: string; }
 
-function AttnRow({ href, primary, secondary }: { href: string; primary: string; secondary?: string }) {
-  return (
-    <Link href={href} className="group flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 -mx-2 text-sm hover:bg-muted/50">
-      <span className="min-w-0 truncate">
-        <span className="font-medium">{primary}</span>
-        {secondary ? <span className="text-muted-foreground"> · {secondary}</span> : null}
-      </span>
-      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-    </Link>
-  );
+// One flat, priority-ordered list of things the owner should act on. Overdue
+// money first, then jobs to invoice, then awaiting payment, missing costs, low
+// margin. Each links straight to the invoice or job.
+function buildAttention(s: Summary): Attn[] {
+  const a = s.attention;
+  const out: Attn[] = [];
+  for (const o of a.overdue) out.push({ key: "ov" + o.invoiceId, href: `/invoices/${o.invoiceId}`, icon: AlertTriangle, tone: "text-red-500", title: `${o.customerName} owes ${money(o.currency, o.total)}`, sub: `${o.invoiceNumber} · ${o.daysOverdue} day${o.daysOverdue === 1 ? "" : "s"} overdue` });
+  for (const j of a.completedNotInvoiced) out.push({ key: "cni" + j.orderId, href: `/orders/${j.orderId}`, icon: PackageCheck, tone: "text-blue-500", title: `${j.jobNumber} is delivered — invoice it`, sub: j.customerName + (j.route ? ` · ${j.route}` : "") });
+  for (const o of a.awaitingConfirmation) out.push({ key: "aw" + o.invoiceId, href: `/invoices/${o.invoiceId}`, icon: Clock, tone: "text-amber-500", title: `${o.customerName} — awaiting payment`, sub: `${o.invoiceNumber} · ${money(o.currency, o.total)}` });
+  for (const j of a.missingCosts) out.push({ key: "mc" + j.orderId, href: "/finance/costs", icon: ReceiptText, tone: "text-violet-500", title: `${j.jobNumber} has no costs recorded`, sub: `${j.customerName} · add costs to see profit` });
+  for (const j of a.lowMargin) out.push({ key: "lm" + j.orderId, href: "/finance/profit", icon: TrendingDown, tone: "text-rose-500", title: `${j.jobNumber} is low margin (${j.marginPct}%)`, sub: j.customerName });
+  return out;
 }
 
 function FinanceHeader({ summary }: { summary: Summary | undefined }) {
-  if (!summary) {
-    return <div className="grid gap-3 sm:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>;
-  }
-  const { totals, attention, primaryCurrency } = summary;
-  const cur = primaryCurrency;
-  const attnCount =
-    attention.overdue.length + attention.completedNotInvoiced.length +
-    attention.awaitingConfirmation.length + attention.missingCosts.length + attention.lowMargin.length;
-
-  const cap = <T,>(arr: T[]) => arr.slice(0, 4);
-  const more = (n: number) => (n > 4 ? <p className="pl-2 text-xs text-muted-foreground">+{n - 4} more</p> : null);
+  if (!summary) return <Skeleton className="h-[104px] w-full rounded-2xl" />;
+  const { totals, primaryCurrency: cur } = summary;
+  const items = buildAttention(summary);
+  const shown = items.slice(0, 5);
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-4">
-        <StatTile label="Invoiced" value={money(cur, totals.invoiced)} />
-        <StatTile label="Received" value={money(cur, totals.received)} accent="text-emerald-600 dark:text-emerald-400" />
-        <StatTile label="Outstanding" value={money(cur, totals.outstanding)} accent={totals.outstanding > 0 ? "text-amber-600 dark:text-amber-400" : ""} />
-        <StatTile label={`Overdue${totals.overdueCount ? ` (${totals.overdueCount})` : ""}`} value={money(cur, totals.overdueValue)} accent={totals.overdueValue > 0 ? "text-red-600 dark:text-red-400" : ""} />
+      {/* Money position — the three numbers that actually drive decisions. */}
+      <div className="grid grid-cols-3 divide-x divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-card">
+        <Stat label="Outstanding" value={money(cur, totals.outstanding)} accent={totals.outstanding > 0 ? "text-amber-600 dark:text-amber-400" : ""} note="owed to you" />
+        <Stat label="Overdue" value={money(cur, totals.overdueValue)} accent={totals.overdueValue > 0 ? "text-red-600 dark:text-red-400" : ""} note={totals.overdueCount ? `${totals.overdueCount} invoice${totals.overdueCount > 1 ? "s" : ""}` : "none"} />
+        <Stat label="Received" value={money(cur, totals.received)} accent="text-emerald-600 dark:text-emerald-400" note="paid to date" />
       </div>
       {summary.mixedCurrencies ? (
-        <p className="text-xs text-muted-foreground">Totals show {cur} only — invoices in other currencies are excluded to avoid mixing them.</p>
+        <p className="px-1 text-xs text-muted-foreground">Showing {cur} only — other currencies are excluded so totals never mix.</p>
       ) : null}
 
-      <Card>
-        <CardContent className="p-4 sm:p-5">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Needs financial attention</p>
-          {attnCount === 0 ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Nothing needs attention — you're all caught up.</div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <AttentionGroup icon={AlertTriangle} tone="text-red-500" title="Overdue invoices" count={attention.overdue.length}>
-                {cap(attention.overdue).map((o) => (
-                  <AttnRow key={o.invoiceId} href={`/invoices/${o.invoiceId}`} primary={`${o.invoiceNumber} · ${o.customerName}`} secondary={`${money(o.currency, o.total)} · ${o.daysOverdue}d late`} />
-                ))}
-                {more(attention.overdue.length)}
-              </AttentionGroup>
-
-              <AttentionGroup icon={PackageCheck} tone="text-blue-500" title="Completed, not invoiced" count={attention.completedNotInvoiced.length}>
-                {cap(attention.completedNotInvoiced).map((j) => (
-                  <AttnRow key={j.orderId} href={`/orders/${j.orderId}`} primary={j.jobNumber} secondary={`${j.customerName} — delivered`} />
-                ))}
-                {more(attention.completedNotInvoiced.length)}
-              </AttentionGroup>
-
-              <AttentionGroup icon={Clock} tone="text-amber-500" title="Awaiting payment" count={attention.awaitingConfirmation.length}>
-                {cap(attention.awaitingConfirmation).map((o) => (
-                  <AttnRow key={o.invoiceId} href={`/invoices/${o.invoiceId}`} primary={`${o.invoiceNumber} · ${o.customerName}`} secondary={money(o.currency, o.total)} />
-                ))}
-                {more(attention.awaitingConfirmation.length)}
-              </AttentionGroup>
-
-              <AttentionGroup icon={ReceiptText} tone="text-violet-500" title="Invoiced, missing costs" count={attention.missingCosts.length}>
-                {cap(attention.missingCosts).map((j) => (
-                  <AttnRow key={j.orderId} href="/finance/costs" primary={j.jobNumber} secondary={`${j.customerName} — no costs recorded`} />
-                ))}
-                {more(attention.missingCosts.length)}
-              </AttentionGroup>
-
-              <AttentionGroup icon={TrendingDown} tone="text-rose-500" title={`Low margin (≤ ${summary.lowMarginThreshold}%)`} count={attention.lowMargin.length}>
-                {cap(attention.lowMargin).map((j) => (
-                  <AttnRow key={j.orderId} href="/finance/profit" primary={j.jobNumber} secondary={`${j.customerName} · ${j.marginPct}% margin`} />
-                ))}
-                {more(attention.lowMargin.length)}
-              </AttentionGroup>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Needs attention — only rendered when there's something to do. */}
+      {items.length > 0 ? (
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
+          <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
+            <span className="text-[13px] font-semibold">Needs attention</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">{items.length}</span>
+          </div>
+          <div className="divide-y divide-border/50">
+            {shown.map((it) => (
+              <Link key={it.key} href={it.href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
+                <it.icon className={`h-4 w-4 shrink-0 ${it.tone}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{it.title}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{it.sub}</span>
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              </Link>
+            ))}
+          </div>
+          {items.length > shown.length ? <p className="px-4 py-2 text-xs text-muted-foreground">+{items.length - shown.length} more</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -211,10 +172,10 @@ function SubTabs({ active }: { active: string }) {
     { key: "profit", label: "Job Profit", href: "/finance/profit" },
   ];
   return (
-    <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
+    <div className="inline-flex gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
       {tabs.map((t) => (
         <Link key={t.key} href={t.href}
-          className={`flex-1 rounded-lg py-2 text-center text-sm font-medium transition-colors ${active === t.key ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${active === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
           {t.label}
         </Link>
       ))}
@@ -296,7 +257,7 @@ function InvoicesTab() {
       <Table>
         <TableHeader><TableRow>
           <TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Job</TableHead>
-          <TableHead className="text-right">Amount</TableHead><TableHead>Issued</TableHead><TableHead>Due</TableHead>
+          <TableHead className="text-right">Amount</TableHead><TableHead>Due</TableHead>
           <TableHead>Status</TableHead><TableHead className="text-right" />
         </TableRow></TableHeader>
         <TableBody>
@@ -307,13 +268,12 @@ function InvoicesTab() {
               <TableRow key={inv.id} className="cursor-pointer" onClick={() => setSelected(inv.id)}>
                 <TableCell className="font-mono text-sm font-semibold">{inv.invoiceNumber}</TableCell>
                 <TableCell>{inv.customerCompany || inv.customerName || "—"}</TableCell>
-                <TableCell><Link href={`/orders/${inv.orderId}`} onClick={(e) => e.stopPropagation()} className="font-mono text-sm hover:text-primary hover:underline">{job}</Link></TableCell>
-                <TableCell className="text-right font-medium">{money(inv.currency, Number(inv.total))}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{fmtDate(inv.createdAt)}</TableCell>
+                <TableCell><Link href={`/orders/${inv.orderId}`} onClick={(e) => e.stopPropagation()} className="font-mono text-sm text-muted-foreground hover:text-primary hover:underline">{job}</Link></TableCell>
+                <TableCell className="text-right font-medium tabular-nums">{money(inv.currency, Number(inv.total))}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{inv.dueDate ? fmtDate(inv.dueDate) : "On receipt"}</TableCell>
                 <TableCell><Badge className={st.cls}>{st.label}</Badge></TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button size="sm" variant="secondary" onClick={() => setSelected(inv.id)}>View</Button>
+                  <Button size="sm" variant="ghost" className="text-primary hover:text-primary" onClick={() => setSelected(inv.id)}>Open</Button>
                 </TableCell>
               </TableRow>
             );
@@ -446,18 +406,17 @@ function JobCostsTab() {
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Job</TableHead><TableHead>Customer</TableHead><TableHead>Route</TableHead>
-            <TableHead className="text-right">Costs</TableHead><TableHead>Invoiced</TableHead><TableHead className="text-right" />
+            <TableHead>Job</TableHead><TableHead>Customer</TableHead>
+            <TableHead className="text-right">Costs</TableHead><TableHead>Status</TableHead><TableHead className="text-right" />
           </TableRow></TableHeader>
           <TableBody>
             {rows.map((j) => (
               <TableRow key={j.orderId}>
                 <TableCell className="font-mono text-sm font-semibold"><span className="inline-flex items-center gap-1.5"><ModeIcon mode={j.transportMode} />{j.jobNumber}</span></TableCell>
                 <TableCell>{j.customerName}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{j.route ?? "—"}</TableCell>
-                <TableCell className="text-right">{j.costCount ? money(j.currency, j.totalCost) : <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell className="text-right tabular-nums">{j.costCount ? money(j.currency, j.totalCost) : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{j.invoiceId ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Invoiced</Badge> : <Badge className="bg-muted text-muted-foreground">Not invoiced</Badge>}</TableCell>
-                <TableCell className="text-right"><Button size="sm" variant="secondary" onClick={() => setEditing(j.orderId)}>{j.costCount ? "Edit costs" : "Add costs"}</Button></TableCell>
+                <TableCell className="text-right"><Button size="sm" variant={j.costCount ? "ghost" : "secondary"} className={j.costCount ? "text-primary hover:text-primary" : ""} onClick={() => setEditing(j.orderId)}>{j.costCount ? "Edit" : "Add costs"}</Button></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -520,17 +479,17 @@ function JobProfitTab() {
                 <TableRow key={j.orderId}>
                   <TableCell className="font-mono text-sm font-semibold"><span className="inline-flex items-center gap-1.5"><ModeIcon mode={j.transportMode} />{j.jobNumber}</span></TableCell>
                   <TableCell>{j.customerName}</TableCell>
-                  <TableCell className="text-right">{money(j.currency, j.revenue)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{money(j.currency, j.revenue)}</TableCell>
                   {j.hasCosts ? (
                     <>
-                      <TableCell className="text-right">{money(j.currency, j.totalCost)}</TableCell>
-                      <TableCell className={`text-right font-medium ${(j.grossProfit ?? 0) < 0 ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>{money(j.currency, j.grossProfit)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">{money(j.currency, j.totalCost)}</TableCell>
+                      <TableCell className={`text-right font-semibold tabular-nums ${(j.grossProfit ?? 0) < 0 ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>{money(j.currency, j.grossProfit)}</TableCell>
                       <TableCell className="text-right">
                         <Badge className={j.marginPct != null && j.marginPct <= threshold ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"}>{j.marginPct}%</Badge>
                       </TableCell>
                     </>
                   ) : (
-                    <TableCell colSpan={3} className="text-right"><span className="text-sm text-amber-600 dark:text-amber-400">Cost information incomplete</span></TableCell>
+                    <TableCell colSpan={3} className="text-right"><span className="text-xs text-amber-600 dark:text-amber-400">Add costs to see profit</span></TableCell>
                   )}
                 </TableRow>
               ))}
@@ -548,17 +507,15 @@ export default function FinancePage({ tab }: { tab: "invoices" | "costs" | "prof
   const summaryQ = useQuery({ queryKey: ["finance", "summary"], queryFn: () => apiFetch<Summary>("/api/finance/summary") });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Who owes you, what each job cost, and what you actually made.</p>
-      </div>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
 
       <FinanceHeader summary={summaryQ.data} />
 
-      <SubTabs active={tab} />
-
-      {tab === "invoices" ? <InvoicesTab /> : tab === "costs" ? <JobCostsTab /> : <JobProfitTab />}
+      <div className="space-y-3">
+        <SubTabs active={tab} />
+        {tab === "invoices" ? <InvoicesTab /> : tab === "costs" ? <JobCostsTab /> : <JobProfitTab />}
+      </div>
     </div>
   );
 }
