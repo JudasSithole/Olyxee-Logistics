@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package, Wallet,
   Menu, Moon, Sun, Settings, LogOut, User, ChevronDown,
-  ArrowUpCircle,
+  ArrowUpCircle, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useBusiness } from "@/hooks/use-supabase-queries";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 
 // The account menu, top-right on every page. Click the avatar chip to open a
@@ -22,10 +23,16 @@ import { InstallAppPrompt } from "@/components/install-app-prompt";
 function TopUser() {
   const { user, signOut } = useAuth();
   const { isDark, setIsDark } = useTheme();
+  const { data: business } = useBusiness(user?.businessId);
   const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
   const email = user?.email ?? "";
   const initial = (fullName || "U").charAt(0).toUpperCase();
+  // Show the plan + an Upgrade entry for anyone not on Scale. Routes to the one
+  // existing upgrade flow (no competing upgrade systems).
+  const planId = business?.plan ?? "beta";
+  const planLabel = planId === "business" ? "Scale" : "Starter";
+  const showUpgrade = planId !== "business";
 
   return (
     <DropdownMenu>
@@ -46,8 +53,15 @@ function TopUser() {
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{fullName}</p>
             {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
+            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{planLabel} plan</p>
           </div>
         </div>
+        {showUpgrade ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setLocation("/upgrade")} className="font-medium text-[#0a84ff] focus:text-[#0a84ff]" data-testid="link-upgrade"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Scale</DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="link-profile"><User className="mr-2 h-4 w-4" /> Edit profile</DropdownMenuItem>
         <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>

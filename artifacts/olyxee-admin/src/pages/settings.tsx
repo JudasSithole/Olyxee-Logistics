@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "@/contexts/theme-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,9 @@ import {
   Moon, Sun, Check, AlertCircle, AlertTriangle, Upload, X, Eye, Loader2, Pipette, Shuffle,
   Building2, Mail, SunMoon, RotateCcw,
   Code2, Copy, Download, Globe, Tag, CreditCard, FileText,
+  Palette, Users, MapPin, Lock, Sparkles, ChevronRight,
 } from "lucide-react";
-import { BUSINESS_TYPES } from "@/components/business-type-selector";
+import { BUSINESS_TYPES, BusinessTypeSelector } from "@/components/business-type-selector";
 import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -546,8 +547,8 @@ function BillingSection() {
     <SectionShell
       icon={CreditCard}
       tint={TINTS.green}
-      title="Billing & plan"
-      description="Your current plan and everything it includes."
+      title="Olyxee Subscription"
+      description="Manage your Olyxee Logistics plan, usage and subscription — separate from the invoices you send customers."
       action={
         <Button asChild variant="outline" size="sm">
           <Link href="/upgrade" data-testid="link-view-plans">
@@ -668,7 +669,7 @@ function InvoiceProfileSection() {
   const pickLogo=async(file:File)=>{if(file.type==="image/svg+xml"){toast.error("Invoice logos must be PNG or JPEG so every PDF renders reliably.");return;}try{update("logoUrl",await compressLogo(file));}catch{toast.error("Could not process that logo. Use a PNG or JPEG image.");}};
   const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!user?.businessId)return;try{await save.mutateAsync({id:user.businessId,invoice_legal_name:profile.legalName||null,invoice_registration_number:profile.registrationNumber||null,invoice_tax_number:profile.taxNumber||null,invoice_address:formatInvoiceAddress(profile)||null,invoice_email:profile.email||null,invoice_phone:profile.phone||null,invoice_logo_url:profile.logoUrl||null,invoice_payment_details:formatPaymentDetails(profile)||null,invoice_payment_terms:profile.paymentTerms||null,invoice_footer_note:profile.footerNote||null});toast.success("Invoice profile saved");}catch(error){toast.error(error instanceof Error?error.message:"Could not save invoice profile");}};
   const ready=[profile.legalName,profile.streetAddress,profile.city,profile.country,profile.email,profile.bank,profile.accountName,profile.accountNumber].filter(v=>v.trim()).length;
-  return <SectionShell icon={CreditCard} tint={TINTS.green} title="Invoice details" description="Add these once and we’ll reuse them on every invoice and PDF.">
+  return <SectionShell icon={CreditCard} tint={TINTS.green} title="Invoice Settings" description="Configure the information shown on invoices you send to your customers. This is not where you pay Olyxee.">
     <form onSubmit={submit}>
       <div className="grid items-start gap-5 p-4 lg:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-5">
@@ -687,11 +688,101 @@ function InvoiceProfileSection() {
   </SectionShell>;
 }
 
+// ─── Feature-state system ────────────────────────────────────────────────────
+// Available = works now. Scale = exists on the Scale plan (locked + Upgrade for
+// Starter). Coming soon = not built yet (never purchasable, no upgrade CTA).
+
+function ScaleBadge() {
+  return <span className="inline-flex items-center gap-1 rounded-full bg-[#0a84ff]/10 px-2 py-0.5 text-[11px] font-semibold text-[#0a84ff]"><Sparkles className="h-3 w-3" /> Scale</span>;
+}
+function ComingSoonBadge() {
+  return <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Coming soon</span>;
+}
+function UpgradeButton() {
+  return <Link href="/upgrade"><Button size="sm" className="gap-1.5 bg-[#0a84ff] hover:bg-[#0a84ff]/90"><Sparkles className="h-3.5 w-3.5" /> Upgrade to Scale</Button></Link>;
+}
+
+// Frosts + disables the intended UI (still visible) and overlays an unlock card.
+function ScaleLock({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative">
+      <div className="pointer-events-none select-none opacity-40" aria-hidden>{children}</div>
+      <div className="absolute inset-0 flex items-start justify-center bg-background/40 p-4 pt-16 backdrop-blur-[1px]">
+        <div className="max-w-sm rounded-2xl border border-border bg-background p-5 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#0a84ff]/10"><Lock className="h-5 w-5 text-[#0a84ff]" /></div>
+          <p className="text-sm font-semibold">Team collaboration is available on Scale</p>
+          <p className="mt-1 text-xs text-muted-foreground">Invite teammates, assign roles and control who can access your workspace.</p>
+          <div className="mt-4 flex justify-center"><UpgradeButton /></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Small page header used by the form-based Settings pages (the reused section
+// components carry their own SectionShell heading).
+function PageHeader({ title, description, badge }: { title: string; description?: string; badge?: ReactNode }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-2.5"><h2 className="text-xl font-semibold tracking-tight">{title}</h2>{badge}</div>
+      {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+    </div>
+  );
+}
+
+// The intended (not-yet-backed) team UI. The owner row is the real signed-in
+// user; Invite is intentionally inert until a team backend exists.
+function TeamManager({ ownerName, ownerEmail }: { ownerName: string; ownerEmail: string }) {
+  const initial = (ownerName || "U").charAt(0).toUpperCase();
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="border-b border-border/60 px-5 py-3.5">
+        <p className="text-sm font-semibold">Team members</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Invite teammates, assign roles and control access.</p>
+      </div>
+      <div className="flex items-center justify-between px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">{initial}</div>
+          <div><p className="text-sm font-medium">{ownerName}</p><p className="text-xs text-muted-foreground">{ownerEmail} · Full access</p></div>
+        </div>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Owner</span>
+      </div>
+      <div className="border-t border-border/60 px-5 py-3.5">
+        <Button size="sm" variant="outline" disabled className="gap-1.5"><Users className="h-3.5 w-3.5" /> Invite member</Button>
+      </div>
+    </div>
+  );
+}
+
+// Grouped Settings navigation. `scale` marks a Scale-gated destination.
+const NAV_GROUPS = [
+  { group: "Workspace", items: [
+    { id: "business-profile", label: "Business Profile", icon: Building2 },
+    { id: "branding", label: "Branding", icon: Palette },
+    { id: "team", label: "Team & Permissions", icon: Users, scale: true },
+    { id: "integrations", label: "Integrations", icon: Code2 },
+  ]},
+  { group: "Customer Experience", items: [
+    { id: "tracking", label: "Tracking Page", icon: MapPin },
+    { id: "updates", label: "Customer Updates", icon: Mail },
+  ]},
+  { group: "Customer Invoicing", items: [
+    { id: "invoicing", label: "Invoice Settings", icon: FileText },
+  ]},
+  { group: "Account", items: [
+    { id: "subscription", label: "Olyxee Subscription", icon: CreditCard },
+    { id: "appearance", label: "Appearance", icon: SunMoon },
+  ]},
+] as const;
+const SETTINGS_PAGES = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
+
 export default function SettingsPage() {
   const theme = useTheme();
   const { user } = useAuth();
   const { data: settingsBusiness } = useBusiness(user?.businessId);
   const saveBusiness = useUpdateBusiness();
+  const planId = (settingsBusiness?.plan as PlanId | undefined) ?? "beta";
+  const isScale = planId === "business";
 
   // Local form state for the theme/branding bits. Email wording lives in its
   // own component because it persists to the server, not localStorage.
@@ -699,12 +790,17 @@ export default function SettingsPage() {
     () => ({
       businessName: settingsBusiness?.name ?? theme.businessName,
       businessTagline: theme.businessTagline,
+      businessType: settingsBusiness?.business_type ?? "",
+      mainEmail: settingsBusiness?.support_email ?? "",
+      phone: settingsBusiness?.phone ?? "",
+      website: settingsBusiness?.website_url ?? "",
+      address: settingsBusiness?.location ?? "",
       logoUrl: settingsBusiness?.business_logo_url ?? theme.logoUrl,
       faviconUrl: theme.faviconUrl,
       primaryColor: settingsBusiness?.primary_brand_colour ?? theme.primaryColor,
     }),
-    // Re-baseline only when the saved theme values change (e.g. after a save).
-    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor, settingsBusiness?.name, settingsBusiness?.business_logo_url, settingsBusiness?.primary_brand_colour],
+    // Re-baseline only when the saved values change (e.g. after a save).
+    [theme.businessName, theme.businessTagline, theme.logoUrl, theme.faviconUrl, theme.primaryColor, settingsBusiness?.name, settingsBusiness?.business_type, settingsBusiness?.support_email, settingsBusiness?.phone, settingsBusiness?.website_url, settingsBusiness?.location, settingsBusiness?.business_logo_url, settingsBusiness?.primary_brand_colour],
   );
 
   const [form, setForm] = useState(initial);
@@ -718,29 +814,25 @@ export default function SettingsPage() {
 
   // Which sections are dirty? Drives the side-nav dot indicators and lets us
   // show a precise "N changes" count in the save bar.
-  const dirty = useMemo(() => {
-    const ids = new Set<string>();
-    // Brand and identity now share one tab/card, so both feed the same
-    // "identity" dirty bucket that drives the tab's unsaved dot.
-    if (
-      form.businessName !== initial.businessName ||
-      form.businessTagline !== initial.businessTagline ||
-      form.logoUrl !== initial.logoUrl ||
-      form.faviconUrl !== initial.faviconUrl ||
-      form.primaryColor !== initial.primaryColor
-    ) {
-      ids.add("identity");
-    }
-    return ids;
-  }, [form, initial]);
-
-  const hasChanges = dirty.size > 0;
-  const changeCount =
-    (form.businessName !== initial.businessName ? 1 : 0) +
-    (form.businessTagline !== initial.businessTagline ? 1 : 0) +
-    (form.logoUrl !== initial.logoUrl ? 1 : 0) +
-    (form.faviconUrl !== initial.faviconUrl ? 1 : 0) +
-    (form.primaryColor !== initial.primaryColor ? 1 : 0);
+  // Which Settings page has unsaved edits (drives the side-nav dots). Business
+  // Profile and Branding share this one form + the floating save bar.
+  const dirtyProfile =
+    form.businessName !== initial.businessName ||
+    form.businessTagline !== initial.businessTagline ||
+    form.businessType !== initial.businessType ||
+    form.mainEmail !== initial.mainEmail ||
+    form.phone !== initial.phone ||
+    form.website !== initial.website ||
+    form.address !== initial.address;
+  const dirtyBranding =
+    form.logoUrl !== initial.logoUrl ||
+    form.faviconUrl !== initial.faviconUrl ||
+    form.primaryColor !== initial.primaryColor;
+  const hasChanges = dirtyProfile || dirtyBranding;
+  const changeCount = (Object.keys(form) as (keyof typeof form)[]).reduce(
+    (n, k) => n + (form[k] !== initial[k] ? 1 : 0),
+    0,
+  );
 
   const handleSave = useCallback(async () => {
     if (user?.businessId) {
@@ -748,6 +840,11 @@ export default function SettingsPage() {
         await saveBusiness.mutateAsync({
           id: user.businessId,
           name: form.businessName.trim(),
+          business_type: form.businessType || undefined,
+          support_email: form.mainEmail.trim() || null,
+          phone: form.phone.trim() || null,
+          website_url: form.website.trim() || null,
+          location: form.address.trim() || null,
           business_logo_url: form.logoUrl || null,
           primary_brand_colour: form.primaryColor || null,
         });
@@ -803,22 +900,20 @@ export default function SettingsPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [guardActive]);
 
-  // Active tab. Honour a deep-link hash on first mount
-  // so links from elsewhere can drop the user straight onto a tab.
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    if (typeof window === "undefined") return NAV_ITEMS[0].id;
+  // Active Settings page. Honour a deep-link hash on first mount so links from
+  // elsewhere (e.g. an Upgrade CTA) can jump straight to a page.
+  const [active, setActive] = useState<string>(() => {
+    if (typeof window === "undefined") return "business-profile";
     const hash = window.location.hash.replace(/^#/, "");
-    return NAV_ITEMS.some((n) => n.id === hash) ? hash : NAV_ITEMS[0].id;
+    return (SETTINGS_PAGES as readonly string[]).includes(hash) ? hash : "business-profile";
   });
-
-  // Keep the URL hash in sync as the tab changes - preserves deep-linking
-  // and back/forward navigation between tabs.
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value);
+  const go = useCallback((id: string) => {
+    setActive(id);
     if (typeof window !== "undefined" && window.history.replaceState) {
-      window.history.replaceState(null, "", `#${value}`);
+      window.history.replaceState(null, "", `#${id}`);
     }
   }, []);
+  const pageDirty: Record<string, boolean> = { "business-profile": dirtyProfile, branding: dirtyBranding, updates: emailDirty };
 
   async function handleLogoPicked(file: File) {
     try {
@@ -870,104 +965,136 @@ export default function SettingsPage() {
 
       {/* Tabs - replace the long scroll. Only the active panel renders, so
           there's no off-screen content competing for attention. */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        {/* TabsList scrolls horizontally on narrow viewports so the labels
-            never wrap or truncate. */}
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted/70 p-1.5 sm:grid-cols-4">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isDirty = dirty.has(item.id);
-            const isActive = activeTab === item.id;
-            return (
-              <TabsTrigger
-                key={item.id}
-                value={item.id}
-                className="relative gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium focus-visible:ring-[#0a84ff]/35 focus-visible:ring-offset-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-              >
-                {isActive && (
-                  <motion.span
-                    layoutId="settingsTabHighlight"
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 rounded-xl bg-background shadow-[0_1px_3px_rgba(0,0,0,.12)]"
-                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
-                  />
-                )}
-                <Icon
-                  className="relative z-10 h-3.5 w-3.5"
-                  style={{ color: item.tint }}
-                />
-                <span className="relative z-10">{item.label}</span>
-                {isDirty && (
-                  <motion.span
-                    layout
-                    className="relative z-10 h-1.5 w-1.5 rounded-full bg-amber-500 inline-block"
-                    aria-label="Unsaved changes"
-                  />
-                )}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-
-        {/* ─── Brand & Identity ─────────────────────────────────────── */}
-        {/* One compact card for all brand inputs, plus a single consolidated
-            preview - far shorter and calmer than the old stacked sections. */}
-        <TabsContent value="identity" className="mt-6 focus-visible:outline-none">
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,.8fr)]">
-            <SectionShell icon={Building2} tint={TINTS.blue} title="Business profile" description="Your name, logo, and color across the app." action={dirty.has("identity") ? <RestoreButton onClick={() => setForm({...initial})} /> : undefined}>
-              <div className="space-y-8 p-6 sm:p-7">
-                <section className="space-y-4"><div><h3 className="text-sm font-semibold">Business details</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">The name customers see throughout your workspace and messages.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="businessName">Business name</Label><Input id="businessName" value={form.businessName} onChange={(e)=>setForm(f=>({...f,businessName:e.target.value}))} placeholder="Your business name" autoComplete="organization"/><p className="text-xs leading-relaxed text-muted-foreground">Used across the app and customer emails.</p></div><div className="space-y-2"><Label htmlFor="businessTagline">Tagline</Label><Input id="businessTagline" value={form.businessTagline} onChange={(e)=>setForm(f=>({...f,businessTagline:e.target.value.slice(0,80)}))} placeholder="Fast, reliable cross-border logistics" maxLength={80}/><p className="text-xs leading-relaxed text-muted-foreground">Optional, up to 80 characters.</p></div></div></section>
-                <section className="space-y-4 border-t border-border/60 pt-7"><div><h3 className="text-sm font-semibold">Brand images</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use your main logo in the app and a smaller icon in browser tabs.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label>Logo</Label><LogoUpload variant="logo" businessName={form.businessName} value={form.logoUrl} onFile={handleLogoPicked} onRemove={()=>setForm(f=>({...f,logoUrl:""}))}/></div><div className="space-y-2"><Label>Browser icon</Label><LogoUpload variant="favicon" businessName={form.businessName} value={form.faviconUrl} onFile={handleFaviconPicked} onRemove={()=>setForm(f=>({...f,faviconUrl:""}))}/></div></div></section>
-                <section className="space-y-4 border-t border-border/60 pt-7"><div><h3 className="text-sm font-semibold">Company color</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Used for buttons, highlights, customer emails, and invoices.</p></div><div className="flex flex-col gap-4 sm:flex-row sm:items-end"><div className="space-y-2"><Label htmlFor="brandColor">Color</Label><input id="brandColor" type="color" value={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} onChange={(e)=>setForm(f=>({...f,primaryColor:e.target.value}))} className="block h-11 w-full cursor-pointer rounded-xl border border-border bg-background p-1 sm:w-16"/></div><div className="min-w-[160px] flex-1 space-y-2"><Label htmlFor="brandHex">Hex value</Label><Input id="brandHex" value={form.primaryColor} onChange={(e)=>{const next=normalizeHex(e.target.value);setForm(f=>({...f,primaryColor:next||e.target.value}))}} placeholder="#2b2b2b" className="font-mono uppercase"/></div><Button type="button" variant="outline" className="h-11 rounded-xl" onClick={()=>setForm(f=>({...f,primaryColor:DEFAULT_PRIMARY}))}><RotateCcw className="mr-1.5 h-3.5 w-3.5"/>Reset</Button></div></section>
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        {/* Persistent Settings sidebar (desktop). */}
+        <nav className="sticky top-4 hidden self-start lg:block" aria-label="Settings sections">
+          <div className="space-y-5">
+            {NAV_GROUPS.map((g) => (
+              <div key={g.group}>
+                <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.group}</p>
+                <div className="space-y-0.5">
+                  {g.items.map((it) => {
+                    const on = active === it.id;
+                    const Icon = it.icon;
+                    const scale = (it as { scale?: boolean }).scale;
+                    return (
+                      <button
+                        key={it.id}
+                        onClick={() => go(it.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                          on ? "bg-[#0a84ff]/10 font-medium text-[#0a84ff]" : "text-foreground hover:bg-muted",
+                        )}
+                      >
+                        <Icon className={cn("h-4 w-4", on ? "text-[#0a84ff]" : "text-muted-foreground")} />
+                        <span className="flex-1 text-left">{it.label}</span>
+                        {scale ? <span className={cn("text-[10px] font-semibold", on ? "text-[#0a84ff]" : "text-[#0a84ff]/70")}>Scale</span> : null}
+                        {pageDirty[it.id] ? <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Unsaved changes" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </SectionShell>
-            <div className="lg:sticky lg:top-5"><BrandIdentityPreview businessName={form.businessName} tagline={form.businessTagline} logoUrl={form.logoUrl} faviconUrl={form.faviconUrl} primaryColor={normalizeHex(form.primaryColor)||DEFAULT_PRIMARY}/></div>
+            ))}
           </div>
-        </TabsContent>
+        </nav>
 
-        <TabsContent value="invoice" className="mt-6 focus-visible:outline-none">
-          <InvoiceProfileSection />
-        </TabsContent>
+        {/* Compact selector on mobile/tablet. */}
+        <div className="lg:hidden">
+          <label className="relative block">
+            <select
+              value={active}
+              onChange={(e) => go(e.target.value)}
+              className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-2.5 text-sm font-medium"
+              aria-label="Settings section"
+            >
+              {NAV_GROUPS.map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.items.map((it) => (
+                    <option key={it.id} value={it.id}>{it.label}{(it as { scale?: boolean }).scale ? " (Scale)" : ""}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-muted-foreground" />
+          </label>
+        </div>
 
-        {/* ─── Appearance ───────────────────────────────────────────── */}
-        <TabsContent value="appearance" className="mt-6 focus-visible:outline-none">
-          <SectionShell
-            icon={SunMoon}
-            tint={TINTS.orange}
-            title="Display"
-            description="Choose the look that feels best to use."
-          >
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-3">
-                <ThemeOption
-                  active={!theme.isDark}
-                  onClick={() => theme.setIsDark(false)}
-                  icon={Sun}
-                  label="Light"
-                  bg="bg-white"
-                  fg="bg-zinc-900"
-                  muted="bg-zinc-200"
-                />
-                <ThemeOption
-                  active={theme.isDark}
-                  onClick={() => theme.setIsDark(true)}
-                  icon={Moon}
-                  label="Dark"
-                  bg="bg-zinc-900"
-                  fg="bg-zinc-200"
-                  muted="bg-zinc-700"
-                />
-              </div>
-            </div>
-          </SectionShell>
-        </TabsContent>
-
-        {/* ─── Billing ──────────────────────────────────────────────── */}
-        <TabsContent value="billing" className="mt-6 focus-visible:outline-none">
-          <BillingSection />
-        </TabsContent>
-
-      </Tabs>
+        {/* Selected settings page. */}
+        <div className="min-w-0">
+          {(() => {
+            switch (active) {
+              case "business-profile":
+                return (
+                  <div>
+                    <PageHeader title="Business Profile" description="Your company details, shown across the app and on customer-facing messages." />
+                    <div className="space-y-6 rounded-2xl border border-border bg-card p-6 sm:p-7">
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div className="space-y-2"><Label htmlFor="businessName">Business name</Label><Input id="businessName" value={form.businessName} onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))} placeholder="Your business name" autoComplete="organization" /></div>
+                        <div className="space-y-2"><Label htmlFor="businessTagline">Tagline</Label><Input id="businessTagline" value={form.businessTagline} onChange={(e) => setForm((f) => ({ ...f, businessTagline: e.target.value.slice(0, 80) }))} placeholder="Fast, reliable cross-border logistics" maxLength={80} /></div>
+                        <div className="space-y-2"><Label htmlFor="mainEmail">Main email</Label><Input id="mainEmail" type="email" value={form.mainEmail} onChange={(e) => setForm((f) => ({ ...f, mainEmail: e.target.value }))} placeholder="hello@yourcompany.co.za" autoComplete="email" /></div>
+                        <div className="space-y-2"><Label htmlFor="bizPhone">Phone</Label><Input id="bizPhone" type="tel" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+27 11 000 0000" autoComplete="tel" /></div>
+                        <div className="space-y-2"><Label htmlFor="bizWebsite">Website</Label><Input id="bizWebsite" type="url" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://yourcompany.co.za" /></div>
+                        <div className="space-y-2"><Label htmlFor="bizAddress">Business address</Label><Input id="bizAddress" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Johannesburg, South Africa" /></div>
+                      </div>
+                      <section className="space-y-3 border-t border-border/60 pt-6">
+                        <div><h3 className="text-sm font-semibold">Business type</h3><p className="mt-1 text-xs text-muted-foreground">The industry that best describes your business.</p></div>
+                        <BusinessTypeSelector value={form.businessType} onChange={(t) => setForm((f) => ({ ...f, businessType: t }))} compact />
+                      </section>
+                      <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">Legal name, tax numbers and banking details for invoices live under <button type="button" onClick={() => go("invoicing")} className="font-medium text-[#0a84ff] hover:underline">Invoice Settings</button>.</p>
+                    </div>
+                  </div>
+                );
+              case "branding":
+                return (
+                  <div>
+                    <PageHeader title="Branding" description="Your logo, browser icon and company colour — used across the app, customer messages and invoices." />
+                    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,.8fr)]">
+                      <div className="space-y-8 rounded-2xl border border-border bg-card p-6 sm:p-7">
+                        <section className="space-y-4"><div><h3 className="text-sm font-semibold">Brand images</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your main logo in the app and a smaller icon in browser tabs.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label>Logo</Label><LogoUpload variant="logo" businessName={form.businessName} value={form.logoUrl} onFile={handleLogoPicked} onRemove={() => setForm((f) => ({ ...f, logoUrl: "" }))} /></div><div className="space-y-2"><Label>Browser icon</Label><LogoUpload variant="favicon" businessName={form.businessName} value={form.faviconUrl} onFile={handleFaviconPicked} onRemove={() => setForm((f) => ({ ...f, faviconUrl: "" }))} /></div></div></section>
+                        <section className="space-y-4 border-t border-border/60 pt-7"><div><h3 className="text-sm font-semibold">Company colour</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Used for buttons, highlights, customer messages, and invoices.</p></div><div className="flex flex-col gap-4 sm:flex-row sm:items-end"><div className="space-y-2"><Label htmlFor="brandColor">Colour</Label><input id="brandColor" type="color" value={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} onChange={(e) => setForm((f) => ({ ...f, primaryColor: e.target.value }))} className="block h-11 w-full cursor-pointer rounded-xl border border-border bg-background p-1 sm:w-16" /></div><div className="min-w-[160px] flex-1 space-y-2"><Label htmlFor="brandHex">Hex value</Label><Input id="brandHex" value={form.primaryColor} onChange={(e) => { const next = normalizeHex(e.target.value); setForm((f) => ({ ...f, primaryColor: next || e.target.value })); }} placeholder="#2b2b2b" className="font-mono uppercase" /></div><Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setForm((f) => ({ ...f, primaryColor: DEFAULT_PRIMARY }))}><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Reset</Button></div></section>
+                      </div>
+                      <div className="lg:sticky lg:top-5"><BrandIdentityPreview businessName={form.businessName} tagline={form.businessTagline} logoUrl={form.logoUrl} faviconUrl={form.faviconUrl} primaryColor={normalizeHex(form.primaryColor) || DEFAULT_PRIMARY} /></div>
+                    </div>
+                  </div>
+                );
+              case "team":
+                return (
+                  <div>
+                    <PageHeader title="Team & Permissions" description="Invite teammates, assign roles and control who can access your workspace." badge={<ScaleBadge />} />
+                    {isScale
+                      ? <TeamManager ownerName={user?.name || "You"} ownerEmail={user?.email || ""} />
+                      : <ScaleLock><TeamManager ownerName={user?.name || "You"} ownerEmail={user?.email || ""} /></ScaleLock>}
+                  </div>
+                );
+              case "integrations":
+                return <IntegrationsSection />;
+              case "tracking":
+                return <TrackingCustomizationSection />;
+              case "updates":
+                return <EmailCustomizationSection businessName={form.businessName} onDirtyChange={setEmailDirty} />;
+              case "invoicing":
+                return <InvoiceProfileSection />;
+              case "subscription":
+                return <BillingSection />;
+              case "appearance":
+                return (
+                  <div>
+                    <PageHeader title="Appearance" description="Choose the look that feels best to use. Stays in sync with the top-bar toggle and account menu." />
+                    <div className="rounded-2xl border border-border bg-card p-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <ThemeOption active={!theme.isDark} onClick={() => theme.setIsDark(false)} icon={Sun} label="Light" bg="bg-white" fg="bg-zinc-900" muted="bg-zinc-200" />
+                        <ThemeOption active={theme.isDark} onClick={() => theme.setIsDark(true)} icon={Moon} label="Dark" bg="bg-zinc-900" fg="bg-zinc-200" muted="bg-zinc-700" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })()}
+        </div>
+      </div>
 
       {/* ─── Sticky save bar ───────────────────────────────────────────────
           Floats above the content with a soft backdrop blur. Slides in only
@@ -1102,8 +1229,8 @@ function EmailCustomizationSection({
       id="emails"
       icon={Mail}
       tint={TINTS.pink}
-      title="Status updates"
-      description="Customize the greeting, sign-off, and footer on status updates."
+      title="Customer Updates"
+      description="How shipment updates read to your customers — greeting, sign-off and footer."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
     >
       {/* Token legend */}
@@ -1414,8 +1541,8 @@ function TrackingCustomizationSection() {
       id="tracking"
       icon={Building2}
       tint={TINTS.cyan}
-      title="Tracking"
-      description="Your tracking ID prefix and the websites allowed to look up orders."
+      title="Tracking Page"
+      description="The customer tracking experience — your tracking ID prefix and the websites allowed to look up orders."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
     >
       {isLoading && !loaded ? (
