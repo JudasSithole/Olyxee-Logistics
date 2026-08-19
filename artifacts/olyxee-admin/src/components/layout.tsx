@@ -2,48 +2,68 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Users, Package, Wallet,
-  Menu, Moon, Sun, Settings, LogOut,
+  Menu, Moon, Sun, Settings, LogOut, User, ChevronDown,
   ArrowUpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/contexts/theme-context";
 import { useAuth } from "@/contexts/auth-context";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 
-// Compact profile chip for the top bar (avatar + name → profile) plus sign-out.
-// Sits next to the theme toggle so account access is top-right on every page.
+// The account menu, top-right on every page. Click the avatar chip to open a
+// dropdown with profile, settings, appearance (light/dark) and sign-out — so
+// everything account/display-related lives in one place.
 function TopUser() {
   const { user, signOut } = useAuth();
+  const { isDark, setIsDark } = useTheme();
   const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
+  const email = user?.email ?? "";
   const initial = (fullName || "U").charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-1">
-      <Link
-        href="/profile"
-        className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 transition-colors hover:bg-muted sm:pr-2.5"
-        title="Edit your profile"
-        data-testid="link-profile"
-      >
-        <Avatar className="h-7 w-7 flex-shrink-0">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback>
-        </Avatar>
-        <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">{fullName}</span>
-      </Link>
-      <button
-        type="button"
-        onClick={async () => { await signOut(); setLocation("/login"); }}
-        className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        aria-label="Sign out"
-        title="Sign out"
-        data-testid="button-signout"
-      >
-        <LogOut className="h-4 w-4" />
-      </button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:pr-2"
+          data-testid="button-user-menu"
+          aria-label="Account menu"
+        >
+          <Avatar className="h-7 w-7 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback></Avatar>
+          <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">{fullName}</span>
+          <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <Avatar className="h-9 w-9 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-sm">{initial}</AvatarFallback></Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{fullName}</p>
+            {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="link-profile"><User className="mr-2 h-4 w-4" /> Edit profile</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {/* Appearance — segmented control stays open while switching. */}
+        <div className="px-2 py-1.5">
+          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Appearance</p>
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            <button type="button" onClick={() => setIsDark(false)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${!isDark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Sun className="h-3.5 w-3.5 text-amber-500" /> Light</button>
+            <button type="button" onClick={() => setIsDark(true)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${isDark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Moon className="h-3.5 w-3.5 text-indigo-400" /> Dark</button>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/login"); }} className="text-destructive focus:text-destructive" data-testid="button-signout"><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -93,7 +113,7 @@ function NavLink({
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { isDark, setIsDark, logoUrl, businessName } = useTheme();
+  const { logoUrl, businessName } = useTheme();
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -139,7 +159,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Secondary navigation stays separate from the primary workflow. */}
+      {/* Secondary navigation. Settings now lives in the account menu (top-right). */}
       <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-sidebar-border">
         <div className="space-y-0.5">
           {GROWTH_ITEMS.map((item) => (
@@ -151,14 +171,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               active={location === item.href || location.startsWith(item.href + "/")}
             />
           ))}
-          <NavLink
-            href="/settings"
-            label="Settings"
-            icon={Settings}
-            active={location.startsWith("/settings")}
-          />
         </div>
-
       </div>
 
       {/* Footer — profile now lives in the top bar, so just branding here. */}
@@ -189,16 +202,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">{businessName}</span>
-        <button
-          type="button"
-          onClick={() => setIsDark(!isDark)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          aria-pressed={isDark}
-          title={isDark ? "Light mode" : "Dark mode"}
-        >
-          {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
-        </button>
         <TopUser />
       </div>
 
@@ -209,22 +212,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           can still use the full container width on a 27" screen.
           Padding scales: tight on mobile, generous on desktop. */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden md:mt-0 mt-12">
-        <div className="hidden h-14 shrink-0 items-center justify-end gap-3 border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
-          <button
-            type="button"
-            onClick={() => setIsDark(!isDark)}
-            className="relative flex h-9 w-[68px] items-center rounded-full border border-border bg-muted/60 p-1 shadow-sm transition-colors hover:bg-muted"
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            aria-pressed={isDark}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            <Sun className="absolute left-2 h-3.5 w-3.5 text-amber-400" />
-            <Moon className="absolute right-2 h-3.5 w-3.5 text-indigo-400" />
-            <span className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ${isDark ? "translate-x-7" : "translate-x-0"}`}>
-              {isDark ? <Moon className="h-3.5 w-3.5 text-indigo-400" /> : <Sun className="h-3.5 w-3.5 text-amber-500" />}
-            </span>
-          </button>
-          <div className="h-6 w-px bg-border" />
+        <div className="hidden h-14 shrink-0 items-center justify-end border-b border-border/60 bg-background/90 px-6 backdrop-blur md:flex lg:px-8 xl:px-10">
           <TopUser />
         </div>
         <div className="flex-1 overflow-auto">

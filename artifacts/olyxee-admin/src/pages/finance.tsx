@@ -205,17 +205,21 @@ function FinanceHeader({ summary, onOpenInvoice, onOpenCosts }: { summary: Summa
 
 function SubTabs({ active }: { active: string }) {
   const tabs = [
-    { key: "invoices", label: "Invoices", href: "/finance" },
-    { key: "jobs", label: "Jobs", href: "/finance/jobs" },
+    { key: "invoices", label: "Invoices", href: "/finance", icon: ReceiptText, tone: "text-indigo-500" },
+    { key: "jobs", label: "Jobs", href: "/finance/jobs", icon: Package, tone: "text-emerald-500" },
   ];
   return (
     <div className="inline-flex gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
-      {tabs.map((t) => (
-        <Link key={t.key} href={t.href}
-          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${active === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          {t.label}
-        </Link>
-      ))}
+      {tabs.map((t) => {
+        const on = active === t.key;
+        return (
+          <Link key={t.key} href={t.href}
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <t.icon className={`h-4 w-4 ${on ? t.tone : "text-muted-foreground"}`} />
+            {t.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }
