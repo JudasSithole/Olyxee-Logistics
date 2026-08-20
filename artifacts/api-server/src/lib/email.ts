@@ -162,7 +162,7 @@ function buildHtml(p: SendStatusEmailParams): string {
                 ${timeline
                   .map(
                     (t) =>
-                      `<tr><td style="padding:3px 0;font-size:14px;color:${t.done ? "#16a34a" : "#a1a1aa"};white-space:nowrap;">${t.done ? "&#10003;" : "&#9675;"}&nbsp;&nbsp;<span style="color:${t.done ? "#27272a" : "#a1a1aa"};">${escapeHtml(t.label)}</span></td></tr>`,
+                      `<tr><td style="padding:3px 0;font-size:14px;color:${t.done ? "#1a1a1a" : "#a1a1aa"};white-space:nowrap;">${t.done ? "&#10003;" : "&#9675;"}&nbsp;&nbsp;<span style="color:${t.done ? "#1a1a1a" : "#a1a1aa"};">${escapeHtml(t.label)}</span></td></tr>`,
                   )
                   .join("")}
               </table>`
@@ -175,115 +175,71 @@ function buildHtml(p: SendStatusEmailParams): string {
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>${escapeHtml(buildSubject(p))}</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#18181b;line-height:1.5;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+<body style="margin:0;padding:32px 20px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:auto;border-collapse:collapse;">
+
+    <!-- Business header -->
     <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e4e4e7;">
-
-          <!-- Brand header -->
-          <tr>
-            <td style="padding:24px 32px 0;border-bottom:1px solid #f4f4f5;">
-              <p style="margin:0 0 16px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">
-                ${safeBusiness}
-              </p>
-            </td>
-          </tr>
-
-          <!-- Status badge + headline -->
-          <tr>
-            <td style="padding:24px 32px 8px;">
-              <span style="display:inline-block;padding:4px 10px;background:${c.accent};color:#ffffff;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
-                ${safeStatus}
-              </span>
-              <h1 style="margin:16px 0 8px;font-size:24px;font-weight:700;color:#18181b;line-height:1.25;">
-                ${escapeHtml(c.headline)}
-              </h1>
-              <p style="margin:0 0 8px;font-size:15px;color:#27272a;">
-                ${safeGreeting}
-              </p>
-              <p style="margin:0;font-size:15px;color:#52525b;">
-                ${escapeHtml(c.intro)}
-              </p>
-            </td>
-          </tr>
-
-          ${safeMessage ? `
-          <!-- Admin note -->
-          <tr>
-            <td style="padding:16px 32px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border-left:3px solid ${c.accent};">
-                <tr>
-                  <td style="padding:12px 16px;">
-                    <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">A note from our team</p>
-                    <p style="margin:0;font-size:14px;color:#27272a;white-space:pre-wrap;">${safeMessage}</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>` : ""}
-
-          <!-- Identifiers + progress + CTA -->
-          <tr>
-            <td style="padding:24px 32px;">
-              ${safeJobNumber ? `
-              <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">Job Number</p>
-              <p style="margin:0 0 16px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:16px;font-weight:600;color:#18181b;">
-                ${safeJobNumber}
-              </p>` : ""}
-              <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">${safeBusiness} Tracking ID</p>
-              <p style="margin:0 0 4px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:16px;font-weight:600;color:#18181b;">
-                ${safeTracking}
-              </p>
-              ${timelineHtml}
-              ${safeLink ? `
-              <a href="${safeLink}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">
-                View full tracking &rarr;
-              </a>
-              <p style="margin:12px 0 0;font-size:12px;color:#a1a1aa;word-break:break-all;">
-                Or open: <a href="${safeLink}" style="color:#52525b;text-decoration:underline;">${safeLink}</a>
-              </p>` : ""}
-            </td>
-          </tr>
-
-          <!-- Signature -->
-          <tr>
-            <td style="padding:8px 32px 24px;">
-              <p style="margin:0;font-size:14px;color:#27272a;line-height:1.6;">
-                ${safeSignature}
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f4f4f5;">
-              ${safeFooterNote ? `
-              <p style="margin:0 0 8px;font-size:13px;color:#52525b;">
-                ${safeFooterNote}
-              </p>` : ""}
-              <p style="margin:0 0 4px;font-size:13px;color:#52525b;">
-                Questions about your shipment?
-              </p>
-              <p style="margin:0;font-size:13px;color:#71717a;">
-                ${safeSupport
-                  ? `Reply to this email or contact <a href="mailto:${safeSupport}" style="color:#18181b;text-decoration:underline;">${safeSupport}</a>.`
-                  : `Just reply to this email and we'll be in touch.`}
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:16px 32px 24px;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#a1a1aa;">
-                Sent by ${safeBusiness}
-              </p>
-            </td>
-          </tr>
-
-        </table>
+      <td style="padding-bottom:20px;border-bottom:1px solid #e5e7eb;">
+        <strong style="font-size:15px;color:#1a1a1a;">${safeBusiness}</strong>
       </td>
     </tr>
+
+    <!-- Status headline -->
+    <tr>
+      <td style="padding:26px 0 0;">
+        <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">${safeStatus}</p>
+        <h1 style="margin:0 0 14px;font-size:22px;font-weight:bold;color:#1a1a1a;line-height:1.3;">${escapeHtml(c.headline)}</h1>
+        <p style="margin:0 0 8px;font-size:15px;">${safeGreeting}</p>
+        <p style="margin:0;font-size:15px;color:#374151;">${escapeHtml(c.intro)}</p>
+      </td>
+    </tr>
+
+    ${safeMessage ? `
+    <!-- Admin note -->
+    <tr>
+      <td style="padding:22px 0 0;">
+        <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">A note from our team</p>
+        <p style="margin:0;font-size:14px;color:#374151;white-space:pre-wrap;">${safeMessage}</p>
+      </td>
+    </tr>` : ""}
+
+    <!-- Identifiers + progress + CTA -->
+    <tr>
+      <td style="padding:26px 0 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e5e7eb;"><tr><td style="padding-top:24px;">
+        ${safeJobNumber ? `
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">Job number</p>
+        <p style="margin:0 0 16px;font-size:15px;font-weight:bold;color:#1a1a1a;">${safeJobNumber}</p>` : ""}
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">${safeBusiness} Tracking ID</p>
+        <p style="margin:0;font-size:15px;font-weight:bold;color:#1a1a1a;">${safeTracking}</p>
+        ${timelineHtml}
+        ${safeLink ? `
+        <p style="margin:22px 0 0;"><a href="${safeLink}" style="display:inline-block;padding:11px 22px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">View full tracking</a></p>
+        <p style="margin:10px 0 0;font-size:12px;color:#6b7280;word-break:break-all;">Or open: <a href="${safeLink}" style="color:#374151;">${safeLink}</a></p>` : ""}
+        </td></tr></table>
+      </td>
+    </tr>
+
+    <!-- Signature -->
+    <tr>
+      <td style="padding:24px 0 0;">
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">${safeSignature}</p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="padding:22px 0 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e5e7eb;"><tr><td style="padding-top:22px;">
+        ${safeFooterNote ? `<p style="margin:0 0 8px;font-size:13px;color:#6b7280;">${safeFooterNote}</p>` : ""}
+        <p style="margin:0;font-size:13px;color:#6b7280;">Questions about your shipment? ${safeSupport
+          ? `Reply to this email or contact <a href="mailto:${safeSupport}" style="color:#1a1a1a;">${safeSupport}</a>.`
+          : `Just reply to this email and we&#39;ll be in touch.`}</p>
+        </td></tr></table>
+      </td>
+    </tr>
+
   </table>
 </body>
 </html>`;
@@ -444,10 +400,39 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   const payment=escapeHtml(p.paymentDetails||"Contact the issuer for payment instructions.").replace(/\n/g,"<br />");
   const terms=escapeHtml(p.paymentTerms||"Payment due within agreed terms.");
   const safeLogo=/^(https?:\/\/|data:image\/(png|jpeg|jpg|webp);base64,)/i.test(p.logoUrl||"")?p.logoUrl||"":"";
-  const brandColor=/^#[0-9a-f]{6}$/i.test(p.primaryColor||"")?p.primaryColor!:"#10243e";
-  const logo=safeLogo?`<img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:58px;object-fit:contain">`:`<strong style="font-size:20px;color:${brandColor}">${escapeHtml(p.businessName)}</strong>`;
+  const logo=safeLogo?`<img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:52px;object-fit:contain">`:`<strong style="font-size:19px;color:#1a1a1a">${escapeHtml(p.businessName)}</strong>`;
   const route=[p.origin,p.destination].filter(Boolean).join(" → ");
-  const emailHtml=`<!doctype html><html><body style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,sans-serif;color:#18212f"><table role="presentation" width="100%" style="max-width:620px;margin:auto;background:#fff;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb"><tr><td style="height:8px;background:${brandColor}"></td></tr><tr><td style="padding:30px 38px 0"><table role="presentation" width="100%"><tr><td>${logo}</td><td align="right"><span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:11px;font-weight:700;letter-spacing:.04em">PENDING PAYMENT</span></td></tr></table></td></tr><tr><td style="padding:32px 38px 12px"><p style="margin:0 0 10px;font-size:15px;color:#64748b">Hi ${escapeHtml(p.customerName)},</p><h1 style="margin:0;font-size:27px;line-height:1.25;color:#111827">Your invoice is ready</h1><p style="margin:14px 0 0;font-size:15px;line-height:1.65;color:#526071">Thank you for confirming your shipment with ${escapeHtml(p.businessName)}. Your invoice is attached to this email as a PDF.</p></td></tr><tr><td style="padding:18px 38px"><table role="presentation" width="100%" style="border-collapse:separate;border-spacing:0;background:#f8fafc;border-radius:12px"><tr><td style="padding:20px 22px"><span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em">Total due</span><div style="margin-top:5px;font-size:26px;font-weight:700;color:${brandColor}">${money(p.total)}</div></td><td style="padding:20px 22px;border-left:1px solid #e5e7eb"><span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em">Due date</span><div style="margin-top:7px;font-size:15px;font-weight:700">${date(p.dueDate)}</div><div style="margin-top:4px;font-size:12px;color:#64748b">Invoice ${escapeHtml(p.invoiceNumber)}</div></td></tr></table></td></tr><tr><td style="padding:2px 38px 22px"><table role="presentation" width="100%" style="font-size:13px;border-collapse:collapse"><tr><td style="padding:8px 0;color:#64748b">Shipment</td><td align="right" style="padding:8px 0;font-weight:600">${escapeHtml(p.description)}</td></tr>${route?`<tr><td style="padding:8px 0;color:#64748b;border-top:1px solid #eef0f3">Route</td><td align="right" style="padding:8px 0;border-top:1px solid #eef0f3;font-weight:600">${escapeHtml(route)}</td></tr>`:""}<tr><td style="padding:8px 0;color:#64748b;border-top:1px solid #eef0f3">Payment reference</td><td align="right" style="padding:8px 0;border-top:1px solid #eef0f3;font-weight:700">${escapeHtml(p.invoiceNumber)}</td></tr></table></td></tr><tr><td style="padding:0 38px 28px"><div style="padding:18px 20px;border-radius:10px;background:#f8fafc"><strong style="font-size:13px;color:${brandColor}">Payment details</strong><div style="margin-top:9px;font-size:13px;line-height:1.65;color:#475569">${payment}</div><div style="margin-top:10px;font-size:12px;color:#64748b">${terms}</div></div></td></tr><tr><td style="padding:0 38px 30px"><p style="margin:0;font-size:13px;line-height:1.6;color:#64748b">Once payment is confirmed, we’ll begin sharing shipment updates. If you have any questions, reply to this email and our team will help.</p>${p.footerNote?`<p style="margin:14px 0 0;font-size:13px;color:#64748b">${escapeHtml(p.footerNote)}</p>`:""}</td></tr><tr><td style="padding:20px 38px;background:#f8fafc;border-top:1px solid #eef0f3;font-size:12px;line-height:1.5;color:#64748b"><strong style="color:#334155">${escapeHtml(p.businessName)}</strong><br>${escapeHtml(p.supportEmail)}${p.businessPhone?` · ${escapeHtml(p.businessPhone)}`:""}<br><span style="font-size:11px">The PDF invoice is attached to this email.</span></td></tr></table></body></html>`;
+  const emailHtml=`<!doctype html><html><body style="margin:0;background:#ffffff;padding:32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.6">
+<table role="presentation" width="100%" style="max-width:560px;margin:auto;border-collapse:collapse">
+  <tr><td style="padding-bottom:22px;border-bottom:1px solid #e5e7eb">${logo}</td></tr>
+  <tr><td style="padding:26px 0 0">
+    <p style="margin:0 0 14px;font-size:15px">Hi ${escapeHtml(p.customerName)},</p>
+    <p style="margin:0;font-size:15px;color:#374151">Thank you for confirming your shipment with ${escapeHtml(p.businessName)}. Your invoice is attached to this email as a PDF. A summary is below.</p>
+  </td></tr>
+  <tr><td style="padding:24px 0 0">
+    <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse">
+      <tr><td style="padding:7px 0;color:#6b7280">Invoice number</td><td align="right" style="padding:7px 0">${escapeHtml(p.invoiceNumber)}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Shipment</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${escapeHtml(p.description)}</td></tr>
+      ${route?`<tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Route</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${escapeHtml(route)}</td></tr>`:""}
+      <tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Due date</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${date(p.dueDate)}</td></tr>
+      <tr><td style="padding:12px 0 0;border-top:2px solid #1a1a1a;font-weight:bold">Total due</td><td align="right" style="padding:12px 0 0;border-top:2px solid #1a1a1a;font-weight:bold;font-size:16px">${money(p.total)}</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="padding:24px 0 0;border-top:1px solid #e5e7eb">
+    <p style="margin:24px 0 8px;font-size:14px;font-weight:bold">Payment details</p>
+    <p style="margin:0;font-size:14px;color:#374151">${payment}</p>
+    <p style="margin:10px 0 0;font-size:14px;color:#374151">Payment reference: <strong>${escapeHtml(p.invoiceNumber)}</strong></p>
+    <p style="margin:6px 0 0;font-size:13px;color:#6b7280">${terms}</p>
+  </td></tr>
+  <tr><td style="padding:24px 0;border-top:1px solid #e5e7eb;font-size:14px;color:#374151">
+    <p style="margin:0">Once payment is confirmed, we will begin sharing shipment updates. If you have any questions, simply reply to this email.</p>
+    ${p.footerNote?`<p style="margin:12px 0 0;font-size:13px;color:#6b7280">${escapeHtml(p.footerNote)}</p>`:""}
+  </td></tr>
+  <tr><td style="padding:20px 0 0;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:#6b7280">
+    <strong style="color:#1a1a1a">${escapeHtml(p.businessName)}</strong><br>${escapeHtml(p.supportEmail)}${p.businessPhone?` &middot; ${escapeHtml(p.businessPhone)}`:""}<br>The PDF invoice is attached to this email.
+  </td></tr>
+</table>
+</body></html>`;
   const text=`Hi ${p.customerName},\n\nYour invoice from ${p.businessName} is ready and attached as a PDF.\n\nTotal due: ${money(p.total)}\nDue date: ${date(p.dueDate)}\nInvoice: ${p.invoiceNumber}\nShipment: ${p.description}${route?`\nRoute: ${route}`:""}\n\nPayment details\n${p.paymentDetails||"Contact the issuer for payment instructions."}\nPayment reference: ${p.invoiceNumber}\n\n${p.paymentTerms||"Payment due within agreed terms."}\n\nOnce payment is confirmed, we’ll begin sharing shipment updates. Reply to this email if you need help.\n\n${p.businessName}`;
   try{
     const { buildInvoicePdf } = await import("./invoice-pdf");

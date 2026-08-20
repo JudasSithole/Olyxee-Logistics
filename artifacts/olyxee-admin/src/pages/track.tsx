@@ -244,10 +244,6 @@ export default function TrackPage() {
               )}
             </div>
 
-            <div className="px-6 sm:px-9 py-6 border-b border-neutral-100">
-              <div className="flex items-start gap-3"><PackageCheck className="h-5 w-5 mt-0.5" style={{ color: data.business?.primaryColor || "#2b2b2b" }}/><div><p className="text-sm font-semibold">What happens next</p><p className="mt-1 text-sm leading-6 text-neutral-500">We’ll update this page as your shipment moves. You don’t need to call for routine status checks.</p></div></div>
-            </div>
-
             {/* Transport-aware journey checklist (logistics orders only) */}
             {data.flow && data.flow.length > 0 && (
               <div className="px-6 sm:px-9 py-7 border-b border-neutral-100">
