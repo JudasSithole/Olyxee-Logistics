@@ -103,16 +103,7 @@ function buildText(p: SendStatusEmailParams): string {
   if (p.jobNumber && p.jobNumber.trim()) {
     lines.push(`Job Number: ${p.jobNumber.trim()}`);
   }
-  lines.push(
-    `${p.businessName} Tracking ID: ${p.trackingId}`,
-    `Status: ${p.status}`,
-  );
-  if (p.timeline && p.timeline.length) {
-    lines.push("", "Tracking progress:");
-    for (const t of p.timeline) {
-      lines.push(`${t.done ? "[x]" : "[ ]"} ${t.label}`);
-    }
-  }
+  lines.push(`Status: ${p.status}`);
   if (p.statusMessage && p.statusMessage.trim()) {
     lines.push("", "Note from our team:", p.statusMessage.trim());
   }
@@ -134,7 +125,6 @@ function buildHtml(p: SendStatusEmailParams): string {
   const c = copyFor(p.status);
   // p.customerName is escaped inside renderGreeting() via safeGreeting below.
   const safeBusiness = escapeHtml(p.businessName);
-  const safeTracking = escapeHtml(p.trackingId);
   const safeStatus = escapeHtml(p.status);
   const safeMessage = p.statusMessage?.trim() ? escapeHtml(p.statusMessage.trim()) : "";
   const safeSupport = p.supportEmail ? escapeHtml(p.supportEmail) : "";
@@ -152,21 +142,6 @@ function buildHtml(p: SendStatusEmailParams): string {
     ? escapeHtml(renderFooterNote(p.emailFooterNote)).replace(/\n/g, "<br />")
     : "";
   const safeJobNumber = p.jobNumber?.trim() ? escapeHtml(p.jobNumber.trim()) : "";
-  // Customer-facing progress list. Reached stages show a green check; any
-  // not-yet-reached stages (if a caller passes them) show a muted circle.
-  const timeline = p.timeline ?? [];
-  const timelineHtml = timeline.length
-    ? `
-              <p style="margin:20px 0 8px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">Tracking progress</p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 4px;">
-                ${timeline
-                  .map(
-                    (t) =>
-                      `<tr><td style="padding:3px 0;font-size:14px;color:${t.done ? "#1a1a1a" : "#a1a1aa"};white-space:nowrap;">${t.done ? "&#10003;" : "&#9675;"}&nbsp;&nbsp;<span style="color:${t.done ? "#1a1a1a" : "#a1a1aa"};">${escapeHtml(t.label)}</span></td></tr>`,
-                  )
-                  .join("")}
-              </table>`
-    : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -210,12 +185,9 @@ function buildHtml(p: SendStatusEmailParams): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e5e7eb;"><tr><td style="padding-top:24px;">
         ${safeJobNumber ? `
         <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">Job number</p>
-        <p style="margin:0 0 16px;font-size:15px;font-weight:bold;color:#1a1a1a;">${safeJobNumber}</p>` : ""}
-        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">${safeBusiness} Tracking ID</p>
-        <p style="margin:0;font-size:15px;font-weight:bold;color:#1a1a1a;">${safeTracking}</p>
-        ${timelineHtml}
+        <p style="margin:0 0 18px;font-size:15px;font-weight:bold;color:#1a1a1a;">${safeJobNumber}</p>` : ""}
         ${safeLink ? `
-        <p style="margin:22px 0 0;"><a href="${safeLink}" style="display:inline-block;padding:11px 22px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">View full tracking</a></p>
+        <p style="margin:0;"><a href="${safeLink}" style="display:inline-block;padding:11px 22px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">Track your shipment</a></p>
         <p style="margin:10px 0 0;font-size:12px;color:#6b7280;word-break:break-all;">Or open: <a href="${safeLink}" style="color:#374151;">${safeLink}</a></p>` : ""}
         </td></tr></table>
       </td>

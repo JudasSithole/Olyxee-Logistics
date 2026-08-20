@@ -1,17 +1,22 @@
 import { Router } from "express";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
-import { db, invoicesTable, ordersTable, customersTable, businessesTable, trackingEventsTable, auditLogsTable } from "@workspace/db";
+import { db, invoicesTable, ordersTable, customersTable, businessesTable, trackingEventsTable, auditLogsTable, jobCostsTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 import { generateId } from "../lib/id";
 import { canConfirmInvoicePaid } from "../lib/invoice-workflow";
 import { sendInvoiceEmail } from "../lib/email";
+import { ensureFinanceSchema } from "./finance";
 
 const router = Router();
 const InvoiceBody = z.object({
   orderId: z.string().min(1), subtotal: z.string().min(1),
   additionalCharges: z.string().default("0"), currency: z.string().length(3).default("ZAR"),
   dueDate: z.coerce.date().optional().nullable(), notes: z.string().max(5000).optional().nullable(),
+  // Optional internal cost captured at invoicing time. NEVER shown to the
+  // customer or on the invoice — it only feeds the Finance tab so the business
+  // can see profit per job. Recorded as a single OTHER cost line.
+  cost: z.string().optional().nullable(),
 });
 function invoiceNumber() { return `INV-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${generateId().slice(0,6).toUpperCase()}`; }
 function serialize(row:any) { return Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v instanceof Date?v.toISOString():v])); }
@@ -45,13 +50,25 @@ router.post("/invoices", requireAuth, async (req,res) => {
     if(existing){res.status(409).json({error:"This order already has an invoice",invoiceId:existing.id});return;}
     const subtotal=Number(parsed.data.subtotal),additional=Number(parsed.data.additionalCharges);
     if(!Number.isFinite(subtotal)||!Number.isFinite(additional)||subtotal<0||additional<0){res.status(400).json({error:"Amounts must be non-negative numbers"});return;}
+    // Parse the optional internal cost. Blank/0 means "not recorded now" — the
+    // business can still add costs later in the Finance tab.
+    const rawCost=parsed.data.cost?.trim();
+    const costAmount=rawCost?Number(rawCost):0;
+    const hasCost=!!rawCost&&Number.isFinite(costAmount)&&costAmount>0;
+    if(rawCost&&(!Number.isFinite(costAmount)||costAmount<0)){res.status(400).json({error:"Cost must be a non-negative number"});return;}
+    // The cost line lives in job_costs, which the Finance module self-heals.
+    // Ensure it exists before the transaction so a first-ever invoice (before
+    // Finance is opened) can still record the cost.
+    if(hasCost)await ensureFinanceSchema();
     const invoice=await db.transaction(async tx=>{
       const [created]=await tx.insert(invoicesTable).values({id:generateId(),businessId,invoiceNumber:invoiceNumber(),customerId:order.customerId,orderId:order.id,subtotal:parsed.data.subtotal,additionalCharges:parsed.data.additionalCharges,total:String(subtotal+additional),currency:parsed.data.currency.toUpperCase(),dueDate:parsed.data.dueDate,notes:parsed.data.notes}).returning();
       // Link the invoice + advance billing_status to INVOICED. This NEVER
       // touches current_status (the shipment stage): billing and shipment are
       // independent.
       await tx.update(ordersTable).set({invoiceId:created.id,billingStatus:"INVOICED",updatedAt:new Date()}).where(and(eq(ordersTable.id,order.id),eq(ordersTable.businessId,businessId)));
-      await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_INVOICE",entityType:"invoice",entityId:created.id,metadata:{orderId:order.id,invoiceNumber:created.invoiceNumber}});
+      // Internal-only cost for the Finance tab (never on the invoice/email).
+      if(hasCost){await tx.insert(jobCostsTable).values({id:generateId(),businessId,orderId:order.id,category:"OTHER",amount:costAmount.toFixed(2),currency:parsed.data.currency.toUpperCase(),note:"Recorded at invoicing"});}
+      await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_INVOICE",entityType:"invoice",entityId:created.id,metadata:{orderId:order.id,invoiceNumber:created.invoiceNumber,...(hasCost?{cost:costAmount.toFixed(2)}:{})}});
       return created;
     });
     res.status(201).json(serialize(invoice));

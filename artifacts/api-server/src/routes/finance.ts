@@ -21,7 +21,7 @@ const router = Router();
 // touches them (mirrors ensureJobsSchema in orders.ts; migration 0005 is the
 // source of truth, this covers envs where migrations don't auto-run). ──────────
 let _financeSchemaReady: Promise<void> | null = null;
-async function ensureFinanceSchema(): Promise<void> {
+export async function ensureFinanceSchema(): Promise<void> {
   if (_financeSchemaReady) return _financeSchemaReady;
   _financeSchemaReady = (async () => {
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "delivered_at" timestamp`);

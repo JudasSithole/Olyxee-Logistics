@@ -224,6 +224,7 @@ export default function OrderDetailPage() {
   const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
   const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
   const [invoiceCharges, setInvoiceCharges] = useState("0");
+  const [invoiceCost, setInvoiceCost] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [editOpen,setEditOpen]=useState(false);
   const [editForm,setEditForm]=useState({orderReference:"",description:"",cargoType:"",serviceRequired:"",origin:"",destination:"",weight:"",dimensions:"",estimatedDeliveryDate:""});
@@ -263,7 +264,7 @@ export default function OrderDetailPage() {
     if (!id || !invoiceSubtotal.trim()) return;
     setCreatingInvoice(true);
     try {
-      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR" } });
+      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR", ...(invoiceCost.trim() ? { cost: invoiceCost.trim() } : {}) } });
       if (send) {
         // Close-the-job flow: create the invoice and email it to the customer
         // in one action, then open it so the admin can confirm payment later.
@@ -753,8 +754,16 @@ export default function OrderDetailPage() {
               {!order.invoice_id && <div className={`space-y-2 rounded-xl border p-3 ${isPostpaid && isDelivered ? "border-primary/50 bg-primary/[0.05]" : "border-t"}`}>
                 <p className={`uppercase font-medium ${isPostpaid && isDelivered ? "text-primary" : "text-muted-foreground"}`}>{isPostpaid && isDelivered ? "Final step — invoice & close this Job" : "Generate invoice"}</p>
                 {isPostpaid && isDelivered && <p className="text-xs text-muted-foreground">Delivered. Enter the final amount and we’ll create the invoice and email it to the customer. Confirm payment afterwards to fully close the Job.</p>}
-                <Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/>
-                <Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Charge the customer</p>
+                  <Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/>
+                  <Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/>
+                </div>
+                <div className="space-y-1 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/20 p-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Your cost for this job <span className="normal-case text-muted-foreground/70">· internal only</span></p>
+                  <Input value={invoiceCost} onChange={e=>setInvoiceCost(e.target.value)} placeholder="What this job cost you (optional)"/>
+                  <p className="text-[11px] leading-4 text-muted-foreground">Never shown to the customer or on the invoice. Feeds the Finance tab so you can see profit per job. You can leave this blank and add costs later.</p>
+                </div>
                 <Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={()=>createInvoice(isPostpaid && isDelivered)}>{creatingInvoice ? "Working…" : isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button>
               </div>}
               {isDelivered && order.invoice_id && invoiceStatus === "paid" && <div className="flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-950/30 dark:text-green-300"><CheckCircle2 className="h-4 w-4"/>Job complete — delivered &amp; paid.</div>}
