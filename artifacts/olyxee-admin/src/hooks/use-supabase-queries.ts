@@ -242,6 +242,7 @@ function mapBusiness(b: ApiBusiness): Business {
     email_signature: b.emailSignature ?? null,
     email_footer_note: b.emailFooterNote ?? null,
     tracking_id_prefix: b.trackingIdPrefix ?? null,
+    allowed_origins: b.allowedOrigins ?? null,
     notify_on_status_change: true,
     notification_email: true,
     notification_sms: false,
@@ -373,6 +374,7 @@ export function useUpdateBusiness() {
       if (updates.email_signature !== undefined) body.emailSignature = updates.email_signature;
       if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
       if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
+      if (updates.allowed_origins !== undefined) body.allowedOrigins = updates.allowed_origins;
       if (updates.business_logo_url !== undefined) body.businessLogoUrl = updates.business_logo_url;
       if (updates.primary_brand_colour !== undefined) body.primaryBrandColour = updates.primary_brand_colour;
       if (updates.invoice_legal_name !== undefined) body.invoiceLegalName = updates.invoice_legal_name;

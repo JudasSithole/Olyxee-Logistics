@@ -10,6 +10,7 @@ import {
   Building2, Mail, SunMoon, RotateCcw,
   Code2, Copy, Download, Globe, Tag, CreditCard, FileText,
   Palette, Users, MapPin, Lock, Sparkles, ChevronRight, User,
+  ExternalLink, ShieldCheck, Link2,
 } from "lucide-react";
 import { BUSINESS_TYPES, BusinessTypeSelector } from "@/components/business-type-selector";
 import ProfilePage from "@/pages/profile";
@@ -1070,16 +1071,10 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 );
               case "tracking":
                 // Tracking Page and its website integration are the same thing —
-                // the tracking page is what you embed on your site — so they live
-                // on one tab: customise the page, then grab the embed/API snippet.
-                return (
-                  <div className="space-y-10">
-                    <TrackingCustomizationSection />
-                    <div className="border-t border-border/60 pt-10">
-                      <IntegrationsSection />
-                    </div>
-                  </div>
-                );
+                // the tracking page is what you embed on your site — so one guided
+                // tab covers the prefix, authorising your site, adding the page and
+                // linking customers.
+                return <TrackingCustomizationSection />;
               case "updates":
                 return <EmailCustomizationSection businessName={form.businessName} onDirtyChange={setEmailDirty} />;
               case "invoicing":
@@ -1474,182 +1469,433 @@ function BusinessTypeSection() {
   );
 }
 
-// ─── Tracking customization ───────────────────────────────────────────────────
-// Two server-side fields on the Business record that govern the public
-// customer experience:
-//   trackingIdPrefix - 3–5 uppercase letters, used as the leading segment
-//     of every new tracking ID we generate (e.g. "FSL" → "FSL-K7M-9X2A").
-//   allowedOrigins   - comma-separated list of customer-site origins allowed
-//     to call the public tracking endpoint cross-origin.
-// Self-contained like EmailCustomizationSection so it persists independently
-// of the theme save bar at the top of the page.
+// ─── Tracking Page (guided) ───────────────────────────────────────────────────
+// One tab that walks a business through putting live tracking on their own
+// website, mirroring docs/website-tracking.md:
+//   Basics  - tracking ID prefix (leads every tracking number).
+//   Step 1  - authorise your website (allowed origins / auto from website URL).
+//   Step 2  - add the tracking page (API base + ready-made page + dev snippets).
+//   Step 3  - link your customers (yoursite/track?code=<trackingId>).
+// Self-contained: saves its two server fields (prefix, origins) independently of
+// the page-level Save bar.
+function StepItem({
+  num, title, subtitle, children, last,
+}: {
+  num: number;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <div className="relative flex gap-4">
+      {!last && (
+        <span
+          aria-hidden
+          className="absolute left-4 top-9 bottom-0 w-px -translate-x-1/2 bg-border/70"
+        />
+      )}
+      <div className="z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+        {num}
+      </div>
+      <div className="min-w-0 flex-1 pb-9">
+        <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+        {subtitle && (
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{subtitle}</p>
+        )}
+        <div className="mt-3.5 space-y-3">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function TrackingCustomizationSection() {
   const { user } = useAuth();
   const { data: business, isLoading, refetch } = useBusiness(user?.businessId);
   const updateMutation = useUpdateBusiness();
+  const { businessName, primaryColor } = useTheme();
 
-  const [form, setForm] = useState({
-    trackingIdPrefix: "",
-    allowedOrigins: "",
-  });
+  // ── Saved server fields ──
+  const [prefix, setPrefix] = useState("");
+  const [origins, setOrigins] = useState("");
   const [loaded, setLoaded] = useState(false);
-  const prefixValid =
-    form.trackingIdPrefix === "" || /^[A-Z]{3,5}$/.test(form.trackingIdPrefix);
+  // ── Local-only helpers for the code samples / links ──
+  const [base, setBase] = useState("");
+  const [baseTouched, setBaseTouched] = useState(false);
+  const [exampleId, setExampleId] = useState("");
+  const [idTouched, setIdTouched] = useState(false);
+  const [lang, setLang] = useState<IntegrationLang>("html");
+  const [showDev, setShowDev] = useState(false);
 
   useEffect(() => {
     if (business && !loaded) {
-      setForm({
-        trackingIdPrefix: business.tracking_id_prefix ?? "",
-        allowedOrigins: "",
-      });
+      setPrefix(business.tracking_id_prefix ?? "");
+      setOrigins(business.allowed_origins ?? "");
       setLoaded(true);
     }
   }, [business, loaded]);
 
-  const dirty =
-    loaded &&
-    form.trackingIdPrefix !== (business?.tracking_id_prefix ?? "");
+  const prefixValid = prefix === "" || /^[A-Z]{3,5}$/.test(prefix);
+  const effectivePrefix = (
+    prefix.trim() ||
+    (businessName || "").replace(/[^A-Za-z]/g, "").slice(0, 3) ||
+    "OLY"
+  ).toUpperCase();
 
-  const handleSave = () => {
+  const prefixDirty = loaded && prefix !== (business?.tracking_id_prefix ?? "");
+  const originsDirty = loaded && origins.trim() !== (business?.allowed_origins ?? "");
+
+  // Where the customer's OWN site lives (their tracking page + track links).
+  const siteOrigin = useMemo(() => {
+    const v = (business?.website_url || "").trim();
+    if (!v) return "";
+    try {
+      const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+      return u.origin;
+    } catch {
+      return "";
+    }
+  }, [business?.website_url]);
+
+  // The Olyxee base the embedded page calls. Pre-fill from their website/support
+  // email domain; stop syncing once edited so we never clobber input.
+  const autoBase = useMemo(() => {
+    const site = business?.website_url?.trim();
+    if (site) {
+      const withProto = /^https?:\/\//i.test(site) ? site : `https://${site}`;
+      return withProto.replace(/\/+$/, "");
+    }
+    const email = business?.support_email?.trim();
+    const domain = email && email.includes("@") ? email.split("@")[1]?.trim() : "";
+    if (domain && domain.includes(".")) return `https://${domain.replace(/\/+$/, "")}`;
+    return "";
+  }, [business?.website_url, business?.support_email]);
+
+  useEffect(() => {
+    if (!baseTouched && autoBase) setBase(autoBase);
+  }, [autoBase, baseTouched]);
+  useEffect(() => {
+    if (!idTouched) setExampleId(`${effectivePrefix}-K7M-9X2A`);
+  }, [effectivePrefix, idTouched]);
+
+  const cleanBase = base.trim().replace(/\/+$/, "") || "https://logistics.olyxee.com";
+  const cleanId = exampleId.trim() || `${effectivePrefix}-K7M-9X2A`;
+  const snippets = useMemo(
+    () => buildSnippets(cleanBase, cleanId, businessName || "Your Store", primaryColor || "#2b2b2b"),
+    [cleanBase, cleanId, businessName, primaryColor],
+  );
+
+  // Live list of authorised origins, for the "already authorised" chips.
+  const originChips = origins
+    .split(",")
+    .map((s) => s.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  const trackBase = siteOrigin || "https://yourshop.co.za";
+  const customerLink = `${trackBase}/track?code=${cleanId}`;
+
+  const savePrefix = () => {
     if (!prefixValid) {
       toast.error("Tracking prefix must be 3–5 letters (A–Z).");
       return;
     }
-    // Normalize origins: trim each, drop trailing slashes, drop empties, dedupe.
-    const normalizedOrigins = Array.from(
-      new Set(
-        form.allowedOrigins
-          .split(",")
-          .map((s) => s.trim().replace(/\/+$/, ""))
-          .filter(Boolean),
-      ),
-    ).join(",");
     updateMutation.mutate(
+      { id: user!.businessId, tracking_id_prefix: prefix ? prefix : null },
       {
-        id: user!.businessId,
-        tracking_id_prefix: form.trackingIdPrefix ? form.trackingIdPrefix : null,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Tracking settings saved");
-          setForm((f) => ({ ...f, allowedOrigins: normalizedOrigins }));
+        onSuccess: (b) => {
+          toast.success("Tracking prefix saved");
+          setPrefix(b.tracking_id_prefix ?? "");
           refetch();
         },
-        onError: () => toast.error("Could not save tracking settings"),
+        onError: () => toast.error("Could not save tracking prefix"),
       },
     );
   };
 
-  const handleReset = () => {
-    setForm({
-      trackingIdPrefix: business?.tracking_id_prefix ?? "",
-      allowedOrigins: "",
-    });
+  const saveOrigins = () => {
+    const normalized = Array.from(
+      new Set(
+        origins.split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean),
+      ),
+    ).join(",");
+    updateMutation.mutate(
+      { id: user!.businessId, allowed_origins: normalized ? normalized : null },
+      {
+        onSuccess: (b) => {
+          toast.success("Authorised websites saved");
+          setOrigins(b.allowed_origins ?? "");
+          refetch();
+        },
+        onError: () => toast.error("Could not save authorised websites"),
+      },
+    );
   };
 
+  const saving = updateMutation.isPending;
+
+  if (isLoading && !loaded) {
+    return (
+      <div className="flex items-center justify-center px-4 py-10" role="status" aria-label="Loading tracking settings">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <SectionShell
-      id="tracking"
-      icon={Building2}
-      tint={TINTS.cyan}
-      title="Tracking Page"
-      description="The customer tracking experience — your tracking ID prefix and the websites allowed to look up orders."
-      action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
-    >
-      {isLoading && !loaded ? (
-        <div
-          className="px-4 py-8 flex items-center justify-center"
-          role="status"
-          aria-label="Loading tracking settings"
-        >
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    <section id="tracking" className="scroll-mt-24">
+      <header className="mb-5">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">Tracking Page</h2>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          Let customers track their shipment on your own website — the same live status as the
+          Olyxee page, in your brand. No backend, API key or login needed.
+        </p>
+      </header>
+
+      {/* The two ways to track */}
+      <div className="mb-7 rounded-xl border border-border/70 bg-muted/25 p-4">
+        <p className="text-[13px] font-medium text-foreground">
+          Every order can be tracked two ways — both show the same live status:
+        </p>
+        <ul className="mt-2.5 space-y-2 text-[13px] leading-relaxed text-muted-foreground">
+          <li className="flex gap-2.5">
+            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+            <span>
+              <span className="font-medium text-foreground">The “Track shipment” button in your emails</span> →
+              the Olyxee-hosted page. Works out of the box — nothing to set up.
+            </span>
+          </li>
+          <li className="flex gap-2.5">
+            <Globe className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+            <span>
+              <span className="font-medium text-foreground">A tracking page on your own website</span> →
+              your domain, your design. The three steps below set this up (optional).
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Basics: tracking ID prefix */}
+      <div className="mb-8 rounded-xl border border-border/70 p-4">
+        <div className="mb-3">
+          <h3 className="text-[15px] font-semibold text-foreground">Tracking ID prefix</h3>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+            Leads every new tracking number, e.g. <span className="font-mono">{effectivePrefix}-K7M-9X2A</span>. 3–5 letters.
+          </p>
         </div>
-      ) : (
-        <>
-          <SectionRow
-            label="Tracking ID prefix"
-            hint="3–5 letters. Shown at the start of every new tracking number, e.g. FSL-K7M-9X2A."
-            htmlFor="trackingIdPrefix"
-          >
-            <Input
-              id="trackingIdPrefix"
-              value={form.trackingIdPrefix}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  // Uppercase as the user types, strip everything that isn't
-                  // a letter, clamp to 5 chars - produces a valid prefix
-                  // without forcing the user to think about the rules.
-                  trackingIdPrefix: e.target.value
-                    .toUpperCase()
-                    .replace(/[^A-Z]/g, "")
-                    .slice(0, 5),
-                }))
-              }
-              placeholder="OLY"
-              maxLength={5}
-              className={cn(
-                "h-11 font-mono uppercase tracking-widest",
-                !prefixValid &&
-                  "border-destructive focus-visible:ring-destructive",
-              )}
-              aria-invalid={!prefixValid}
-            />
-            {form.trackingIdPrefix && prefixValid && (
-              <p className="text-xs text-muted-foreground">
-                Example: <span className="font-mono">{form.trackingIdPrefix}-K7M-9X2A</span>
-              </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            id="trackingIdPrefix"
+            value={prefix}
+            onChange={(e) =>
+              setPrefix(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5))
+            }
+            placeholder="OLY"
+            maxLength={5}
+            className={cn(
+              "h-11 w-40 font-mono uppercase tracking-widest",
+              !prefixValid && "border-destructive focus-visible:ring-destructive",
             )}
-            {!prefixValid && (
-              <p className="text-xs text-destructive">
-                Use 3–5 letters only (A–Z).
-              </p>
-            )}
-          </SectionRow>
+            aria-invalid={!prefixValid}
+          />
+          <Button size="sm" onClick={savePrefix} disabled={!prefixDirty || !prefixValid || saving} className="gap-1.5">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Save prefix
+          </Button>
+          {!prefixValid && <p className="w-full text-xs text-destructive">Use 3–5 letters only (A–Z).</p>}
+        </div>
+      </div>
 
-          <SectionRow
-            label="Allowed website origins"
-            hint="Comma-separated list of sites allowed to load tracking from your customer page. Include both apex and www variants if you use both."
-            htmlFor="allowedOrigins"
-          >
-            <Textarea
-              id="allowedOrigins"
-              value={form.allowedOrigins}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, allowedOrigins: e.target.value }))
-              }
-              placeholder="https://example.com, https://www.example.com"
-              rows={3}
-              spellCheck={false}
-              className="font-mono text-xs"
-            />
+      {/* Guided steps */}
+      <div>
+        <StepItem
+          num={1}
+          title="Authorise your website"
+          subtitle="One-time. Browsers only let your site read Olyxee's tracking data if the site is on the allow-list. Save your Website URL in Business Profile and its address is added here automatically — add any extra origins below (www and non-www count as different sites)."
+        >
+          {originChips.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {originChips.map((o) => (
+                <span
+                  key={o}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 font-mono text-[11px] text-emerald-700 dark:text-emerald-300"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {o}
+                </span>
+              ))}
+            </div>
+          )}
+          <Textarea
+            id="allowedOrigins"
+            value={origins}
+            onChange={(e) => setOrigins(e.target.value)}
+            placeholder="https://yourshop.co.za, https://www.yourshop.co.za"
+            rows={2}
+            spellCheck={false}
+            className="font-mono text-xs"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[11px] text-muted-foreground">
-              Leave empty to disable cross-origin browser access. Changes take
-              effect within ~1 minute.
+              Comma-separated. Use <span className="font-mono">https://</span> in production. Changes take effect within ~1 minute.
             </p>
-          </SectionRow>
-
-          <div className="px-4 py-3 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              Saves immediately - separate from the page-level Save.
-            </p>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!dirty || !prefixValid || updateMutation.isPending}
-              className="gap-1.5"
-            >
-              {updateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="h-4 w-4" />
-              )}
-              Save tracking settings
+            <Button size="sm" onClick={saveOrigins} disabled={!originsDirty || saving} className="gap-1.5">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Save websites
             </Button>
           </div>
-        </>
-      )}
-    </SectionShell>
+        </StepItem>
+
+        <StepItem
+          num={2}
+          title="Add the tracking page to your site"
+          subtitle="Download the ready-made page, set one value, and publish it at yoursite.com/track. It reads the shipment ID from the link, calls the API below, and draws the status in your brand."
+        >
+          <div className="rounded-xl border border-border/70 p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-foreground">Ready-made tracking page</p>
+                <p className="text-[12px] text-muted-foreground">
+                  Self-contained HTML — no build step. Open it, set <span className="font-mono">OLYXEE_API_BASE</span>, publish.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => downloadFile("track.html", snippets.html, "text/html")}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" /> Download page
+              </Button>
+            </div>
+          </div>
+
+          <SectionRow
+            label="API base URL"
+            hint="The Olyxee address your page calls. Pre-filled from your domain — change it only if your tracking API is hosted elsewhere."
+            htmlFor="int-base"
+          >
+            <Input
+              id="int-base"
+              value={base}
+              onChange={(e) => { setBaseTouched(true); setBase(e.target.value); }}
+              className="h-11 font-mono text-sm"
+              spellCheck={false}
+              placeholder="https://logistics.olyxee.com"
+            />
+          </SectionRow>
+
+          <button
+            type="button"
+            onClick={() => setShowDev((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
+          >
+            <Code2 className="h-4 w-4" />
+            {showDev ? "Hide developer snippets" : "Prefer to build it yourself? Show code snippets"}
+            <ChevronRight className={cn("h-4 w-4 transition-transform", showDev && "rotate-90")} />
+          </button>
+
+          {showDev && (
+            <div className="space-y-3 rounded-xl border border-border/70 p-3.5">
+              <SectionRow
+                label="Example tracking ID"
+                hint="Used in the samples so you can copy and run them right away."
+                htmlFor="int-id"
+              >
+                <Input
+                  id="int-id"
+                  value={exampleId}
+                  onChange={(e) => { setIdTouched(true); setExampleId(e.target.value.toUpperCase()); }}
+                  className="h-11 font-mono text-sm uppercase tracking-wider"
+                  spellCheck={false}
+                  placeholder={`${effectivePrefix}-K7M-9X2A`}
+                />
+              </SectionRow>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-1">
+                  {INTEGRATION_LANGS.map((l) => {
+                    const Icon = l.icon;
+                    const active = lang === l.id;
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => setLang(l.id)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors",
+                          active
+                            ? "border-primary bg-primary/[0.05] text-foreground"
+                            : "border-border text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" style={active ? { color: l.color } : undefined} />
+                        {l.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <CopyButton text={snippets[lang]} />
+              </div>
+              <div className="relative">
+                <div className="absolute right-2 top-2 z-10 rounded-md bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                  GET /api/public/track/:id
+                </div>
+                <CodeBlock code={snippets[lang]} lang={lang} />
+              </div>
+              <div className="flex items-start gap-2 text-[12px] text-muted-foreground">
+                <Globe className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <p>
+                  Browser calls (JavaScript / HTML) need the page's address in Step 1 above — including any local
+                  test server, e.g. <span className="font-mono text-foreground">http://localhost:3000</span>. Opening
+                  the file with <span className="font-mono text-foreground">file://</span> is blocked, so serve it. Server-side
+                  calls (cURL, Python, PHP) need no allow-listing.
+                </p>
+              </div>
+            </div>
+          )}
+        </StepItem>
+
+        <StepItem
+          num={3}
+          title="Link your customers to it"
+          subtitle="Anywhere you'd point a customer at tracking — your site nav, a button, WhatsApp — link to your page with the order's tracking ID. The ID is shown on every order and invoice."
+          last
+        >
+          <div className="rounded-xl border border-border/70 bg-muted/25 p-3.5">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+              <Link2 className="h-3.5 w-3.5" /> Your track link
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded-md bg-background px-2.5 py-2 font-mono text-[12px] text-foreground">
+                {customerLink}
+              </code>
+              <CopyButton text={customerLink} />
+            </div>
+            {!siteOrigin && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Add your Website URL in Business Profile and this fills in with your real domain.
+              </p>
+            )}
+          </div>
+          {siteOrigin && (
+            <a
+              href={customerLink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:underline"
+            >
+              <ExternalLink className="h-4 w-4" /> Preview the link
+            </a>
+          )}
+        </StepItem>
+      </div>
+
+      <div className="mt-1 flex items-center gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+        <Mail className="h-4 w-4 flex-shrink-0" />
+        <p>
+          Full guide for your developer: <span className="font-mono text-foreground">docs/website-tracking.md</span>. Need a hand?{" "}
+          <a href="mailto:support@olyxee.com" className="font-medium text-foreground hover:underline">support@olyxee.com</a>
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -1968,188 +2214,6 @@ function CopyButton({ text }: { text: string }) {
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? "Copied" : "Copy"}
     </button>
-  );
-}
-
-function IntegrationsSection() {
-  const { user } = useAuth();
-  const { data: business } = useBusiness(user?.businessId);
-  const { businessName, primaryColor } = useTheme();
-
-  const prefix = (
-    business?.tracking_id_prefix?.trim() ||
-    (businessName || "").replace(/[^A-Za-z]/g, "").slice(0, 3) ||
-    "TRK"
-  ).toUpperCase();
-
-  const [base, setBase] = useState("");
-  const [baseTouched, setBaseTouched] = useState(false);
-  const [exampleId, setExampleId] = useState(`${prefix}-K7M-9X2A`);
-  const [idTouched, setIdTouched] = useState(false);
-  const [lang, setLang] = useState<IntegrationLang>("curl");
-
-  // Pre-fill the base URL automatically from what the company gave us at sign-up:
-  //   1. the website they entered during onboarding (preferred), normalised to
-  //      include https:// if they typed a bare domain;
-  //   2. otherwise the domain of their support email (e.g. hi@acme.com → acme.com).
-  // We deliberately NEVER fall back to the current browser origin so the hosting
-  // / dev domain can't leak in. If neither exists the field keeps its placeholder.
-  // Syncing stops the moment the user edits the field so we never clobber input.
-  const autoBase = useMemo(() => {
-    const site = business?.website_url?.trim();
-    if (site) {
-      const withProto = /^https?:\/\//i.test(site) ? site : `https://${site}`;
-      return withProto.replace(/\/+$/, "");
-    }
-    const email = business?.support_email?.trim();
-    const domain = email && email.includes("@") ? email.split("@")[1]?.trim() : "";
-    if (domain && domain.includes(".")) {
-      return `https://${domain.replace(/\/+$/, "")}`;
-    }
-    return "";
-  }, [business?.website_url, business?.support_email]);
-
-  useEffect(() => {
-    if (baseTouched) return;
-    if (autoBase) setBase(autoBase);
-  }, [autoBase, baseTouched]);
-
-  // Keep the example ID in sync with the saved prefix until the user edits it.
-  useEffect(() => {
-    if (!idTouched) setExampleId(`${prefix}-K7M-9X2A`);
-  }, [prefix, idTouched]);
-
-  const cleanBase = base.trim().replace(/\/+$/, "") || "https://your-domain.com";
-  const cleanId = exampleId.trim() || `${prefix}-K7M-9X2A`;
-
-  const snippets = useMemo(
-    () => buildSnippets(cleanBase, cleanId, businessName || "Your Store", primaryColor || "#f97316"),
-    [cleanBase, cleanId, businessName, primaryColor],
-  );
-
-  return (
-    <>
-      <SectionShell
-        icon={Code2}
-        tint={TINTS.indigo}
-        title="Add tracking to your website"
-        description="Embed this tracking page on your own site - copy a snippet in your language, or download a ready-to-run page to test locally."
-      >
-        <SectionRow
-          label="API base URL"
-          hint="Pre-filled with your business domain. Change it if your tracking API is hosted elsewhere (e.g. a separate Vercel deployment)."
-          htmlFor="int-base"
-        >
-          <Input
-            id="int-base"
-            value={base}
-            onChange={(e) => {
-              setBaseTouched(true);
-              setBase(e.target.value);
-            }}
-            className="h-11 font-mono text-sm"
-            spellCheck={false}
-            placeholder="https://your-domain.com"
-          />
-        </SectionRow>
-
-        <SectionRow
-          label="Example tracking ID"
-          hint="Used throughout the samples below so you can copy and run them right away."
-          htmlFor="int-id"
-        >
-          <Input
-            id="int-id"
-            value={exampleId}
-            onChange={(e) => {
-              setIdTouched(true);
-              setExampleId(e.target.value.toUpperCase());
-            }}
-            className="h-11 font-mono text-sm uppercase tracking-wider"
-            spellCheck={false}
-            placeholder={`${prefix}-K7M-9X2A`}
-          />
-        </SectionRow>
-
-        <div className="px-4 py-4 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex flex-wrap gap-1">
-              {INTEGRATION_LANGS.map((l) => {
-                const Icon = l.icon;
-                const active = lang === l.id;
-                return (
-                  <button
-                    key={l.id}
-                    type="button"
-                    onClick={() => setLang(l.id)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 border transition-colors",
-                      active
-                        ? "border-primary bg-primary/[0.05] text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Icon
-                      className="h-3.5 w-3.5"
-                      style={active ? { color: l.color } : undefined}
-                    />
-                    {l.label}
-                  </button>
-                );
-              })}
-            </div>
-            <CopyButton text={snippets[lang]} />
-          </div>
-
-          <div className="relative">
-            <div className="absolute top-2 right-2 z-10 text-[10px] uppercase tracking-wider text-zinc-400 bg-zinc-800 px-1.5 py-0.5 font-mono rounded-md">
-              GET /api/public/track/:id
-            </div>
-            <CodeBlock code={snippets[lang]} lang={lang} />
-          </div>
-
-          {lang === "html" && (
-            <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-muted-foreground">
-              <span>
-                Save as <span className="font-mono text-foreground">tracking.html</span>, then serve it from a local web server
-                (e.g. <span className="font-mono text-foreground">npx serve</span> or <span className="font-mono text-foreground">python3 -m http.server</span>) and add that address to Allowed origins.
-              </span>
-              <button
-                type="button"
-                onClick={() => downloadFile("tracking.html", snippets.html, "text/html")}
-                className="inline-flex items-center gap-1.5 font-medium text-foreground hover:underline"
-              >
-                <Download className="h-3.5 w-3.5" /> Download tracking.html
-              </button>
-            </div>
-          )}
-        </div>
-      </SectionShell>
-
-      <div className="mt-4 px-1 flex items-start gap-2 text-xs text-muted-foreground">
-        <Globe className="h-4 w-4 mt-0.5 flex-shrink-0" />
-        <p>
-          Browser calls from a different website (the JavaScript and HTML samples) need that site's address listed under{" "}
-          <span className="font-medium text-foreground">Allowed website origins</span> in the Identity tab - including any
-          local server you test with, e.g. <span className="font-mono text-foreground">http://localhost:3000</span>. Opening
-          the HTML file directly with <span className="font-mono text-foreground">file://</span> will be blocked, so serve it instead.
-          Server-side calls (cURL, Python, PHP) work without any allow-listing.
-        </p>
-      </div>
-
-      <div className="mt-2 px-1 flex items-center gap-2 text-xs text-muted-foreground">
-        <Mail className="h-4 w-4 flex-shrink-0" />
-        <p>
-          Need a hand integrating?{" "}
-          <a
-            href="mailto:support@olyxee.com"
-            className="font-medium text-foreground hover:underline"
-          >
-            support@olyxee.com
-          </a>
-        </p>
-      </div>
-    </>
   );
 }
 

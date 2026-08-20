@@ -37,6 +37,7 @@ export interface Database {
           email_signature: string | null;
           email_footer_note: string | null;
           tracking_id_prefix: string | null;
+          allowed_origins: string | null;
           notify_on_status_change: boolean;
           notification_email: boolean;
           notification_sms: boolean;
@@ -91,6 +92,7 @@ export interface Database {
           email_signature?: string | null;
           email_footer_note?: string | null;
           tracking_id_prefix?: string | null;
+          allowed_origins?: string | null;
           notify_on_status_change?: boolean;
           notification_email?: boolean;
           notification_sms?: boolean;
