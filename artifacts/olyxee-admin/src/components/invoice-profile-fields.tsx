@@ -15,7 +15,7 @@ interface InvoiceProfileFieldsProps {
   pickLogo: (file: File) => void;
   // Return to the previous onboarding screen (from the first sub-step).
   onBack: () => void;
-  // Finish onboarding — used by "Finish setup" and "Skip for now" alike, so the
+  // Finish onboarding - used by "Finish setup" and "Skip for now" alike, so the
   // whole invoice profile stays optional.
   onComplete: () => void;
   submitting?: boolean;
@@ -60,7 +60,7 @@ const SUB_STEPS = [
 ] as const;
 
 // The invoice profile, captured as a short 4-step wizard so no single screen is
-// long. Everything is optional — the user can Continue past empty steps or Skip
+// long. Everything is optional - the user can Continue past empty steps or Skip
 // out entirely and finish it later in Settings. Only used by onboarding.
 export function InvoiceProfileFields({
   profile,
@@ -222,7 +222,7 @@ export function InvoiceProfileFields({
         className="mx-auto block text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
         data-testid="button-skip-invoice"
       >
-        Skip for now — I’ll add this later in Settings
+        Skip for now - I’ll add this later in Settings
       </button>
     </div>
   );

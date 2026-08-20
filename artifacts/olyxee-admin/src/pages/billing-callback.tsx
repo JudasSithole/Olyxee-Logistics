@@ -6,7 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api";
  * Paystack redirects the buyer here after a checkout (the callback_url set when
  * the transaction was initialized). We read the `reference` query param and
  * re-verify it server-side via /api/billing/verify/:reference, which activates
- * the plan idempotently. Verification is authoritative — we never trust the
+ * the plan idempotently. Verification is authoritative - we never trust the
  * redirect alone.
  */
 
@@ -37,7 +37,7 @@ export default function BillingCallbackPage() {
         if (res.status === "success") {
           setPhase("success");
           if (!res.activated) {
-            setMessage("This payment was already processed — your plan is active.");
+            setMessage("This payment was already processed - your plan is active.");
           }
         } else {
           setPhase("failed");

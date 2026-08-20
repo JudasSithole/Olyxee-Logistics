@@ -16,7 +16,7 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
   const statusStyle = invoice.status === "paid" ? "bg-emerald-50 text-emerald-700" : invoice.status === "sent" ? "bg-amber-50 text-amber-700" : invoice.status === "overdue" ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-600";
   const issueDate = new Date(invoice.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
   const dueDate = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) : "On receipt";
-  const jobNumber = order?.jobNumber || order?.orderReference || "—";
+  const jobNumber = order?.jobNumber || order?.orderReference || "-";
   const transportLabel = order?.transportMode ? `${String(order.transportMode).charAt(0)}${String(order.transportMode).slice(1).toLowerCase()} freight` : "";
   const chargeDescription = [transportLabel || "Logistics service", order?.cargoType || order?.description, order?.weight].filter(Boolean).join(" · ");
 
@@ -73,8 +73,8 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
         <section className="mt-8">
           <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-slate-400">Shipment</p>
           <div className="grid grid-cols-4 gap-4 rounded-2xl bg-slate-50 px-6 py-5 text-[12px]">{([
-            ["Cargo", order?.cargoType || order?.description || "—"], ["Route", [order?.origin, order?.destination].filter(Boolean).join(" → ") || "—"],
-            ["Transport", transportLabel || "—"], ["Job number", jobNumber],
+            ["Cargo", order?.cargoType || order?.description || "-"], ["Route", [order?.origin, order?.destination].filter(Boolean).join(" → ") || "-"],
+            ["Transport", transportLabel || "-"], ["Job number", jobNumber],
           ] as [string, string][]).map(([label, value]) => <div key={label}><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 font-medium text-slate-700">{value}</p></div>)}</div>
         </section>
 

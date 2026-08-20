@@ -175,7 +175,7 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell><p className="font-semibold">{customer.full_name}</p><p className="mt-1 text-xs text-muted-foreground">{customer.email}</p></TableCell>
                       <TableCell><p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" />{customer.phone ?? "No phone"}</p></TableCell>
-                      <TableCell className="text-muted-foreground">{customer.company_name ? <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{customer.company_name}</span> : "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.company_name ? <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{customer.company_name}</span> : "-"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(customer.created_at), "MMM d, yyyy")}
                       </TableCell>

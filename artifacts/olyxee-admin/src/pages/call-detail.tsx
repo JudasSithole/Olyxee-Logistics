@@ -160,11 +160,11 @@ export default function CallDetailPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Caller</span>
-                <span className="font-mono">{call.fromNumber ?? "—"}</span>
+                <span className="font-mono">{call.fromNumber ?? "-"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Retell ID</span>
-                <span className="font-mono truncate max-w-[180px]">{call.retellCallId ?? "—"}</span>
+                <span className="font-mono truncate max-w-[180px]">{call.retellCallId ?? "-"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Escalated</span>

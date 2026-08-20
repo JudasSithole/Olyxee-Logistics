@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "olyxee/tracking",
+	"title": "Olyxee Tracking",
+	"category": "widgets",
+	"icon": "location",
+	"description": "Live shipment tracking from Olyxee. Renders a tracking box that reads ?code= automatically.",
+	"keywords": [ "tracking", "shipment", "olyxee", "logistics" ],
+	"supports": {
+		"html": false,
+		"multiple": false
+	},
+	"textdomain": "olyxee-tracking",
+	"editorScript": "file:./index.js"
+}

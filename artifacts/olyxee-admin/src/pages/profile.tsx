@@ -16,6 +16,7 @@ import {
   Building2,
   Trash2,
   AlertTriangle,
+  User,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -200,15 +201,14 @@ export default function ProfilePage() {
   if (!user) return null;
 
   const fullName = user.name || user.email;
-  const initial = (fullName || "U").charAt(0).toUpperCase();
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 pb-10">
       {/* ─── Identity card ──────────────────────────────────────── */}
       <header className="flex items-center gap-4 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-sm sm:p-6">
         <Avatar className="h-16 w-16 flex-shrink-0">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
-            {initial}
+          <AvatarFallback className="bg-primary text-primary-foreground">
+            <User className="h-8 w-8" />
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
@@ -301,7 +301,7 @@ export default function ProfilePage() {
         </div>
         <div className="grid gap-5 p-5 sm:grid-cols-2">
           <div className="space-y-1.5"><Label className="text-xs font-normal text-muted-foreground">Business name</Label><div className="flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{businessName || "Not set"}</div><p className="text-[11px] text-muted-foreground">Change branding and customer-facing names in Settings.</p></div>
-          <div className="space-y-1.5"><Label className="text-xs font-normal text-muted-foreground">Business type</Label><div className="flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{businessType || "Not set"}</div><p className="text-[11px] text-muted-foreground">Chosen when your account was created — it can't be changed here.</p></div>
+          <div className="space-y-1.5"><Label className="text-xs font-normal text-muted-foreground">Business type</Label><div className="flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{businessType || "Not set"}</div><p className="text-[11px] text-muted-foreground">Chosen when your account was created - it can't be changed here.</p></div>
         </div>
       </section>
 

@@ -20,13 +20,13 @@ const ANNOUNCEMENTS: Announcement[] = [
     date: "July 2026",
     tag: "Launch",
     title: `Olyxee Logistics is going live on ${LAUNCH_LABEL}`,
-    body: `Everything is free for every business until ${SCALE_BILLING_START_LABEL} — nothing to pay right now. After that you choose: stay on Starter (R89/month) to keep running your freight jobs, or move up to Scale (R999/month). No payment is taken before then.`,
+    body: `Everything is free for every business until ${SCALE_BILLING_START_LABEL} - nothing to pay right now. After that you choose: stay on Starter (R89/month) to keep running your freight jobs, or move up to Scale (R999/month). No payment is taken before then.`,
   },
   {
     date: "July 2026",
     tag: "Heads up",
     title: "More on the way for Scale",
-    body: "Scale is where we're adding the tools that save your team time and protect margin — automatic document handling, faster quoting, landed-cost and profit tracking, customer self-service, and Orgni Intelligence to flag what needs attention. Scroll down for a preview. These are marked Coming Soon until released.",
+    body: "Scale is where we're adding the tools that save your team time and protect margin - automatic document handling, faster quoting, landed-cost and profit tracking, customer self-service, and Orgni Intelligence to flag what needs attention. Scroll down for a preview. These are marked Coming Soon until released.",
   },
 ];
 
@@ -38,7 +38,7 @@ interface UpcomingFeature {
 }
 
 // Marketing preview of the disabled foundations shipping around launch. These
-// are informational only — none of these features are active yet.
+// are informational only - none of these features are active yet.
 const FEATURES: UpcomingFeature[] = [
   {
     icon: MessageSquare,
@@ -51,7 +51,7 @@ const FEATURES: UpcomingFeature[] = [
     icon: Palette,
     title: "Business branding",
     description:
-      "Add your logo, colours and sender name to tracking pages and emails — and remove Olyxee branding.",
+      "Add your logo, colours and sender name to tracking pages and emails - and remove Olyxee branding.",
     plan: "Scale",
   },
   {

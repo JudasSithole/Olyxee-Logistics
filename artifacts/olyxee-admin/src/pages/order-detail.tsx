@@ -718,7 +718,7 @@ export default function OrderDetailPage() {
               </div>
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Job Number</p>
-                <p className="text-sm font-mono">{order.job_number ?? order.order_reference ?? "—"}</p>
+                <p className="text-sm font-mono">{order.job_number ?? order.order_reference ?? "-"}</p>
               </div>
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Billing Type</p>
@@ -734,7 +734,7 @@ export default function OrderDetailPage() {
                   <div className="rounded-xl bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">From the supplier / warehouse / courier · staff only</p><p className="mt-1 text-sm font-mono font-semibold">{order.supplier_tracking_number}</p></div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Optional. Add it whenever the supplier, warehouse, or courier provides one — it never blocks the shipment.</p>
+                    <p className="text-sm text-muted-foreground">Optional. Add it whenever the supplier, warehouse, or courier provides one - it never blocks the shipment.</p>
                     {/* Supplier tracking is optional and can be added at any pre-delivery
                         stage. For PREPAID it still requires payment first (the API
                         enforces that); POSTPAID can add it any time. */}
@@ -752,7 +752,7 @@ export default function OrderDetailPage() {
               </div>
               {order.invoice_id && <div className="space-y-2 rounded-xl border p-3"><p className="text-muted-foreground uppercase font-medium">Invoice</p><p className={`text-sm font-semibold ${invoiceStatus === "paid" ? "text-green-700" : "text-amber-700"}`}>{invoiceStatus === "paid" ? "Paid · manually confirmed" : "Pending payment · confirmation required"}</p><Link className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline" href={`/invoices/${order.invoice_id}`}>Open invoice <ExternalLink className="h-3 w-3" /></Link></div>}
               {!order.invoice_id && <div className={`space-y-2 rounded-xl border p-3 ${isPostpaid && isDelivered ? "border-primary/50 bg-primary/[0.05]" : "border-t"}`}>
-                <p className={`uppercase font-medium ${isPostpaid && isDelivered ? "text-primary" : "text-muted-foreground"}`}>{isPostpaid && isDelivered ? "Final step — invoice & close this Job" : "Generate invoice"}</p>
+                <p className={`uppercase font-medium ${isPostpaid && isDelivered ? "text-primary" : "text-muted-foreground"}`}>{isPostpaid && isDelivered ? "Final step - invoice & close this Job" : "Generate invoice"}</p>
                 {isPostpaid && isDelivered && <p className="text-xs text-muted-foreground">Delivered. Enter the final amount and we’ll create the invoice and email it to the customer. Confirm payment afterwards to fully close the Job.</p>}
                 <div className="space-y-1">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Charge the customer</p>
@@ -766,8 +766,8 @@ export default function OrderDetailPage() {
                 </div>
                 <Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={()=>createInvoice(isPostpaid && isDelivered)}>{creatingInvoice ? "Working…" : isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button>
               </div>}
-              {isDelivered && order.invoice_id && invoiceStatus === "paid" && <div className="flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-950/30 dark:text-green-300"><CheckCircle2 className="h-4 w-4"/>Job complete — delivered &amp; paid.</div>}
-              {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "—"} → {order.destination || "—"}</p></div>}
+              {isDelivered && order.invoice_id && invoiceStatus === "paid" && <div className="flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-950/30 dark:text-green-300"><CheckCircle2 className="h-4 w-4"/>Job complete - delivered &amp; paid.</div>}
+              {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "-"} → {order.destination || "-"}</p></div>}
             </CardContent>
           </Card>
         </div>

@@ -32,7 +32,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORIES = Object.keys(CATEGORY_LABELS);
 
 function money(currency: string, n: number | null | undefined): string {
-  if (n == null || Number.isNaN(n)) return "—";
+  if (n == null || Number.isNaN(n)) return "-";
   return `${currency} ${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -45,7 +45,7 @@ function ModeIcon({ mode }: { mode: string | null }) {
   return null;
 }
 
-const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
+const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "-");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -84,7 +84,7 @@ interface Summary {
 }
 
 // Derive the invoice status shown to the user, computing Overdue dynamically
-// (the DB never persists `overdue` reliably — see finance.ts).
+// (the DB never persists `overdue` reliably - see finance.ts).
 function invoiceStatus(inv: { status: string; dueDate: string | null }): { label: string; cls: string } {
   const past = !!inv.dueDate && new Date(inv.dueDate).getTime() < Date.now();
   if (inv.status === "paid") return { label: "Paid", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" };
@@ -162,8 +162,8 @@ function FinanceHeader({ summary, onOpenInvoice, onOpenCosts }: { summary: Summa
   const a = summary.attention;
   const items: Attn[] = [];
   for (const o of a.overdue) items.push({ key: "ov" + o.invoiceId, icon: AlertTriangle, tone: "text-red-500", title: `${o.customerName} owes ${money(o.currency, o.total)}`, sub: `${o.invoiceNumber} · ${o.daysOverdue} day${o.daysOverdue === 1 ? "" : "s"} overdue`, open: () => onOpenInvoice(o.invoiceId) });
-  for (const j of a.completedNotInvoiced) items.push({ key: "cni" + j.orderId, icon: PackageCheck, tone: "text-blue-500", title: `${j.jobNumber} is delivered — invoice it`, sub: j.customerName + (j.route ? ` · ${j.route}` : ""), open: () => navigate(`/orders/${j.orderId}`) });
-  for (const o of a.awaitingConfirmation) items.push({ key: "aw" + o.invoiceId, icon: Clock, tone: "text-amber-500", title: `${o.customerName} — awaiting payment`, sub: `${o.invoiceNumber} · ${money(o.currency, o.total)}`, open: () => onOpenInvoice(o.invoiceId) });
+  for (const j of a.completedNotInvoiced) items.push({ key: "cni" + j.orderId, icon: PackageCheck, tone: "text-blue-500", title: `${j.jobNumber} is delivered - invoice it`, sub: j.customerName + (j.route ? ` · ${j.route}` : ""), open: () => navigate(`/orders/${j.orderId}`) });
+  for (const o of a.awaitingConfirmation) items.push({ key: "aw" + o.invoiceId, icon: Clock, tone: "text-amber-500", title: `${o.customerName} - awaiting payment`, sub: `${o.invoiceNumber} · ${money(o.currency, o.total)}`, open: () => onOpenInvoice(o.invoiceId) });
   for (const j of a.missingCosts) items.push({ key: "mc" + j.orderId, icon: ReceiptText, tone: "text-violet-500", title: `${j.jobNumber} has no costs recorded`, sub: `${j.customerName} · add costs to see profit`, open: () => onOpenCosts(j.orderId) });
   for (const j of a.lowMargin) items.push({ key: "lm" + j.orderId, icon: TrendingDown, tone: "text-rose-500", title: `${j.jobNumber} is low margin (${j.marginPct}%)`, sub: `${j.customerName} · review its costs`, open: () => onOpenCosts(j.orderId) });
   const shown = items.slice(0, 5);
@@ -348,7 +348,7 @@ function JobCostEditor({ orderId, onClose }: { orderId: string; onClose: () => v
                   ) : <p className="border-t border-border pt-1.5 text-xs text-muted-foreground">Add costs to see profit.</p>}
                 </>
               ) : (
-                <p className="border-t border-border pt-1.5 text-xs text-muted-foreground">This job isn't invoiced yet — profit will appear once it has an invoice.</p>
+                <p className="border-t border-border pt-1.5 text-xs text-muted-foreground">This job isn't invoiced yet - profit will appear once it has an invoice.</p>
               )}
             </div>
           </div>
@@ -377,11 +377,11 @@ function InvoicesTab({ onOpen }: { onOpen: (id: string) => void }) {
         <TableBody>
           {rows.map((inv) => {
             const st = invoiceStatus(inv);
-            const job = inv.jobNumber || inv.orderReference || inv.trackingId || "—";
+            const job = inv.jobNumber || inv.orderReference || inv.trackingId || "-";
             return (
               <TableRow key={inv.id} className="cursor-pointer" onClick={() => onOpen(inv.id)}>
                 <TableCell className="font-mono text-sm font-semibold">{inv.invoiceNumber}</TableCell>
-                <TableCell>{inv.customerCompany || inv.customerName || "—"}</TableCell>
+                <TableCell>{inv.customerCompany || inv.customerName || "-"}</TableCell>
                 <TableCell><Link href={`/orders/${inv.orderId}`} onClick={(e) => e.stopPropagation()} className="font-mono text-sm text-muted-foreground hover:text-primary hover:underline">{job}</Link></TableCell>
                 <TableCell className="text-right font-medium tabular-nums">{money(inv.currency, Number(inv.total))}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{inv.dueDate ? fmtDate(inv.dueDate) : "On receipt"}</TableCell>
@@ -450,11 +450,11 @@ function JobsTab({ onEditCosts }: { onEditCosts: (orderId: string) => void }) {
                   <TableCell className="font-mono text-sm font-semibold"><span className="inline-flex items-center gap-1.5"><ModeIcon mode={j.transportMode} />{j.jobNumber}</span></TableCell>
                   <TableCell>{j.customerName}</TableCell>
                   <TableCell className="text-right tabular-nums">{j.revenue != null ? money(j.currency, j.revenue) : <span className="text-muted-foreground">Not invoiced</span>}</TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">{j.costCount ? money(j.currency, j.totalCost) : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">{j.costCount ? money(j.currency, j.totalCost) : "-"}</TableCell>
                   <TableCell className={`text-right font-semibold tabular-nums ${j.grossProfit == null ? "" : j.grossProfit < 0 ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>
-                    {j.grossProfit != null ? money(j.currency, j.grossProfit) : j.revenue != null ? <span className="text-xs font-normal text-amber-600 dark:text-amber-400">Add costs</span> : <span className="text-muted-foreground">—</span>}
+                    {j.grossProfit != null ? money(j.currency, j.grossProfit) : j.revenue != null ? <span className="text-xs font-normal text-amber-600 dark:text-amber-400">Add costs</span> : <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell className="text-right">{j.marginPct != null ? <Badge className={j.marginPct <= threshold ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"}>{j.marginPct}%</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="text-right">{j.marginPct != null ? <Badge className={j.marginPct <= threshold ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"}>{j.marginPct}%</Badge> : <span className="text-muted-foreground">-</span>}</TableCell>
                   <TableCell className="text-right"><Button size="sm" variant={j.costCount ? "ghost" : "secondary"} className={j.costCount ? "text-primary hover:text-primary" : ""} onClick={() => onEditCosts(j.orderId)}>{j.costCount ? "Edit costs" : "Add costs"}</Button></TableCell>
                 </TableRow>
               ))}

@@ -26,7 +26,7 @@ export interface SendStatusEmailParams {
   // the tracking ID. Optional so older callers/tests still compile.
   jobNumber?: string | null;
   // Customer-facing shipment progress, oldest-first. Built from the Job's
-  // tracking events (customer-visible statuses only — never internal notes).
+  // tracking events (customer-visible statuses only - never internal notes).
   // Each label is a friendly status; `done` marks reached stages.
   timeline?: { label: string; done: boolean }[];
   // Admin-customizable copy (from Settings). All optional; sensible defaults

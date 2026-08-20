@@ -215,7 +215,7 @@ export default function CallCentreSettingsPage() {
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-sm text-muted-foreground">AI agent number</span>
-              <span className="text-sm font-mono">{status?.retellPhoneNumber ?? "—"}</span>
+              <span className="text-sm font-mono">{status?.retellPhoneNumber ?? "-"}</span>
             </div>
             {status?.retellPhoneNumber && status?.callCentreForwardingNumber && (
               <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 text-blue-800 text-sm">
@@ -227,11 +227,11 @@ export default function CallCentreSettingsPage() {
             )}
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-sm text-muted-foreground">Agent ID</span>
-              <span className="text-sm font-mono">{status?.retellAgentId ?? "—"}</span>
+              <span className="text-sm font-mono">{status?.retellAgentId ?? "-"}</span>
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-muted-foreground">Knowledge base</span>
-              <span className="text-sm font-mono">{status?.retellKnowledgeBaseId ?? "—"}</span>
+              <span className="text-sm font-mono">{status?.retellKnowledgeBaseId ?? "-"}</span>
             </div>
           </div>
         )}

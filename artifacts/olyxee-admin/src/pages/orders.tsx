@@ -193,7 +193,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                       {customersFetching ? "Searching…" : "No customers found."}
                     </CommandEmpty>
                     {customersData?.customers.map(c => {
-                      const label = `${c.full_name} — ${c.email}`;
+                      const label = `${c.full_name} - ${c.email}`;
                       return (
                         <CommandItem
                           key={c.id}
@@ -296,7 +296,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 <p className="text-xs leading-relaxed text-muted-foreground">Sent as <strong className="font-medium text-foreground">Pending payment</strong>. The shipment stays locked until you confirm payment.</p>
               </div>
             ) : (
-              <div className="rounded-2xl bg-muted/40 px-4 py-3.5 text-xs leading-relaxed text-muted-foreground">No invoice yet — the shipment can start right away, and you'll invoice this Job after it's delivered.</div>
+              <div className="rounded-2xl bg-muted/40 px-4 py-3.5 text-xs leading-relaxed text-muted-foreground">No invoice yet - the shipment can start right away, and you'll invoice this Job after it's delivered.</div>
             )}
           </div>
           )}

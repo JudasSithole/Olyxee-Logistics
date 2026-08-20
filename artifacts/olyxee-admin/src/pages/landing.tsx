@@ -650,7 +650,7 @@ const Landing: FC = () => {
         `}</style>
       </section>
 
-      {/* === PAIN — the old way === */}
+      {/* === PAIN - the old way === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-10 sm:mb-12 flex flex-wrap items-end justify-between gap-6">
@@ -750,7 +750,7 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === SOLUTIONS — Air & Ocean === */}
+      {/* === SOLUTIONS - Air & Ocean === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-3xl mb-14">
@@ -868,7 +868,7 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === CUSTOMER TRACKING — contrasting warm section === */}
+      {/* === CUSTOMER TRACKING - contrasting warm section === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8 bg-orange-50/50 border-y border-orange-100">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-12 items-center">
           <motion.div
@@ -911,7 +911,7 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === FREE PLAN — editorial layout === */}
+      {/* === FREE PLAN - editorial layout === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-start">
           <div className="col-span-12 lg:col-span-5 lg:sticky lg:top-28">

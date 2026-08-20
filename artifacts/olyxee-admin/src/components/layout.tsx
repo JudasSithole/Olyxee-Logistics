@@ -19,7 +19,7 @@ import { InstallAppPrompt } from "@/components/install-app-prompt";
 import { SettingsModal, SettingsModalContext, useSettingsModal } from "@/components/settings-modal";
 
 // The account menu, top-right on every page. Click the avatar chip to open a
-// dropdown with profile, settings, appearance (light/dark) and sign-out — so
+// dropdown with profile, settings, appearance (light/dark) and sign-out - so
 // everything account/display-related lives in one place.
 function TopUser() {
   const { user, signOut } = useAuth();
@@ -29,7 +29,6 @@ function TopUser() {
   const [, setLocation] = useLocation();
   const fullName = user?.name || user?.email || "User";
   const email = user?.email ?? "";
-  const initial = (fullName || "U").charAt(0).toUpperCase();
   // Show the plan + an Upgrade entry for anyone not on Scale. Routes to the one
   // existing upgrade flow (no competing upgrade systems).
   const planId = business?.plan ?? "beta";
@@ -44,7 +43,7 @@ function TopUser() {
           data-testid="button-user-menu"
           aria-label="Account menu"
         >
-          <Avatar className="h-7 w-7 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback></Avatar>
+          <Avatar className="h-7 w-7 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><User className="h-3.5 w-3.5" /></AvatarFallback></Avatar>
           <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">{fullName}</span>
           <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
         </button>
@@ -64,7 +63,7 @@ function TopUser() {
         <div className="px-2 py-2">
           <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"><User className="h-3 w-3" /> Current user</p>
           <div className="flex items-center gap-2.5">
-            <Avatar className="h-8 w-8 flex-shrink-0"><AvatarFallback className="bg-muted text-foreground text-xs">{initial}</AvatarFallback></Avatar>
+            <Avatar className="h-8 w-8 flex-shrink-0"><AvatarFallback className="bg-muted text-muted-foreground"><User className="h-4 w-4" /></AvatarFallback></Avatar>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{fullName}</p>
               {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
@@ -175,7 +174,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Footer — profile + plan + settings now live in the top-bar account menu. */}
+      {/* Footer - profile + plan + settings now live in the top-bar account menu. */}
       <div className="flex-shrink-0 border-t border-sidebar-border px-5 py-2.5">
         <p className="text-[10px] text-sidebar-foreground/25 tracking-widest uppercase">Powered by Olyxee</p>
       </div>
@@ -244,7 +243,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <TopUser />
         </div>
         <div className="flex-1 overflow-auto">
-          {/* No per-navigation entrance animation — pages swap instantly instead
+          {/* No per-navigation entrance animation - pages swap instantly instead
               of sliding/scaling the whole frame in on every route change. */}
           <div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10">
             {children}

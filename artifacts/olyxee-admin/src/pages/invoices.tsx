@@ -80,9 +80,9 @@ export default function InvoicesPage() {
                 {query.data.data.map((invoice) => (
                   <TableRow key={invoice.id} className="cursor-pointer" onClick={() => navigate(`/invoices/${invoice.id}`)}>
                     <TableCell className="font-mono font-semibold">{invoice.invoiceNumber}</TableCell>
-                    <TableCell>{invoice.customerName ?? "—"}</TableCell>
+                    <TableCell>{invoice.customerName ?? "-"}</TableCell>
                     <TableCell>
-                      <div className="font-mono text-sm">{invoice.trackingId ?? "—"}</div>
+                      <div className="font-mono text-sm">{invoice.trackingId ?? "-"}</div>
                       {invoice.orderReference ? <div className="text-xs text-muted-foreground">{invoice.orderReference}</div> : null}
                     </TableCell>
                     <TableCell><Badge className={statusStyles[invoice.status]}>{invoice.status === "sent" ? "Pending payment" : invoice.status}</Badge></TableCell>

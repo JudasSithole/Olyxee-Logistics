@@ -25,7 +25,7 @@ export default function InvoiceDetailPage() {
       // After confirming payment, jump straight to the Job so the admin can
       // carry on with the shipment (which just unlocked for prepaid Jobs).
       if (name === "pay") {
-        toast.success("Payment confirmed — opening the Job");
+        toast.success("Payment confirmed - opening the Job");
         const orderId = query.data?.orderId;
         if (orderId) navigate(`/orders/${orderId}`);
       } else {

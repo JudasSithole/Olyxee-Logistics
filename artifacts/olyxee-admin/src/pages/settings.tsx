@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { BUSINESS_TYPES, BusinessTypeSelector } from "@/components/business-type-selector";
 import ProfilePage from "@/pages/profile";
-import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5 } from "react-icons/si";
+import { SiCurl, SiJavascript, SiPython, SiPhp, SiHtml5, SiWordpress, SiShopify, SiWix, SiWebflow } from "react-icons/si";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -319,7 +319,7 @@ function SectionShell({
   tint?: string;
 }) {
   // Flat page (no inner card): the Settings popup is already the card, so each
-  // page reads as its own page — a heading plus divider-separated rows.
+  // page reads as its own page - a heading plus divider-separated rows.
   void Icon; void tint;
   return (
     <section id={id} className="scroll-mt-24">
@@ -540,7 +540,7 @@ function BillingSection() {
       icon={CreditCard}
       tint={TINTS.green}
       title="Olyxee Subscription"
-      description="Manage your Olyxee Logistics plan, usage and subscription — separate from the invoices you send customers."
+      description="Manage your Olyxee Logistics plan, usage and subscription - separate from the invoices you send customers."
       action={
         <Button asChild variant="outline" size="sm">
           <Link href="/upgrade" data-testid="link-view-plans">
@@ -610,7 +610,7 @@ function BillingSection() {
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
               Nothing changes for you before then. Your business stays on the{" "}
               <span className="font-semibold text-foreground">{plans.free.name}</span> plan at no
-              cost — no payment is required.
+              cost - no payment is required.
             </p>
           </div>
         </div>
@@ -831,7 +831,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
           id: user.businessId,
           name: form.businessName.trim(),
           // These fields are validated as string (not nullable) on the API, so
-          // send an empty string to clear — never null (which would 400 the
+          // send an empty string to clear - never null (which would 400 the
           // whole save and block the business-name change).
           support_email: form.mainEmail.trim(),
           phone: form.phone.trim(),
@@ -1034,7 +1034,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                       <div className="border-t border-border/60 pt-6">
                         <Label className="text-xs font-normal text-muted-foreground">Business type</Label>
                         <div className="mt-1.5 flex h-11 items-center rounded-xl bg-muted/40 px-3 text-sm font-medium">{form.businessType || "Not set"}</div>
-                        <p className="mt-1 text-[11px] text-muted-foreground">Chosen when your account was created — it can't be changed here.</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">Chosen when your account was created - it can't be changed here.</p>
                       </div>
                       <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">Legal name, tax numbers and banking details for invoices live under <button type="button" onClick={() => go("invoicing")} className="font-medium text-foreground underline underline-offset-2 hover:no-underline">Invoice Settings</button>.</p>
                     </div>
@@ -1070,8 +1070,8 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                   </div>
                 );
               case "tracking":
-                // Tracking Page and its website integration are the same thing —
-                // the tracking page is what you embed on your site — so one guided
+                // Tracking Page and its website integration are the same thing -
+                // the tracking page is what you embed on your site - so one guided
                 // tab covers the prefix, authorising your site, adding the page and
                 // linking customers.
                 return <TrackingCustomizationSection />;
@@ -1082,7 +1082,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
               case "profile":
                 return (
                   <div>
-                    <PageHeader title="Profile" description="Your personal account — name, email, password and sign-out. Separate from the business." />
+                    <PageHeader title="Profile" description="Your personal account - name, email, password and sign-out. Separate from the business." />
                     <ProfilePage />
                   </div>
                 );
@@ -1236,7 +1236,7 @@ function EmailCustomizationSection({
       icon={Mail}
       tint={TINTS.pink}
       title="Customer Updates"
-      description="How shipment updates read to your customers — greeting, sign-off and footer."
+      description="How shipment updates read to your customers - greeting, sign-off and footer."
       action={dirty ? <RestoreButton onClick={handleReset} /> : undefined}
     >
       {/* Token legend */}
@@ -1471,13 +1471,13 @@ function BusinessTypeSection() {
 
 // ─── Tracking Page (guided) ───────────────────────────────────────────────────
 // One tab that walks a business through putting live tracking on their own
-// website, mirroring docs/website-tracking.md:
-//   Basics  - tracking ID prefix (leads every tracking number).
-//   Step 1  - authorise your website (allowed origins / auto from website URL).
-//   Step 2  - add the tracking page (API base + ready-made page + dev snippets).
-//   Step 3  - link your customers (yoursite/track?code=<trackingId>).
-// Self-contained: saves its two server fields (prefix, origins) independently of
-// the page-level Save bar.
+// website. The customer first picks what their site is built with, then sees
+// the simplest method for that platform:
+//   WordPress      - download a plugin, add a shortcode. No code, no CORS.
+//   Shopify/Wix/…  - "coming soon".
+//   Custom website - the full developer flow (origins, HTML page, API, snippets).
+// The Olyxee-hosted page always works regardless - website integration is
+// optional. Self-contained: saves prefix + allowed origins independently.
 function StepItem({
   num, title, subtitle, children, last,
 }: {
@@ -1509,6 +1509,22 @@ function StepItem({
   );
 }
 
+type WebsitePlatform = "wordpress" | "shopify" | "wix" | "webflow" | "custom";
+
+const WEBSITE_PLATFORMS: {
+  id: WebsitePlatform;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  note: string;
+}[] = [
+  { id: "wordpress", label: "WordPress", icon: SiWordpress, color: "#21759b", note: "Plugin - easiest" },
+  { id: "shopify", label: "Shopify", icon: SiShopify, color: "#95bf47", note: "Coming soon" },
+  { id: "wix", label: "Wix", icon: SiWix, color: "#0c6efc", note: "Coming soon" },
+  { id: "webflow", label: "Webflow", icon: SiWebflow, color: "#4353ff", note: "Coming soon" },
+  { id: "custom", label: "Custom website", icon: Code2, color: "#6b7280", note: "Developer" },
+];
+
 function TrackingCustomizationSection() {
   const { user } = useAuth();
   const { data: business, isLoading, refetch } = useBusiness(user?.businessId);
@@ -1519,7 +1535,9 @@ function TrackingCustomizationSection() {
   const [prefix, setPrefix] = useState("");
   const [origins, setOrigins] = useState("");
   const [loaded, setLoaded] = useState(false);
-  // ── Local-only helpers for the code samples / links ──
+  // ── Which platform the site is built with (local choice, not persisted) ──
+  const [platform, setPlatform] = useState<WebsitePlatform | null>(null);
+  // ── Local-only helpers for the developer code samples / links ──
   const [base, setBase] = useState("");
   const [baseTouched, setBaseTouched] = useState(false);
   const [exampleId, setExampleId] = useState("");
@@ -1527,22 +1545,36 @@ function TrackingCustomizationSection() {
   const [lang, setLang] = useState<IntegrationLang>("html");
   const [showDev, setShowDev] = useState(false);
 
+  // Auto tracking-ID prefix derived from the company name (name letters, then
+  // slug, then "OLY") - this mirrors resolveTrackingPrefix() on the server, so
+  // a business never has to set a prefix: their tracking IDs are branded from
+  // their name out of the box. Shown pre-filled in the field below.
+  const derivedPrefix = useMemo(() => {
+    const lettersOf = (s?: string | null) => (s ?? "").toUpperCase().replace(/[^A-Z]/g, "");
+    const fromName = lettersOf(business?.name || businessName).slice(0, 3);
+    if (fromName.length >= 3) return fromName;
+    const fromSlug = lettersOf(business?.slug).slice(0, 3);
+    if (fromSlug.length >= 3) return fromSlug;
+    return "OLY";
+  }, [business?.name, business?.slug, businessName]);
+
   useEffect(() => {
     if (business && !loaded) {
-      setPrefix(business.tracking_id_prefix ?? "");
+      // Pre-fill with the saved prefix, or the auto value from the company name.
+      setPrefix(business.tracking_id_prefix ?? derivedPrefix);
       setOrigins(business.allowed_origins ?? "");
       setLoaded(true);
     }
-  }, [business, loaded]);
+  }, [business, loaded, derivedPrefix]);
 
+  const savedPrefix = business?.tracking_id_prefix ?? "";
+  const usingAutoPrefix = savedPrefix === "";
   const prefixValid = prefix === "" || /^[A-Z]{3,5}$/.test(prefix);
-  const effectivePrefix = (
-    prefix.trim() ||
-    (businessName || "").replace(/[^A-Za-z]/g, "").slice(0, 3) ||
-    "OLY"
-  ).toUpperCase();
+  const effectivePrefix = (prefix.trim() || derivedPrefix).toUpperCase();
 
-  const prefixDirty = loaded && prefix !== (business?.tracking_id_prefix ?? "");
+  // No explicit prefix saved yet? The shown value is the auto one, so it isn't
+  // "dirty" until the business actually changes it.
+  const prefixDirty = loaded && prefix !== (savedPrefix || derivedPrefix);
   const originsDirty = loaded && origins.trim() !== (business?.allowed_origins ?? "");
 
   // Where the customer's OWN site lives (their tracking page + track links).
@@ -1557,8 +1589,7 @@ function TrackingCustomizationSection() {
     }
   }, [business?.website_url]);
 
-  // The Olyxee base the embedded page calls. Pre-fill from their website/support
-  // email domain; stop syncing once edited so we never clobber input.
+  // The Olyxee base the embedded (developer) page calls.
   const autoBase = useMemo(() => {
     const site = business?.website_url?.trim();
     if (site) {
@@ -1585,14 +1616,17 @@ function TrackingCustomizationSection() {
     [cleanBase, cleanId, businessName, primaryColor],
   );
 
-  // Live list of authorised origins, for the "already authorised" chips.
   const originChips = origins
     .split(",")
     .map((s) => s.trim().replace(/\/+$/, ""))
     .filter(Boolean);
 
-  const trackBase = siteOrigin || "https://yourshop.co.za";
+  const trackBase = siteOrigin || "https://yourwebsite.co.za";
   const customerLink = `${trackBase}/track?code=${cleanId}`;
+  const wpCustomerLink = `${trackBase}/track/?code=${cleanId}`;
+  const pluginUrl = `${import.meta.env.BASE_URL}olyxee-tracking.zip`;
+  const guideUrl = `${import.meta.env.BASE_URL}website-tracking.md`;
+  const shortcode = "[olyxee_tracking]";
 
   const savePrefix = () => {
     if (!prefixValid) {
@@ -1646,40 +1680,47 @@ function TrackingCustomizationSection() {
       <header className="mb-5">
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Tracking Page</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Let customers track their shipment on your own website — the same live status as the
-          Olyxee page, in your brand. No backend, API key or login needed.
+          Give customers a place to track their shipment. The Olyxee-hosted page works out of the
+          box - putting tracking on your own website is optional.
         </p>
       </header>
 
-      {/* The two ways to track */}
-      <div className="mb-7 rounded-xl border border-border/70 bg-muted/25 p-4">
-        <p className="text-[13px] font-medium text-foreground">
-          Every order can be tracked two ways — both show the same live status:
+      {/* Hosted tracking always works */}
+      <div className="mb-7 flex gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4">
+        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+        <p className="text-[13px] leading-relaxed text-foreground">
+          <span className="font-medium">Your customers can already track shipments</span> using the
+          Olyxee-hosted tracking page - the “Track shipment” button in your emails links straight to
+          it, with your logo and colours. Everything below is <span className="font-medium">optional</span>,
+          for showing tracking directly on your own website.
         </p>
-        <ul className="mt-2.5 space-y-2 text-[13px] leading-relaxed text-muted-foreground">
-          <li className="flex gap-2.5">
-            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
-            <span>
-              <span className="font-medium text-foreground">The “Track shipment” button in your emails</span> →
-              the Olyxee-hosted page. Works out of the box — nothing to set up.
-            </span>
-          </li>
-          <li className="flex gap-2.5">
-            <Globe className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-            <span>
-              <span className="font-medium text-foreground">A tracking page on your own website</span> →
-              your domain, your design. The three steps below set this up (optional).
-            </span>
-          </li>
-        </ul>
       </div>
 
-      {/* Basics: tracking ID prefix */}
+      {/* Tracking ID prefix (auto from company name, editable) */}
       <div className="mb-8 rounded-xl border border-border/70 p-4">
         <div className="mb-3">
-          <h3 className="text-[15px] font-semibold text-foreground">Tracking ID prefix</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-[15px] font-semibold text-foreground">Tracking ID prefix</h3>
+            {usingAutoPrefix && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                <Sparkles className="h-3 w-3" /> Auto from company name
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            Leads every new tracking number, e.g. <span className="font-mono">{effectivePrefix}-K7M-9X2A</span>. 3–5 letters.
+            {usingAutoPrefix ? (
+              <>
+                Set automatically from your company name - every tracking number starts with{" "}
+                <span className="font-mono">{effectivePrefix}</span>, e.g.{" "}
+                <span className="font-mono">{effectivePrefix}-K7M-9X2A</span>. Nothing to do; edit it
+                only if you want a different code.
+              </>
+            ) : (
+              <>
+                Leads every new tracking number, e.g.{" "}
+                <span className="font-mono">{effectivePrefix}-K7M-9X2A</span>. 3-5 letters.
+              </>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1705,193 +1746,315 @@ function TrackingCustomizationSection() {
         </div>
       </div>
 
-      {/* Guided steps */}
-      <div>
-        <StepItem
-          num={1}
-          title="Authorise your website"
-          subtitle="One-time. Browsers only let your site read Olyxee's tracking data if the site is on the allow-list. Save your Website URL in Business Profile and its address is added here automatically — add any extra origins below (www and non-www count as different sites)."
-        >
-          {originChips.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {originChips.map((o) => (
-                <span
-                  key={o}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 font-mono text-[11px] text-emerald-700 dark:text-emerald-300"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {o}
-                </span>
-              ))}
-            </div>
-          )}
-          <Textarea
-            id="allowedOrigins"
-            value={origins}
-            onChange={(e) => setOrigins(e.target.value)}
-            placeholder="https://yourshop.co.za, https://www.yourshop.co.za"
-            rows={2}
-            spellCheck={false}
-            className="font-mono text-xs"
-          />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] text-muted-foreground">
-              Comma-separated. Use <span className="font-mono">https://</span> in production. Changes take effect within ~1 minute.
-            </p>
-            <Button size="sm" onClick={saveOrigins} disabled={!originsDirty || saving} className="gap-1.5">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Save websites
-            </Button>
-          </div>
-        </StepItem>
-
-        <StepItem
-          num={2}
-          title="Add the tracking page to your site"
-          subtitle="Download the ready-made page, set one value, and publish it at yoursite.com/track. It reads the shipment ID from the link, calls the API below, and draws the status in your brand."
-        >
-          <div className="rounded-xl border border-border/70 p-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground">Ready-made tracking page</p>
-                <p className="text-[12px] text-muted-foreground">
-                  Self-contained HTML — no build step. Open it, set <span className="font-mono">OLYXEE_API_BASE</span>, publish.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => downloadFile("track.html", snippets.html, "text/html")}
-                className="gap-1.5"
+      {/* Platform picker */}
+      <div className="mb-7">
+        <h3 className="text-[15px] font-semibold text-foreground">Where is your website built?</h3>
+        <p className="mt-1 text-[13px] text-muted-foreground">Pick one and we’ll show the simplest way to add tracking.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          {WEBSITE_PLATFORMS.map((p) => {
+            const Icon = p.icon;
+            const active = platform === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPlatform(p.id)}
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors",
+                  active
+                    ? "border-foreground bg-muted/50 ring-1 ring-foreground"
+                    : "border-border/70 hover:border-foreground/40 hover:bg-muted/30",
+                )}
               >
-                <Download className="h-4 w-4" /> Download page
-              </Button>
-            </div>
-          </div>
-
-          <SectionRow
-            label="API base URL"
-            hint="The Olyxee address your page calls. Pre-filled from your domain — change it only if your tracking API is hosted elsewhere."
-            htmlFor="int-base"
-          >
-            <Input
-              id="int-base"
-              value={base}
-              onChange={(e) => { setBaseTouched(true); setBase(e.target.value); }}
-              className="h-11 font-mono text-sm"
-              spellCheck={false}
-              placeholder="https://logistics.olyxee.com"
-            />
-          </SectionRow>
-
-          <button
-            type="button"
-            onClick={() => setShowDev((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            <Code2 className="h-4 w-4" />
-            {showDev ? "Hide developer snippets" : "Prefer to build it yourself? Show code snippets"}
-            <ChevronRight className={cn("h-4 w-4 transition-transform", showDev && "rotate-90")} />
-          </button>
-
-          {showDev && (
-            <div className="space-y-3 rounded-xl border border-border/70 p-3.5">
-              <SectionRow
-                label="Example tracking ID"
-                hint="Used in the samples so you can copy and run them right away."
-                htmlFor="int-id"
-              >
-                <Input
-                  id="int-id"
-                  value={exampleId}
-                  onChange={(e) => { setIdTouched(true); setExampleId(e.target.value.toUpperCase()); }}
-                  className="h-11 font-mono text-sm uppercase tracking-wider"
-                  spellCheck={false}
-                  placeholder={`${effectivePrefix}-K7M-9X2A`}
-                />
-              </SectionRow>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-1">
-                  {INTEGRATION_LANGS.map((l) => {
-                    const Icon = l.icon;
-                    const active = lang === l.id;
-                    return (
-                      <button
-                        key={l.id}
-                        type="button"
-                        onClick={() => setLang(l.id)}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors",
-                          active
-                            ? "border-primary bg-primary/[0.05] text-foreground"
-                            : "border-border text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" style={active ? { color: l.color } : undefined} />
-                        {l.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <CopyButton text={snippets[lang]} />
-              </div>
-              <div className="relative">
-                <div className="absolute right-2 top-2 z-10 rounded-md bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                  GET /api/public/track/:id
-                </div>
-                <CodeBlock code={snippets[lang]} lang={lang} />
-              </div>
-              <div className="flex items-start gap-2 text-[12px] text-muted-foreground">
-                <Globe className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <p>
-                  Browser calls (JavaScript / HTML) need the page's address in Step 1 above — including any local
-                  test server, e.g. <span className="font-mono text-foreground">http://localhost:3000</span>. Opening
-                  the file with <span className="font-mono text-foreground">file://</span> is blocked, so serve it. Server-side
-                  calls (cURL, Python, PHP) need no allow-listing.
-                </p>
-              </div>
-            </div>
-          )}
-        </StepItem>
-
-        <StepItem
-          num={3}
-          title="Link your customers to it"
-          subtitle="Anywhere you'd point a customer at tracking — your site nav, a button, WhatsApp — link to your page with the order's tracking ID. The ID is shown on every order and invoice."
-          last
-        >
-          <div className="rounded-xl border border-border/70 bg-muted/25 p-3.5">
-            <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
-              <Link2 className="h-3.5 w-3.5" /> Your track link
-            </p>
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-md bg-background px-2.5 py-2 font-mono text-[12px] text-foreground">
-                {customerLink}
-              </code>
-              <CopyButton text={customerLink} />
-            </div>
-            {!siteOrigin && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Add your Website URL in Business Profile and this fills in with your real domain.
-              </p>
-            )}
-          </div>
-          {siteOrigin && (
-            <a
-              href={customerLink}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:underline"
-            >
-              <ExternalLink className="h-4 w-4" /> Preview the link
-            </a>
-          )}
-        </StepItem>
+                <Icon className="h-7 w-7" style={{ color: active ? p.color : undefined }} />
+                <span className="text-[13px] font-medium text-foreground">{p.label}</span>
+                <span className="text-[11px] text-muted-foreground">{p.note}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="mt-1 flex items-center gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+      {/* Selected platform flow */}
+      {platform === null && (
+        <div className="rounded-xl border border-dashed border-border/70 p-6 text-center text-[13px] text-muted-foreground">
+          Choose your website platform above to see setup steps.
+        </div>
+      )}
+
+      {platform === "wordpress" && (
+        <div>
+          <h3 className="mb-4 text-[15px] font-semibold text-foreground">Add Olyxee Tracking to WordPress</h3>
+          <StepItem
+            num={1}
+            title="Install the plugin"
+            subtitle="In WordPress, go to Plugins → Add New → Upload Plugin, upload the file below and click Activate."
+          >
+            <a
+              href={pluginUrl}
+              download
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+            >
+              <Download className="h-4 w-4" /> Download Olyxee Tracking Plugin
+            </a>
+            <p className="text-[12px] text-muted-foreground">
+              Installs like any WordPress plugin - no code, no API keys, nothing to configure.
+            </p>
+          </StepItem>
+
+          <StepItem
+            num={2}
+            title="Add tracking to a page"
+            subtitle="Create or edit your “Track Shipment” page and add this shortcode. Olyxee handles the tracking connection automatically."
+          >
+            <div className="flex items-center gap-2">
+              <code className="rounded-md bg-muted px-2.5 py-2 font-mono text-[13px] font-semibold text-foreground">
+                {shortcode}
+              </code>
+              <CopyButton text={shortcode} />
+            </div>
+            <p className="text-[12px] text-muted-foreground">
+              On the block editor you can instead insert the <span className="font-medium text-foreground">“Olyxee Tracking”</span> block - same result.
+            </p>
+          </StepItem>
+
+          <StepItem
+            num={3}
+            title="Send customers to your page"
+            subtitle="Link customers to that page with their tracking number. The shipment loads automatically - no typing needed."
+            last
+          >
+            <div className="rounded-xl border border-border/70 bg-muted/25 p-3.5">
+              <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+                <Link2 className="h-3.5 w-3.5" /> Your track link
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md bg-background px-2.5 py-2 font-mono text-[12px] text-foreground">
+                  {wpCustomerLink}
+                </code>
+                <CopyButton text={wpCustomerLink} />
+              </div>
+              {!siteOrigin && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Add your Website URL in Business Profile and this fills in with your real domain.
+                </p>
+              )}
+            </div>
+            <p className="text-[12px] text-muted-foreground">
+              Shipment emails can send customers straight to this page - the tracking number is loaded for them.
+            </p>
+          </StepItem>
+        </div>
+      )}
+
+      {(platform === "shopify" || platform === "wix" || platform === "webflow") && (
+        <div className="rounded-xl border border-border/70 p-6 text-center">
+          <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
+          <p className="mt-2 text-[15px] font-semibold text-foreground">Easy integration coming soon</p>
+          <p className="mx-auto mt-1 max-w-md text-[13px] leading-relaxed text-muted-foreground">
+            A one-click way to add tracking to {WEBSITE_PLATFORMS.find((p) => p.id === platform)?.label} is on the way.
+            In the meantime your customers can still track on the Olyxee-hosted page, or a developer can use the{" "}
+            <button type="button" onClick={() => setPlatform("custom")} className="font-medium text-foreground underline underline-offset-2">
+              custom website integration
+            </button>.
+          </p>
+        </div>
+      )}
+
+      {platform === "custom" && (
+        <div>
+          <div className="mb-4">
+            <h3 className="text-[15px] font-semibold text-foreground">Custom website / Developer integration</h3>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+              For hand-built sites. Authorise your domain, drop in a ready-made page (or call the public
+              API directly), and link customers to it.
+            </p>
+          </div>
+
+          <StepItem
+            num={1}
+            title="Authorise your website"
+            subtitle="One-time. Browsers only let your site read Olyxee's tracking data if it's on the allow-list. Saving your Website URL in Business Profile adds it automatically - add any extra origins below (www and non-www count as different sites)."
+          >
+            {originChips.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {originChips.map((o) => (
+                  <span
+                    key={o}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 font-mono text-[11px] text-emerald-700 dark:text-emerald-300"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {o}
+                  </span>
+                ))}
+              </div>
+            )}
+            <Textarea
+              id="allowedOrigins"
+              value={origins}
+              onChange={(e) => setOrigins(e.target.value)}
+              placeholder="https://yourshop.co.za, https://www.yourshop.co.za"
+              rows={2}
+              spellCheck={false}
+              className="font-mono text-xs"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                Comma-separated. Use <span className="font-mono">https://</span> in production. Changes take effect within ~1 minute.
+              </p>
+              <Button size="sm" onClick={saveOrigins} disabled={!originsDirty || saving} className="gap-1.5">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Save websites
+              </Button>
+            </div>
+          </StepItem>
+
+          <StepItem
+            num={2}
+            title="Add the tracking page to your site"
+            subtitle="Download the ready-made page, set one value, and publish it at yoursite.com/track. It reads the shipment ID from the link, calls the API below, and draws the status in your brand."
+          >
+            <div className="rounded-xl border border-border/70 p-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground">Ready-made tracking page</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    Self-contained HTML - no build step. Open it, set <span className="font-mono">OLYXEE_API_BASE</span>, publish.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => downloadFile("track.html", snippets.html, "text/html")}
+                  className="gap-1.5"
+                >
+                  <Download className="h-4 w-4" /> Download page
+                </Button>
+              </div>
+            </div>
+
+            <SectionRow
+              label="API base URL"
+              hint="The Olyxee address your page calls. Pre-filled from your domain - change it only if your tracking API is hosted elsewhere."
+              htmlFor="int-base"
+            >
+              <Input
+                id="int-base"
+                value={base}
+                onChange={(e) => { setBaseTouched(true); setBase(e.target.value); }}
+                className="h-11 font-mono text-sm"
+                spellCheck={false}
+                placeholder="https://logistics.olyxee.com"
+              />
+            </SectionRow>
+
+            <button
+              type="button"
+              onClick={() => setShowDev((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Code2 className="h-4 w-4" />
+              {showDev ? "Hide developer snippets" : "Prefer to build it yourself? Show code snippets"}
+              <ChevronRight className={cn("h-4 w-4 transition-transform", showDev && "rotate-90")} />
+            </button>
+
+            {showDev && (
+              <div className="space-y-3 rounded-xl border border-border/70 p-3.5">
+                <SectionRow
+                  label="Example tracking ID"
+                  hint="Used in the samples so you can copy and run them right away."
+                  htmlFor="int-id"
+                >
+                  <Input
+                    id="int-id"
+                    value={exampleId}
+                    onChange={(e) => { setIdTouched(true); setExampleId(e.target.value.toUpperCase()); }}
+                    className="h-11 font-mono text-sm uppercase tracking-wider"
+                    spellCheck={false}
+                    placeholder={`${effectivePrefix}-K7M-9X2A`}
+                  />
+                </SectionRow>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap gap-1">
+                    {INTEGRATION_LANGS.map((l) => {
+                      const Icon = l.icon;
+                      const active = lang === l.id;
+                      return (
+                        <button
+                          key={l.id}
+                          type="button"
+                          onClick={() => setLang(l.id)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors",
+                            active
+                              ? "border-primary bg-primary/[0.05] text-foreground"
+                              : "border-border text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5" style={active ? { color: l.color } : undefined} />
+                          {l.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <CopyButton text={snippets[lang]} />
+                </div>
+                <div className="relative">
+                  <div className="absolute right-2 top-2 z-10 rounded-md bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                    GET /api/public/track/:id
+                  </div>
+                  <CodeBlock code={snippets[lang]} lang={lang} />
+                </div>
+                <div className="flex items-start gap-2 text-[12px] text-muted-foreground">
+                  <Globe className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <p>
+                    Browser calls (JavaScript / HTML) need the page's address in Step 1 above - including any local
+                    test server, e.g. <span className="font-mono text-foreground">http://localhost:3000</span>. Opening
+                    the file with <span className="font-mono text-foreground">file://</span> is blocked, so serve it. Server-side
+                    calls (cURL, Python, PHP) need no allow-listing.
+                  </p>
+                </div>
+              </div>
+            )}
+          </StepItem>
+
+          <StepItem
+            num={3}
+            title="Link your customers to it"
+            subtitle="Anywhere you'd point a customer at tracking, link to your page with the order's tracking ID. The ID is shown on every order and invoice."
+            last
+          >
+            <div className="rounded-xl border border-border/70 bg-muted/25 p-3.5">
+              <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+                <Link2 className="h-3.5 w-3.5" /> Your track link
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md bg-background px-2.5 py-2 font-mono text-[12px] text-foreground">
+                  {customerLink}
+                </code>
+                <CopyButton text={customerLink} />
+              </div>
+            </div>
+            {siteOrigin && (
+              <a
+                href={customerLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:underline"
+              >
+                <ExternalLink className="h-4 w-4" /> Preview the link
+              </a>
+            )}
+          </StepItem>
+        </div>
+      )}
+
+      <div className="mt-6 flex items-center gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground">
         <Mail className="h-4 w-4 flex-shrink-0" />
         <p>
-          Full guide for your developer: <span className="font-mono text-foreground">docs/website-tracking.md</span>. Need a hand?{" "}
+          <a href={guideUrl} download="olyxee-website-tracking.md" className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+            <Download className="h-3.5 w-3.5" /> Download the developer guide
+          </a>{" "}
+          for your website team. Need a hand?{" "}
           <a href="mailto:support@olyxee.com" className="font-medium text-foreground hover:underline">support@olyxee.com</a>
         </p>
       </div>
@@ -2307,7 +2470,7 @@ function CallCentreSettingsEmbed() {
         </div>
         <div className="flex items-center justify-between py-2 border-b">
           <span className="text-sm text-muted-foreground">Phone number</span>
-          <span className="text-sm font-mono">{business?.retell_phone_number ?? "—"}</span>
+          <span className="text-sm font-mono">{business?.retell_phone_number ?? "-"}</span>
         </div>
         {!business?.call_centre_enabled && (
           <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs">

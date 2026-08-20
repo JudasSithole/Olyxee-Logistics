@@ -367,7 +367,7 @@ export default function OnboardingPage() {
               </>
               )}
 
-              {/* ─── Invoice details — its own short 4-step wizard. Entirely
+              {/* ─── Invoice details - its own short 4-step wizard. Entirely
                   optional: the user can Continue past empty steps or Skip out
                   and finish later in Settings. It drives its own Back/Continue/
                   Finish, so it lives outside the step-1 form flow. */}

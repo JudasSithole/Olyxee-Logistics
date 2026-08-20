@@ -49,7 +49,7 @@ const TIERS: PlanId[] = ["free", "business"];
 // Short, plain-language descriptions for this page (the catalog taglines are
 // longer marketing copy used elsewhere).
 const PLAN_BLURB: Record<string, string> = {
-  free: "Manage the job — the core system for running your freight work in one place.",
+  free: "Manage the job - the core system for running your freight work in one place.",
   business: "Make the job faster, cheaper and easier to run. Save controller time, reduce cross-border mistakes, and protect your margins.",
 };
 
@@ -107,7 +107,7 @@ const FeatureIcon = ({ label, muted }: { label: string; muted?: boolean }) => {
 // Bold the capability name at the start of a feature line, leaving the
 // explanatory tail in normal weight (e.g. **Call-centre support** for routine
 // questions). Splits at the first dash/paren/colon or a connective word.
-const FEATURE_BOLD_SPLIT = /\s[—–]\s|\s*\(|:\s|\sfor\s|\swith\s|\sfrom\s|\son\s|\swhen\s|\susing\s|\sincluding\s/i;
+const FEATURE_BOLD_SPLIT = /\s[-–]\s|\s*\(|:\s|\sfor\s|\swith\s|\sfrom\s|\son\s|\swhen\s|\susing\s|\sincluding\s/i;
 function renderFeature(text: string) {
   const idx = text.search(FEATURE_BOLD_SPLIT);
   if (idx > 0) {
@@ -150,7 +150,7 @@ const FEATURE_GROUPS = [
     ["Customer self-service portal", false, "soon"],
     ["SMS shipment notifications", false, "soon"],
     ["Call-centre support for routine questions", false, "soon"],
-    ["Orgni Intelligence — flags what needs attention", false, "soon"],
+    ["Orgni Intelligence - flags what needs attention", false, "soon"],
     ["Carrier, customs and freight-system integrations", false, "soon"],
   ]},
   { title: "Support", rows: [
@@ -199,7 +199,7 @@ export default function UpgradePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Rollout period: joining Scale before the billing start date is a plain,
-  // non-charging plan selection — no checkout, no payment.
+  // non-charging plan selection - no checkout, no payment.
   async function handleJoin(id: PlanId) {
     if (!isAuthed) {
       navigate("/login");
@@ -254,7 +254,7 @@ export default function UpgradePage() {
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
       <header className="pt-1">
         <h1 className="text-xl font-bold tracking-tight">Plans</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Free for everyone until {SCALE_BILLING_START_LABEL} — nothing to pay until then.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Free for everyone until {SCALE_BILLING_START_LABEL} - nothing to pay until then.</p>
       </header>
 
       {errorMsg && (

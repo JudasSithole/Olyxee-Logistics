@@ -16,7 +16,7 @@ const UNITS: { key: "days" | "hours" | "minutes" | "seconds"; label: string }[] 
   { key: "seconds", label: "Seconds" },
 ];
 
-// Live-updating countdown to the launch date. Purely presentational — it never
+// Live-updating countdown to the launch date. Purely presentational - it never
 // gates any behaviour, it only informs the user when the launch happens.
 export function LaunchCountdown({
   target = orderLoopLaunch.launchDate,

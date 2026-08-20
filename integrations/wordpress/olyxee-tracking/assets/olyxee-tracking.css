@@ -1,0 +1,219 @@
+/* Olyxee Tracking — self-contained, mobile-first styles. Scoped under
+   .olyxee-tracking so it won't fight the host theme. */
+
+.olyxee-tracking {
+	--olyxee-accent: #1a1a1a;
+	max-width: 640px;
+	margin: 0 auto;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	color: #1a1a1a;
+	line-height: 1.5;
+	box-sizing: border-box;
+}
+.olyxee-tracking *,
+.olyxee-tracking *::before,
+.olyxee-tracking *::after {
+	box-sizing: border-box;
+}
+
+.olyxee-tracking__form {
+	margin: 0 0 16px;
+}
+.olyxee-tracking__label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: #52525b;
+	margin-bottom: 6px;
+}
+.olyxee-tracking__row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.olyxee-tracking__input {
+	flex: 1 1 200px;
+	min-width: 0;
+	height: 46px;
+	padding: 0 14px;
+	font-size: 16px; /* >=16px stops iOS zoom-on-focus */
+	border: 1px solid #d4d4d8;
+	border-radius: 10px;
+	background: #fff;
+	color: #1a1a1a;
+	outline: none;
+}
+.olyxee-tracking__input:focus {
+	border-color: var(--olyxee-accent);
+	box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+.olyxee-tracking__button {
+	height: 46px;
+	padding: 0 22px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #fff;
+	background: #1a1a1a;
+	border: 0;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: opacity 0.15s ease;
+}
+.olyxee-tracking__button:hover {
+	opacity: 0.9;
+}
+
+/* States */
+.olyxee-tracking__state {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 20px;
+	border: 1px solid #e4e4e7;
+	border-radius: 12px;
+	background: #fafafa;
+	font-size: 14px;
+}
+.olyxee-tracking__state strong {
+	font-size: 15px;
+}
+.olyxee-tracking__state span {
+	color: #52525b;
+}
+.olyxee-tracking__state--loading {
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+	color: #52525b;
+}
+.olyxee-tracking__state--error strong {
+	color: #b45309;
+}
+.olyxee-tracking__spinner {
+	width: 18px;
+	height: 18px;
+	border: 2px solid #d4d4d8;
+	border-top-color: var(--olyxee-accent);
+	border-radius: 50%;
+	animation: olyxee-spin 0.7s linear infinite;
+	flex: 0 0 auto;
+}
+@keyframes olyxee-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Result card */
+.olyxee-tracking__card {
+	border: 1px solid #e4e4e7;
+	border-radius: 14px;
+	padding: 20px;
+	background: #fff;
+	border-top: 3px solid var(--olyxee-accent);
+}
+.olyxee-tracking__card-head {
+	margin-bottom: 12px;
+}
+.olyxee-tracking__logo {
+	max-height: 40px;
+	max-width: 160px;
+	height: auto;
+	width: auto;
+}
+.olyxee-tracking__biz {
+	font-size: 15px;
+	font-weight: 700;
+	color: #1a1a1a;
+}
+.olyxee-tracking__status {
+	font-size: 22px;
+	font-weight: 700;
+	color: var(--olyxee-accent);
+	line-height: 1.25;
+}
+.olyxee-tracking__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+	margin-top: 8px;
+	font-size: 13px;
+	color: #52525b;
+}
+.olyxee-tracking__id {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-weight: 600;
+	color: #1a1a1a;
+}
+.olyxee-tracking__eta {
+	margin-top: 12px;
+	font-size: 14px;
+	color: #3f3f46;
+}
+
+/* Flow checklist */
+.olyxee-tracking__timeline {
+	list-style: none;
+	margin: 18px 0 0;
+	padding: 0;
+}
+.olyxee-tracking__step {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 7px 0;
+	font-size: 14px;
+	color: #a1a1aa;
+}
+.olyxee-tracking__step--completed,
+.olyxee-tracking__step--current {
+	color: #1a1a1a;
+}
+.olyxee-tracking__step--current .olyxee-tracking__step-label {
+	font-weight: 700;
+}
+.olyxee-tracking__dot {
+	flex: 0 0 auto;
+	width: 20px;
+	text-align: center;
+	color: #a1a1aa;
+}
+.olyxee-tracking__step--completed .olyxee-tracking__dot,
+.olyxee-tracking__step--current .olyxee-tracking__dot {
+	color: var(--olyxee-accent);
+}
+
+/* Event history (fallback) */
+.olyxee-tracking__events {
+	list-style: none;
+	margin: 18px 0 0;
+	padding: 0;
+}
+.olyxee-tracking__event {
+	padding: 10px 0;
+	border-top: 1px solid #f4f4f5;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.olyxee-tracking__event:first-child {
+	border-top: 0;
+}
+.olyxee-tracking__event-head {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1a1a1a;
+}
+.olyxee-tracking__event-when {
+	font-size: 12px;
+	color: #71717a;
+}
+.olyxee-tracking__event-msg {
+	font-size: 13px;
+	color: #3f3f46;
+}
+
+@media (max-width: 420px) {
+	.olyxee-tracking__button {
+		flex: 1 1 100%;
+	}
+}
