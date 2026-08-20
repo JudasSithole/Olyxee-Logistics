@@ -123,35 +123,43 @@ function renderFeature(text: string) {
 
 const FEATURE_GROUPS = [
   { title: "Operations", rows: [
-    ["Customer and order management", true, true],
+    ["Customer management", true, true],
+    ["Jobs and shipments", true, true],
     ["Air and sea freight workflows", true, true],
-    ["Invoicing and payment confirmation", true, true],
+    ["Invoices and billing status", true, true],
     ["Delivery and collection management", true, true],
-    ["Dashboard and business insights", true, true],
+    ["Basic reporting", true, true],
   ]},
   { title: "Customer experience", rows: [
-    ["Public shipment tracking", true, true],
-    ["Branded customer tracking pages", true, true],
-    ["Email status notifications", "50 / month", "Higher allowance"],
+    ["Customer tracking page", true, true],
+    ["Shipment status updates", true, true],
+    ["Email shipment notifications", "100 / month", "Higher allowance"],
   ]},
-  { title: "Documents & coordination", comingSoon: true, rows: [
-    ["Automatic document handling (invoices, packing lists, AWBs/BLs, permits, PODs)", false, "soon"],
-    ["Missing-document reminders and follow-ups", false, "soon"],
-    ["Easier customs and clearance coordination", false, "soon"],
+  { title: "Cost & profit", rows: [
+    ["Costs and expenses", true, true],
+    ["Margin tracking", true, true],
+    ["Profit per job", true, true],
+    ["Landed-cost estimates", true, true],
+    ["Freight-rate and quote support", true, true],
   ]},
-  { title: "Pricing, cost & profit", comingSoon: true, rows: [
-    ["Quote faster from your rates, costs and margins", false, "soon"],
-    ["Landed-cost estimates (freight, duties, taxes, clearing, delivery)", false, "soon"],
-    ["Profit and margin tracking on every job", false, "soon"],
-    ["Warnings when costs eat into your margin", false, "soon"],
+  { title: "AI & automation", comingSoon: true, rows: [
+    ["AI Assistant Agent", false, "soon"],
+    ["Email integration with actions", false, "soon"],
+    ["Automatic document handling", false, "soon"],
+    ["Missing-document detection and follow-ups", false, "soon"],
+    ["Customs and clearance workflow automation", false, "soon"],
+    ["Automatic customer, supplier and agent follow-ups", false, "soon"],
+    ["AI call agent", false, "soon"],
+    ["Orgni Intelligence", false, "soon"],
   ]},
-  { title: "Automation & service", comingSoon: true, rows: [
-    ["Automatic follow-ups with customers, suppliers and agents", false, "soon"],
+  { title: "Portal & channels", comingSoon: true, rows: [
     ["Customer self-service portal", false, "soon"],
     ["SMS shipment notifications", false, "soon"],
-    ["Call-centre support for routine questions", false, "soon"],
-    ["Orgni Intelligence - flags what needs attention", false, "soon"],
-    ["Carrier, customs and freight-system integrations", false, "soon"],
+  ]},
+  { title: "Integrations", comingSoon: true, rows: [
+    ["Carrier integrations", false, "soon"],
+    ["Customs integrations", false, "soon"],
+    ["Freight-system integrations", false, "soon"],
   ]},
   { title: "Support", rows: [
     ["Standard support", true, true],

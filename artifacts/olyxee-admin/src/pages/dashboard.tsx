@@ -15,18 +15,22 @@ function StatCard({
   helper,
   icon: Icon,
   href,
+  accent,
 }: {
   label: string;
   value: number;
   helper: string;
   icon: typeof Package;
   href: string;
+  // Tailwind classes for the icon tile (bg + text) so each KPI carries a clear,
+  // meaningful colour instead of neutral grey.
+  accent: string;
 }) {
   return (
     <Link href={href} className="group block">
       <Card className="h-full rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-colors hover:bg-muted/25">
         <CardContent className="flex items-start gap-4 p-5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground"><Icon className="h-5 w-5" /></div>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${accent}`}><Icon className="h-5 w-5" /></div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-muted-foreground">{label}</p><ArrowRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" /></div>
             <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
@@ -73,9 +77,9 @@ export default function DashboardPage() {
         <div className="grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
       ) : summary ? (
         <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard label="Unpaid invoices" value={summary.unpaidInvoices} helper="Waiting for manual confirmation" icon={CircleDollarSign} href="/invoices" />
-          <StatCard label="Active deliveries" value={summary.activeDeliveries} helper="Shipments currently in progress" icon={Truck} href={`/orders?status=${encodeURIComponent("In transit")}`} />
-          <StatCard label="Delayed" value={summary.delayedOrders} helper="Orders that may need follow-up" icon={Clock3} href="/orders?status=Delayed" />
+          <StatCard label="Unpaid invoices" value={summary.unpaidInvoices} helper="Waiting for manual confirmation" icon={CircleDollarSign} href="/invoices" accent="bg-amber-500/10 text-amber-600 dark:text-amber-400" />
+          <StatCard label="Active deliveries" value={summary.activeDeliveries} helper="Shipments currently in progress" icon={Truck} href={`/orders?status=${encodeURIComponent("In transit")}`} accent="bg-blue-500/10 text-blue-600 dark:text-blue-400" />
+          <StatCard label="Delayed" value={summary.delayedOrders} helper="Orders that may need follow-up" icon={Clock3} href="/orders?status=Delayed" accent="bg-rose-500/10 text-rose-600 dark:text-rose-400" />
         </div>
       ) : null}
 
@@ -84,12 +88,12 @@ export default function DashboardPage() {
           <Card className="rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
             <CardHeader className="pb-2"><CardTitle className="text-base">Orders by product</CardTitle><p className="text-xs text-muted-foreground">Most frequently shipped cargo</p></CardHeader>
             <CardContent>
-              {summary.productBreakdown.length ? <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.productBreakdown} layout="vertical" margin={{ left: 8, right: 12 }}><CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} /><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" width={90} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }} formatter={(value) => [`${value} orders`, "Orders"]} /><Bar dataKey="orderCount" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <div className="flex h-56 items-center justify-center text-center"><div><Package className="mx-auto h-8 w-8 text-muted-foreground/30" /><p className="mt-3 text-sm font-medium">No product data yet</p><p className="mt-1 text-xs text-muted-foreground">Cargo types will appear after orders are created.</p></div></div>}
+              {summary.productBreakdown.length ? <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.productBreakdown} layout="vertical" margin={{ left: 8, right: 12 }}><CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} /><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" width={90} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }} formatter={(value) => [`${value} orders`, "Orders"]} /><Bar dataKey="orderCount" fill="#6366f1" radius={[0, 6, 6, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <div className="flex h-56 items-center justify-center text-center"><div><Package className="mx-auto h-8 w-8 text-muted-foreground/30" /><p className="mt-3 text-sm font-medium">No product data yet</p><p className="mt-1 text-xs text-muted-foreground">Cargo types will appear after orders are created.</p></div></div>}
             </CardContent>
           </Card>
           <Card className="rounded-3xl border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2"><div><CardTitle className="text-base">Paid revenue</CardTitle><p className="mt-1 text-xs text-muted-foreground">Confirmed invoices · last 6 months</p></div><div className="text-right"><p className="text-xl font-bold">{money(summary.paidRevenue)}</p>{summary.topCustomer && <Link href={`/customers/${summary.topCustomer.id}`} className="mt-1 flex items-center justify-end gap-1 text-[11px] text-muted-foreground hover:text-foreground"><Crown className="h-3 w-3" />{summary.topCustomer.companyName || summary.topCustomer.name}</Link>}</div></CardHeader>
-            <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><AreaChart data={summary.revenueByMonth} margin={{ left: 0, right: 8, top: 12 }}><defs><linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)} width={34} /><Tooltip formatter={(value) => [money(Number(value)), "Paid revenue"]} /><Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#revenueFill)" /></AreaChart></ResponsiveContainer></div></CardContent>
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2"><div><CardTitle className="text-base">Paid revenue</CardTitle><p className="mt-1 text-xs text-muted-foreground">Confirmed invoices · last 6 months</p></div><div className="text-right"><p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{money(summary.paidRevenue)}</p>{summary.topCustomer && <Link href={`/customers/${summary.topCustomer.id}`} className="mt-1 flex items-center justify-end gap-1 text-[11px] text-muted-foreground hover:text-foreground"><Crown className="h-3 w-3" />{summary.topCustomer.companyName || summary.topCustomer.name}</Link>}</div></CardHeader>
+            <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><AreaChart data={summary.revenueByMonth} margin={{ left: 0, right: 8, top: 12 }}><defs><linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)} width={34} /><Tooltip formatter={(value) => [money(Number(value)), "Paid revenue"]} /><Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2.5} fill="url(#revenueFill)" /></AreaChart></ResponsiveContainer></div></CardContent>
           </Card>
         </section>
       )}

@@ -66,12 +66,18 @@ export const plans: Record<PlanId, PlanConfig> = {
     tagline: "Run your freight jobs in one place.",
     features: [
       "Customer management",
-      "Quotes and jobs",
-      "Invoicing and payment confirmation",
-      "Air and sea shipment workflows",
-      "Shipment tracking",
-      "Branded customer tracking",
-      "Delivery and collection management",
+      "Jobs and shipments",
+      "Air and sea workflows",
+      "Customer tracking page",
+      "Invoices and billing status",
+      "Costs and expenses",
+      "Margin tracking",
+      "Profit per job",
+      "Landed-cost estimates",
+      "Freight-rate and quote support",
+      "Shipment status updates",
+      "Email shipment notifications",
+      "Basic reporting",
       "Up to 100 status updates per month",
     ],
   },
@@ -110,25 +116,26 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Handle more cross-border freight with less admin and better control over every job. Save controller time, reduce mistakes, and protect your margins.",
     features: [
       "Everything in Starter",
-      "Up to 500 status updates per month",
+      "Higher status-update and automation limits",
     ],
-    // Outcome-first roadmap, written for a freight owner (never internal/AI
-    // jargon). None of these are released yet, so every item renders with a
-    // "Coming Soon" marker on the pricing surfaces.
+    // Scale is where the serious automation begins. None of these are released
+    // yet, so every item renders with a "Coming Soon" marker on the pricing
+    // surfaces (per the file rule: never advertise an unbuilt capability as
+    // available). Promote an item into `features` only once it ships.
     comingSoon: [
-      "Spend less time chasing documents — automatic handling of invoices, packing lists, AWBs/BLs, permits and PODs",
-      "Missing-document reminders and follow-ups",
-      "Easier customs and clearance coordination",
-      "Quote faster using your freight rates, costs and margins",
-      "Landed-cost estimates — freight, duties, taxes, clearing and delivery",
-      "Know the real profit on every job with margin tracking",
-      "Early warnings when carrier or supplier costs eat into your margin",
-      "Automatic follow-ups with customers, suppliers and agents",
-      "Customer self-service portal for shipments, documents, invoices and updates",
+      "AI Assistant Agent",
+      "Email integration with actions",
+      "Automatic document handling",
+      "Missing-document detection and follow-ups",
+      "Customs and clearance workflow automation",
+      "Automatic customer, supplier and agent follow-ups",
+      "Customer self-service portal",
       "SMS shipment notifications",
-      "Call-centre support for routine shipment questions",
-      "Orgni Intelligence — watches active jobs and flags what needs attention",
-      "Carrier, customs and freight-system integrations as they're added",
+      "AI call agent",
+      "Orgni Intelligence",
+      "Carrier integrations",
+      "Customs integrations",
+      "Freight-system integrations",
     ],
   },
 } satisfies Record<PlanId, PlanConfig>;

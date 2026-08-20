@@ -501,16 +501,18 @@ const FREE_VALUE = [
 // ─── Free plan list ──────────────────────────────────────────────────────────
 const FREE_PLAN_ITEMS = [
   "Customer management",
-  "Leads / CRM",
-  "Quotes with accept or reject",
-  "Convert accepted quotes to orders",
-  "Air and sea freight orders",
-  "Cargo and supplier references",
-  "Shipment status history",
-  "Public customer tracking",
-  "Basic invoices and payment status",
-  "Documents",
-  "Dashboard and reporting",
+  "Jobs and shipments",
+  "Air and sea workflows",
+  "Customer tracking page",
+  "Invoices and billing status",
+  "Costs and expenses",
+  "Margin tracking",
+  "Profit per job",
+  "Landed-cost estimates",
+  "Freight-rate and quote support",
+  "Shipment status updates",
+  "Email shipment notifications",
+  "Basic reporting",
   "Up to 100 status updates per month",
 ];
 
