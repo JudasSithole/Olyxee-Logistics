@@ -751,7 +751,6 @@ const NAV_GROUPS = [
     { id: "business-profile", label: "Business Profile", icon: Building2 },
     { id: "branding", label: "Branding", icon: Palette },
     { id: "team", label: "Team & Permissions", icon: Users, scale: true },
-    { id: "integrations", label: "Integrations", icon: Code2 },
   ]},
   { group: "Customer Experience", items: [
     { id: "tracking", label: "Tracking Page", icon: MapPin },
@@ -1069,10 +1068,18 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                       : <ScaleLock><TeamManager ownerName={user?.name || "You"} ownerEmail={user?.email || ""} /></ScaleLock>}
                   </div>
                 );
-              case "integrations":
-                return <IntegrationsSection />;
               case "tracking":
-                return <TrackingCustomizationSection />;
+                // Tracking Page and its website integration are the same thing —
+                // the tracking page is what you embed on your site — so they live
+                // on one tab: customise the page, then grab the embed/API snippet.
+                return (
+                  <div className="space-y-10">
+                    <TrackingCustomizationSection />
+                    <div className="border-t border-border/60 pt-10">
+                      <IntegrationsSection />
+                    </div>
+                  </div>
+                );
               case "updates":
                 return <EmailCustomizationSection businessName={form.businessName} onDirtyChange={setEmailDirty} />;
               case "invoicing":
@@ -2025,8 +2032,8 @@ function IntegrationsSection() {
       <SectionShell
         icon={Code2}
         tint={TINTS.indigo}
-        title="Integrations"
-        description="Embed live order tracking on your own website - copy a snippet in your language, or download a ready-to-run page to test locally."
+        title="Add tracking to your website"
+        description="Embed this tracking page on your own site - copy a snippet in your language, or download a ready-to-run page to test locally."
       >
         <SectionRow
           label="API base URL"
