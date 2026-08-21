@@ -26,16 +26,16 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150 sm:p-6 md:p-10"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150 sm:p-5 md:p-6"
       role="dialog"
       aria-modal="true"
       aria-label="Settings"
       onMouseDown={onClose}
     >
-      {/* Fixed height + width so the modal never resizes when you switch tabs -
-          the content area inside scrolls instead. */}
+      {/* Keep the original fixed height while giving dense settings forms more
+          horizontal room. The content area scrolls independently. */}
       <div
-        className="relative my-auto flex h-[86vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 lg:h-[90vh] lg:max-w-6xl xl:max-w-[1240px]"
+        className="relative my-auto flex h-[86vh] w-full max-w-[1600px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 lg:h-[90vh]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button

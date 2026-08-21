@@ -755,7 +755,6 @@ const NAV_GROUPS = [
   ]},
   { group: "Customer Experience", items: [
     { id: "tracking", label: "Tracking Page", icon: MapPin },
-    { id: "updates", label: "Customer Updates", icon: Mail },
   ]},
   { group: "Customer Invoicing", items: [
     { id: "invoicing", label: "Invoice Settings", icon: FileText },
@@ -859,12 +858,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
     setForm(initial);
   }, [initial]);
 
-  // Track the email editor's dirty state so the beforeunload guard covers
-  // unsaved email wording too (email persists server-side via its own button,
-  // so it's not in the page-level save bar - but losing typed text on tab
-  // close would still be a bad surprise).
-  const [emailDirty, setEmailDirty] = useState(false);
-  const guardActive = hasChanges || emailDirty;
+  const guardActive = hasChanges;
 
   // ⌘S / Ctrl+S - power-user shortcut. Browsers reserve this for "Save page",
   // so we preventDefault and route it to our save handler.
@@ -905,7 +899,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
       window.history.replaceState(null, "", `#${id}`);
     }
   }, []);
-  const pageDirty: Record<string, boolean> = { "business-profile": dirtyProfile, branding: dirtyBranding, updates: emailDirty };
+  const pageDirty: Record<string, boolean> = { "business-profile": dirtyProfile, branding: dirtyBranding };
 
   async function handleLogoPicked(file: File) {
     try {
@@ -961,12 +955,12 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
           switching tabs never changes the popup's size. On the page: a grid. */}
       <div className={cn(inModal ? "flex min-h-0 flex-1 flex-col lg:flex-row" : "grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]")}>
         {/* Persistent Settings sidebar (desktop). */}
-        <nav className={cn("hidden lg:block", inModal ? "shrink-0 overflow-y-auto border-border/60 px-3 py-5 lg:w-[224px] lg:border-r" : "sticky top-4 self-start")} aria-label="Settings sections">
-          <div className="space-y-5">
+        <nav className={cn("hidden lg:block", inModal ? "shrink-0 overflow-y-auto border-border/60 px-4 py-6 lg:w-[264px] lg:border-r" : "sticky top-4 self-start")} aria-label="Settings sections">
+          <div className="space-y-7">
             {NAV_GROUPS.map((g) => (
               <div key={g.group}>
-                <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.group}</p>
-                <div className="space-y-0.5">
+                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">{g.group}</p>
+                <div className="space-y-1.5">
                   {g.items.map((it) => {
                     const on = active === it.id;
                     const Icon = it.icon;
@@ -1015,7 +1009,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
         </div>
 
         {/* Selected settings page. */}
-        <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-6 sm:px-8 lg:px-10 lg:py-8" : "")}>
+        <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-7 sm:px-9 lg:px-12 lg:py-10" : "")}>
           {(() => {
             switch (active) {
               case "business-profile":
@@ -1075,8 +1069,6 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                 // tab covers the prefix, authorising your site, adding the page and
                 // linking customers.
                 return <TrackingCustomizationSection />;
-              case "updates":
-                return <EmailCustomizationSection businessName={form.businessName} onDirtyChange={setEmailDirty} />;
               case "invoicing":
                 return <InvoiceProfileSection />;
               case "profile":
