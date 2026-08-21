@@ -152,7 +152,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" /> New Job</Button>
+        <Button className="gap-2 rounded-xl"><Plus className="h-4 w-4" /> New Job</Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] gap-0 overflow-y-auto rounded-3xl p-0 sm:max-w-[560px]">
         <DialogHeader className="space-y-0 px-7 pb-0 pt-7 text-left">
@@ -380,30 +380,39 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6 pb-8">
       <section
-        className="relative min-h-[290px] overflow-hidden rounded-3xl border border-black/10 bg-cover bg-center p-4 shadow-sm sm:p-6"
+        className="relative overflow-hidden rounded-3xl border border-black/10 bg-cover bg-center p-5 shadow-sm sm:p-6"
         style={{ backgroundImage: "url('/jobs-directory-background.jpg')", backgroundPosition: "center 46%" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/50 to-slate-950/25" />
-        <div className="relative z-10 grid min-h-[242px] items-end gap-6 pt-16 lg:grid-cols-[minmax(240px,0.7fr)_minmax(420px,1.3fr)]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-              <ClipboardCheck className="h-4 w-4 text-white" /> Job workspace
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/50 to-slate-950/20" />
+        <div className="relative z-10 flex min-h-[220px] flex-col justify-between gap-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
+                <ClipboardCheck className="h-4 w-4 text-white" /> Job workspace
+              </div>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Jobs</h1>
+              <p className="mt-1 max-w-lg text-sm leading-5 text-white/75">Create a job once a quote is accepted, then manage its billing and shipment journey here.</p>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Jobs</h1>
-            <p className="mt-1 max-w-md text-sm leading-5 text-white/75">Create a job after a quote is accepted, then manage its invoice and shipment updates here.</p>
+            <div className="shrink-0 rounded-xl shadow-lg [&_button]:bg-white [&_button]:text-slate-950 [&_button:hover]:bg-white/90">
+              <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
+            </div>
           </div>
-          <div className="w-full rounded-2xl border border-white/15 bg-black/25 p-3 backdrop-blur-sm">
-            <p className="mb-2 text-xs font-semibold text-white">Find an existing job</p>
-            <form onSubmit={handleSearch} className="flex gap-2">
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-black/25 p-3 backdrop-blur-md sm:flex-row sm:items-end">
+            <form onSubmit={handleSearch} className="min-w-0 flex-1">
+              <label htmlFor="job-search" className="mb-2 block text-xs font-semibold text-white">Search jobs</label>
+              <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <Input className="h-11 rounded-xl border-white/30 bg-white/95 pl-9 text-slate-950 placeholder:text-slate-500" placeholder="Job number, tracking ID or customer" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input id="job-search" className="h-11 rounded-xl border-white/30 bg-white/95 pl-9 text-slate-950 placeholder:text-slate-500" placeholder="Job number, tracking ID or customer" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
-              <Button type="submit" className="h-11 rounded-xl bg-white px-5 text-slate-950 hover:bg-white/90">Find job</Button>
+                <Button type="submit" className="h-11 rounded-xl bg-white px-5 text-slate-950 hover:bg-white/90">Search</Button>
+              </div>
             </form>
-          </div>
-          <div className="absolute right-0 top-0 rounded-xl shadow-lg">
-            <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
+            <div className="flex items-center justify-between border-t border-white/15 pt-3 sm:w-32 sm:block sm:border-l sm:border-t-0 sm:pb-1 sm:pl-4 sm:pt-0">
+              <p className="text-xs text-white/60">In workspace</p>
+              <p className="text-xl font-bold text-white">{data?.total ?? 0} <span className="text-xs font-medium text-white/60">jobs</span></p>
+            </div>
           </div>
         </div>
       </section>
