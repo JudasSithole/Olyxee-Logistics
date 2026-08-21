@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { apiFetch } from "@/lib/api";
 import {
   statusChoices,
@@ -61,6 +61,12 @@ import {
   TRANSPORT_MODE_LABELS,
   type TransportMode,
 } from "@/lib/order-statuses";
+
+function displayDate(value: string | Date | null | undefined, pattern: string, fallback = "Date unavailable") {
+  if (!value) return fallback;
+  const date = value instanceof Date ? value : new Date(value);
+  return isValid(date) ? format(date, pattern) : fallback;
+}
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 
@@ -397,22 +403,26 @@ export default function OrderDetailPage() {
 
       {/* Order identity */}
       <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
-        <div className="bg-gradient-to-br from-primary/[0.09] via-background to-background p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div
+          className="relative flex min-h-52 items-end bg-cover bg-center p-5 sm:p-6"
+          style={{ backgroundImage: "url('/order-overview-background.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/20" />
+          <div className="relative z-10 flex w-full flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Job overview</p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{order.job_number ?? order.order_reference ?? order.tracking_id}</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-mono">{companyName} Tracking ID: {order.tracking_id}</span><span>•</span><span>Created {format(new Date(order.created_at), "MMM d, yyyy · HH:mm")}</span>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">Job overview</p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">{order.job_number ?? order.order_reference ?? order.tracking_id}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                <span className="font-mono">{companyName} Tracking ID: {order.tracking_id}</span><span>•</span><span>Created {displayDate(order.created_at, "MMM d, yyyy · HH:mm")}</span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2"><StatusBadge status={order.current_status} />{order.transport_mode && <span className="rounded-lg border bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}</span>}</div>
+            <div className="flex flex-wrap items-center gap-2"><StatusBadge status={order.current_status} />{order.transport_mode && <span className="rounded-lg border border-white/20 bg-black/30 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-sm">{TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode}</span>}</div>
           </div>
         </div>
         <div className="grid border-t border-border/60 sm:grid-cols-2 lg:grid-cols-4">
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing</div><p className={`mt-2 text-sm font-semibold ${billingStatus === "PAID" ? "text-emerald-700" : billingStatus === "AWAITING_PAYMENT" ? "text-amber-700" : "text-foreground"}`}>{isPostpaid ? "POSTPAID" : "PREPAID"} · {billingLabel}</p><p className="mt-0.5 text-xs text-muted-foreground">{isPostpaid ? "Invoiced after delivery" : "Payment before shipment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
           <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
-          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {format(new Date(order.estimated_delivery_date), "MMM d, yyyy")}</p>}</div>
+          <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {displayDate(order.estimated_delivery_date, "MMM d, yyyy")}</p>}</div>
           <div className="p-4 sm:p-5"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
         </div>
       </div>
@@ -558,7 +568,7 @@ export default function OrderDetailPage() {
                               </span>
                             )}
                             <span className="text-xs text-muted-foreground ml-auto">
-                              {format(new Date(event.created_at), "MMM d, yyyy · HH:mm")}
+                              {displayDate(event.created_at, "MMM d, yyyy · HH:mm")}
                             </span>
                           </div>
                           {order.current_status === "Delivered" && (
@@ -617,7 +627,7 @@ export default function OrderDetailPage() {
                           <p className="text-sm font-medium truncate">{notif.subject}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">To: {notif.recipient_email}</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(notif.created_at), "MMM d, yyyy · HH:mm")}
+                            {displayDate(notif.created_at, "MMM d, yyyy · HH:mm")}
                           </p>
                         </div>
                         <span className={`text-xs font-semibold px-2 py-0.5 flex-shrink-0 border ${
@@ -709,12 +719,12 @@ export default function OrderDetailPage() {
               {order.estimated_delivery_date && (
                 <div>
                   <p className="text-muted-foreground uppercase font-medium mb-0.5">Est. Delivery</p>
-                  <p className="text-sm">{format(new Date(order.estimated_delivery_date), "MMMM d, yyyy")}</p>
+                  <p className="text-sm">{displayDate(order.estimated_delivery_date, "MMMM d, yyyy")}</p>
                 </div>
               )}
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Last Updated</p>
-                <p className="text-sm">{format(new Date(order.updated_at), "MMM d, yyyy · HH:mm")}</p>
+                <p className="text-sm">{displayDate(order.updated_at, "MMM d, yyyy · HH:mm")}</p>
               </div>
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Job Number</p>

@@ -116,13 +116,19 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Customer directory</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Keep billing and delivery contacts ready for every new order.</p>
+      <div
+        className="relative flex min-h-44 flex-col justify-end gap-4 overflow-hidden rounded-3xl border border-black/10 bg-cover bg-center p-6 shadow-sm sm:flex-row sm:items-end sm:justify-between"
+        style={{ backgroundImage: "url('/customer-port-background.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/15" />
+        <div className="relative z-10 max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/75">Customer directory</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Customers</h1>
+          <p className="mt-1 text-sm text-white/75">Keep billing and delivery contacts ready for every new order.</p>
         </div>
-        <CreateCustomerDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
+        <div className="relative z-10">
+          <CreateCustomerDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
+        </div>
       </div>
 
       <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">

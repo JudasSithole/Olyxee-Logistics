@@ -12,9 +12,15 @@ import { StatusBadge } from "@/components/status-badge";
 import { ArrowLeft, ArrowRight, Edit, Package, Mail, Phone, Building, MapPin, ReceiptText, Trash2, UserX } from "lucide-react";
 import { EmptyState } from "@/components/page-loader";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+
+function displayDate(value: string | Date | null | undefined, fallback = "-") {
+  if (!value) return fallback;
+  const date = value instanceof Date ? value : new Date(value);
+  return isValid(date) ? format(date, "MMM d, yyyy") : fallback;
+}
 
 export default function CustomerDetailPage() {
   const [, navigate] = useLocation();
@@ -93,25 +99,29 @@ export default function CustomerDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-background to-background p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div className="flex items-center gap-4 sm:gap-5">
+      <div
+        className="relative flex min-h-48 flex-col justify-end gap-5 overflow-hidden rounded-3xl border border-black/10 bg-cover bg-center p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-6"
+        style={{ backgroundImage: "url('/customer-port-background.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/20" />
+        <div className="relative z-10 flex items-center gap-4 sm:gap-5">
           {/* Avatar */}
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-bold text-primary sm:h-20 sm:w-20">{initials}</div>
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-xl font-bold text-white shadow-sm backdrop-blur-sm sm:h-20 sm:w-20">{initials}</div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">Customer profile</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{customer.full_name}</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">Customer profile</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">{customer.full_name}</h1>
             {customer.company_name && (
-              <p className="text-muted-foreground text-sm mt-0.5">{customer.company_name}</p>
+              <p className="mt-0.5 text-sm text-white/80">{customer.company_name}</p>
             )}
-            <p className="text-muted-foreground text-xs mt-1">
-              Customer since {format(new Date(customer.created_at), "MMMM d, yyyy")}
+            <p className="mt-1 text-xs text-white/65">
+              Customer since {displayDate(customer.created_at, "date unavailable")}
             </p>
           </div>
         </div>
 
-        <div className="flex gap-2"><Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <div className="relative z-10 flex gap-2"><Sheet open={editOpen} onOpenChange={setEditOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="gap-2 flex-shrink-0 rounded-xl" onClick={openEdit}>
+            <Button variant="outline" className="flex-shrink-0 gap-2 rounded-xl border-white/25 bg-white/90 text-slate-950 hover:bg-white" onClick={openEdit}>
               <Edit className="h-4 w-4" /> Edit profile
             </Button>
           </SheetTrigger>
@@ -128,7 +138,7 @@ export default function CustomerDetailPage() {
               </Button>
             </form>
           </SheetContent>
-        </Sheet><Button variant="ghost" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete ${customer.full_name}? This is permanent and requires their orders to be deleted first.`)) deleteMutation.mutate(); }}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
+        </Sheet><Button variant="ghost" className="rounded-xl bg-black/20 text-white hover:bg-destructive/80 hover:text-white" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete ${customer.full_name}? This is permanent and requires their orders to be deleted first.`)) deleteMutation.mutate(); }}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
       </div>
 
       {/* Info cards */}
@@ -214,10 +224,10 @@ export default function CustomerDetailPage() {
                     <TableCell className="text-muted-foreground">{order.order_reference ?? "-"}</TableCell>
                     <TableCell><StatusBadge status={order.current_status} /></TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
+                      {displayDate(order.estimated_delivery_date)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(order.created_at), "MMM d, yyyy")}
+                      {displayDate(order.created_at)}
                     </TableCell>
                   </TableRow>
                 ))}

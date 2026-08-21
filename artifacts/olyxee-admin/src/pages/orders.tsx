@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useOrders, useCustomers, useCreateOrder, useDashboardStats } from "@/hooks/use-supabase-queries";
+import { useOrders, useCustomers, useCreateOrder } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,14 @@ import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@
 import { StatusBadge } from "@/components/status-badge";
 import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, ClipboardCheck, Filter, Plane, RotateCcw, Ship, Truck } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+function displayDate(value: string | Date | null | undefined, pattern = "MMM d, yyyy", fallback = "-") {
+  if (!value) return fallback;
+  const date = value instanceof Date ? value : new Date(value);
+  return isValid(date) ? format(date, pattern) : fallback;
+}
 
 function generateOrderReference(): string {
   const d = new Date();
@@ -350,15 +355,6 @@ export default function OrdersPage() {
     page,
     limit: 20,
   });
-  const { data: orderStats, isLoading: loadingOrderStats } = useDashboardStats(user?.businessId);
-  const orderStatusChart = Object.entries(orderStats?.statusBreakdown ?? {})
-    .map(([status, count]) => ({
-      status,
-      label: status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()),
-      count,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,50 +379,50 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <section className="rounded-3xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
-        <div className="grid gap-5 lg:grid-cols-[minmax(240px,0.7fr)_minmax(420px,1.3fr)] lg:items-center">
+      <section
+        className="relative min-h-[290px] overflow-hidden rounded-3xl border border-black/10 bg-cover bg-center p-4 shadow-sm sm:p-6"
+        style={{ backgroundImage: "url('/jobs-directory-background.jpg')", backgroundPosition: "center 46%" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/50 to-slate-950/25" />
+        <div className="relative z-10 grid min-h-[242px] items-end gap-6 pt-16 lg:grid-cols-[minmax(240px,0.7fr)_minmax(420px,1.3fr)]">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              <ClipboardCheck className="h-4 w-4 text-primary" /> Jobs
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
+              <ClipboardCheck className="h-4 w-4 text-white" /> Job workspace
             </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight">Manage jobs</h1>
-            <p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">Create, find and update customer shipments.</p>
-            <div className="mt-4"><CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} /></div>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Jobs</h1>
+            <p className="mt-1 max-w-md text-sm leading-5 text-white/75">Create a job after a quote is accepted, then manage its invoice and shipment updates here.</p>
           </div>
-
-          <div className="border-t border-border/60 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-            <div className="flex items-center justify-between gap-3">
-              <div><h2 className="text-sm font-semibold">Jobs by status</h2><p className="text-xs text-muted-foreground">A quick workload snapshot</p></div>
-              {orderStats && <p className="whitespace-nowrap text-xs text-muted-foreground"><span className="font-semibold text-foreground">{orderStats.totalOrders}</span> total</p>}
-            </div>
-            <div className="mt-2">
-              {loadingOrderStats ? <Skeleton className="h-32 w-full rounded-xl" /> : orderStatusChart.length === 0 ? <div className="grid h-28 place-items-center rounded-xl bg-muted/20 text-center"><p className="text-xs text-muted-foreground">Status activity will appear here.</p></div> : <div className="h-32 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={orderStatusChart} layout="vertical" margin={{ top: 0, right: 10, bottom: 0, left: 0 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))"/><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{fontSize:10,fill:"hsl(var(--muted-foreground))"}}/><YAxis type="category" dataKey="label" width={112} axisLine={false} tickLine={false} tick={{fontSize:10,fill:"hsl(var(--muted-foreground))"}}/><Tooltip cursor={{fill:"hsl(var(--muted) / 0.35)"}} contentStyle={{borderRadius:10,border:"1px solid hsl(var(--border))",background:"hsl(var(--card))",fontSize:11}}/><Bar dataKey="count" name="Orders" fill="hsl(var(--primary))" radius={[0,5,5,0]} maxBarSize={14}/></BarChart></ResponsiveContainer></div>}
-            </div>
+          <div className="w-full rounded-2xl border border-white/15 bg-black/25 p-3 backdrop-blur-sm">
+            <p className="mb-2 text-xs font-semibold text-white">Find an existing job</p>
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Input className="h-11 rounded-xl border-white/30 bg-white/95 pl-9 text-slate-950 placeholder:text-slate-500" placeholder="Job number, tracking ID or customer" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <Button type="submit" className="h-11 rounded-xl bg-white px-5 text-slate-950 hover:bg-white/90">Find job</Button>
+            </form>
+          </div>
+          <div className="absolute right-0 top-0 rounded-xl shadow-lg">
+            <CreateOrderDialog onSuccess={() => refetch()} businessId={user?.businessId ?? ""} />
           </div>
         </div>
       </section>
 
       <Card className="overflow-hidden rounded-3xl border-border/70 shadow-sm">
-        <CardHeader className="space-y-4 border-b border-border/60 bg-muted/20 p-4 sm:p-5">
-          <div className="flex items-end justify-between gap-3">
-            <div><h2 className="text-lg font-semibold">All jobs</h2><p className="mt-0.5 text-sm text-muted-foreground">{data?.total ?? 0} {data?.total === 1 ? "job" : "jobs"}{hasActiveFilters ? " found" : " in your workspace"}</p></div>
-            {hasActiveFilters && <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={clearFilters}><RotateCcw className="h-3.5 w-3.5" /> Clear</Button>}
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <form onSubmit={handleSearch} className="flex flex-1 gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input className="h-11 rounded-xl border-border/80 bg-background pl-9" placeholder="Search Job number, tracking ID, supplier, or customer" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-              <Button type="submit" variant="secondary" className="h-11 rounded-xl px-4">Search</Button>
-            </form>
-            <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="h-11 w-full rounded-xl bg-background sm:w-[220px]"><Filter className="mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="All statuses" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                {ORDER_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        <CardHeader className="border-b border-border/60 bg-muted/20 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div><h2 className="text-lg font-semibold">Your jobs</h2><p className="mt-0.5 text-sm text-muted-foreground">{hasActiveFilters ? `${data?.total ?? 0} matching ${data?.total === 1 ? "job" : "jobs"}` : `${data?.total ?? 0} ${data?.total === 1 ? "job" : "jobs"} · Open one to see its next action`}</p></div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={clearFilters}><RotateCcw className="h-3.5 w-3.5" /> Clear</Button>}
+              <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Show</span>
+              <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
+                <SelectTrigger className="h-10 w-full rounded-xl bg-background sm:w-[220px]"><Filter className="mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="All statuses" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  {ORDER_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
 
@@ -465,12 +461,12 @@ export default function OrdersPage() {
                         <span className="font-mono text-sm font-semibold">{order.job_number ?? order.order_reference ?? order.tracking_id}</span>
                         <p className="mt-1 font-mono text-[11px] text-muted-foreground">{order.tracking_id}</p>
                       </TableCell>
-                      <TableCell><p className="font-medium">{order.customers?.full_name ?? "Unknown customer"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {format(new Date(order.updated_at), "MMM d, HH:mm")}</p></TableCell>
+                      <TableCell><p className="font-medium">{order.customers?.full_name ?? "Unknown customer"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {displayDate(order.updated_at, "MMM d, HH:mm", "recently")}</p></TableCell>
                       <TableCell>{(() => { const Icon = transportIcon(order.transport_mode); return <div className="flex items-center gap-2 text-sm"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-4 w-4" /></span><span>{order.transport_mode ? TRANSPORT_MODE_LABELS[order.transport_mode as TransportMode] ?? order.transport_mode : "Not set"}</span></div>; })()}</TableCell>
                       <TableCell><span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${order.billing_type === "POSTPAID" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"}`}>{order.billing_type === "POSTPAID" ? "After delivery" : "Before delivery"}</span></TableCell>
                       <TableCell><StatusBadge status={order.current_status} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {order.estimated_delivery_date ? format(new Date(order.estimated_delivery_date), "MMM d, yyyy") : "-"}
+                        {displayDate(order.estimated_delivery_date)}
                       </TableCell>
                       <TableCell className="text-right pr-4" onClick={e => e.stopPropagation()}>
                         <Link href={`/orders/${order.id}`}>
