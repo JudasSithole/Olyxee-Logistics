@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Phone, PhoneIncoming, ChevronLeft, AlertTriangle,
 } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/date-utils";
 import { apiFetch } from "@/lib/api";
 import { isFeatureEnabled } from "@/lib/launch";
 
@@ -109,7 +109,7 @@ export default function CallsPage() {
                       {statusBadge(call.status, call.escalated)}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(call.createdAt), "MMM d, yyyy · HH:mm")}
+                      {safeFormatDate(call.createdAt, "MMM d, yyyy · HH:mm")}
                       {call.orderId && (
                         <span className="ml-2">· Order linked</span>
                       )}

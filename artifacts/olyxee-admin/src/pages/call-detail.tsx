@@ -9,7 +9,7 @@ import {
   ArrowLeft, PhoneOff, AlertTriangle,
   PhoneIncoming, Mail, ExternalLink,
 } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/date-utils";
 import { apiFetch } from "@/lib/api";
 import { isFeatureEnabled } from "@/lib/launch";
 import { EmptyState } from "@/components/page-loader";
@@ -112,7 +112,7 @@ export default function CallDetailPage() {
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          {format(new Date(call.createdAt), "MMM d, yyyy · HH:mm")}
+          {safeFormatDate(call.createdAt, "MMM d, yyyy · HH:mm")}
         </p>
       </div>
 

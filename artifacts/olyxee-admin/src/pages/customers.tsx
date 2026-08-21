@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowRight, Building2, Mail, MapPin, Phone, Plus, ReceiptText, Search, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/date-utils";
 
 function CustomerAvatar({ name, size = "sm" }: { name: string; size?: "sm" | "lg" }) {
   const dim = size === "lg" ? "h-16 w-16" : "h-8 w-8";
@@ -183,7 +183,7 @@ export default function CustomersPage() {
                       <TableCell><p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" />{customer.phone ?? "No phone"}</p></TableCell>
                       <TableCell className="text-muted-foreground">{customer.company_name ? <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{customer.company_name}</span> : "-"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(customer.created_at), "MMM d, yyyy")}
+                        {safeFormatDate(customer.created_at, "MMM d, yyyy")}
                       </TableCell>
                       <TableCell><ArrowRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" /></TableCell>
                     </TableRow>

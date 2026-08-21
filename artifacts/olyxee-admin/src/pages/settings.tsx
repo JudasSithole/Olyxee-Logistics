@@ -26,7 +26,7 @@ import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
 import { Skeleton } from "@/components/ui/skeleton";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
-import { formatDistanceToNow } from "date-fns";
+import { safeTimeAgo } from "@/lib/date-utils";
 
 const DEFAULT_PRIMARY = "#2b2b2b";
 
@@ -731,7 +731,7 @@ function TeamManager({ businessId, currentUserId, businessName, isScale }: { bus
               <div className="min-w-0"><div className="flex items-center gap-2"><p className="truncate text-sm font-medium">{member.name}</p>{member.id === currentUserId ? <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">You</span> : null}</div><p className="mt-0.5 text-[11px] text-muted-foreground">Workspace member</p></div>
             </div>
             <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Email</p><p className="mt-1 truncate text-sm md:mt-0">{member.email}</p></div>
-            <div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Activity</p><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground md:mt-0"><span className={`h-1.5 w-1.5 rounded-full ${member.id === currentUserId ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />{member.id === currentUserId ? "Active now" : member.lastActiveAt ? formatDistanceToNow(new Date(member.lastActiveAt), { addSuffix: true }) : "No recent activity"}</p></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Activity</p><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground md:mt-0"><span className={`h-1.5 w-1.5 rounded-full ${member.id === currentUserId ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />{member.id === currentUserId ? "Active now" : safeTimeAgo(member.lastActiveAt)}</p></div>
             <div className="md:text-right"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Role</p><span className="mt-1 inline-flex rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-foreground md:mt-0">{member.role === "owner" ? "Admin" : member.role.charAt(0).toUpperCase() + member.role.slice(1)}</span><p className="mt-1 text-[10px] text-muted-foreground">{member.role === "owner" ? "Business owner" : "Team member"}</p></div>
           </div>
         ))}
