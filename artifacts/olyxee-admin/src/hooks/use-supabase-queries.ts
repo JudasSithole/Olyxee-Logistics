@@ -710,6 +710,7 @@ export function useDashboardStats(businessId: string | null | undefined) {
           paidRevenue: number;
           topProduct: { name: string; orderCount: number } | null;
           productBreakdown: Array<{ name: string; orderCount: number }>;
+          cargoProfitBreakdown: Array<{ name: string; revenue: number; cost: number; profit: number; jobCount: number }>;
           revenueByMonth: Array<{ month: string; amount: number }>;
           topRoute: { name: string; orderCount: number } | null;
           topCustomer: { id: string; name: string; companyName: string | null; paidAmount: number } | null;
@@ -742,6 +743,7 @@ export function useDashboardStats(businessId: string | null | undefined) {
         paidRevenue: summary.paidRevenue,
         topProduct: summary.topProduct,
         productBreakdown: summary.productBreakdown,
+        cargoProfitBreakdown: summary.cargoProfitBreakdown ?? [],
         revenueByMonth: summary.revenueByMonth,
         topRoute: summary.topRoute,
         topCustomer: summary.topCustomer,

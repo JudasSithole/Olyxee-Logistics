@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable } from "@workspace/db";
+import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable, jobCostsTable } from "@workspace/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -9,7 +9,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
 
-    const [orders, emailsToday, escalatedToday, callsToday, invoices, customers] = await Promise.all([
+    const [orders, emailsToday, escalatedToday, callsToday, invoices, customers, jobCosts] = await Promise.all([
       db.select().from(ordersTable).where(eq(ordersTable.businessId, businessId)),
       db
         .select()
@@ -46,6 +46,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
         ),
       db.select().from(invoicesTable).where(eq(invoicesTable.businessId, businessId)),
       db.select().from(customersTable).where(eq(customersTable.businessId, businessId)),
+      db.select().from(jobCostsTable).where(eq(jobCostsTable.businessId, businessId)),
     ]);
 
     const activeStatuses = [
@@ -77,6 +78,24 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       ? customers.find((customer) => customer.id === topCustomerEntry[0])
       : null;
     const paidRevenue = paidInvoices.reduce((total, invoice) => total + Number(invoice.total || 0), 0);
+    const costsByOrder = new Map<string, number>();
+    for (const cost of jobCosts) costsByOrder.set(cost.orderId, (costsByOrder.get(cost.orderId) ?? 0) + Number(cost.amount || 0));
+    const ordersById = new Map(orders.map((order) => [order.id, order]));
+    const profitByCargo = new Map<string, { revenue: number; cost: number; jobCount: number }>();
+    for (const invoice of paidInvoices) {
+      const order = ordersById.get(invoice.orderId);
+      const cargo = order?.cargoType?.trim();
+      if (!cargo) continue;
+      const current = profitByCargo.get(cargo) ?? { revenue: 0, cost: 0, jobCount: 0 };
+      current.revenue += Number(invoice.total || 0);
+      current.cost += costsByOrder.get(invoice.orderId) ?? 0;
+      current.jobCount += 1;
+      profitByCargo.set(cargo, current);
+    }
+    const cargoProfitBreakdown = [...profitByCargo.entries()]
+      .map(([name, values]) => ({ name, ...values, profit: values.revenue - values.cost }))
+      .sort((a, b) => b.profit - a.profit || b.revenue - a.revenue)
+      .slice(0, 5);
     const now = new Date();
     const revenueByMonth = Array.from({ length: 6 }, (_, index) => {
       const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
@@ -109,6 +128,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       paidRevenue,
       topProduct: topProduct ? { name: topProduct[0], orderCount: topProduct[1] } : null,
       productBreakdown: rankedProducts.slice(0, 5).map(([name, orderCount]) => ({ name, orderCount })),
+      cargoProfitBreakdown,
       revenueByMonth,
       topRoute: topRoute ? { name: topRoute[0], orderCount: topRoute[1] } : null,
       topCustomer: topCustomerEntry ? {

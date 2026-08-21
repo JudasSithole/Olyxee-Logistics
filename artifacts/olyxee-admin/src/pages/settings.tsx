@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { plans, isFeatureEnabled, type PlanId, SCALE_BILLING_START_LABEL } from "@/lib/launch";
 import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
+import { Skeleton } from "@/components/ui/skeleton";
 import { compressLogo, compressFavicon } from "@/lib/image-processing";
 import { formatDistanceToNow } from "date-fns";
 
@@ -723,7 +724,7 @@ function TeamManager({ businessId, currentUserId, businessName, isScale }: { bus
       </div>
       <div className="divide-y divide-border/60">
         {!isLoading && members.length > 0 ? <div className="hidden grid-cols-[minmax(180px,1.1fr)_minmax(180px,1fr)_minmax(130px,.7fr)_110px] gap-5 bg-muted/20 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:grid"><span>User</span><span>Email</span><span>Activity</span><span className="text-right">Role</span></div> : null}
-        {isLoading ? <div className="px-5 py-4 text-sm text-muted-foreground">Loading members…</div> : members.map((member) => (
+        {isLoading ? <div className="space-y-3 px-5 py-4">{Array.from({length:2}).map((_,i)=><div key={i} className="grid gap-4 md:grid-cols-[minmax(180px,1.1fr)_minmax(180px,1fr)_minmax(130px,.7fr)_110px] md:items-center"><div className="flex items-center gap-3"><Skeleton className="h-9 w-9 rounded-full"/><Skeleton className="h-4 w-28"/></div><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-24"/><Skeleton className="h-7 w-20 md:ml-auto"/></div>)}</div> : members.map((member) => (
           <div key={member.id} className="grid gap-4 px-5 py-4 md:grid-cols-[minmax(180px,1.1fr)_minmax(180px,1fr)_minmax(130px,.7fr)_110px] md:items-center md:gap-5">
             <div className="flex min-w-0 items-center gap-3">
               <img src={member.avatarUrl || "/avatar-placeholder.png"} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
@@ -768,10 +769,14 @@ const NAV_GROUPS = [
 ] as const;
 const SETTINGS_PAGES = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
 
+function SettingsContentSkeleton() {
+  return <div className="space-y-6" aria-label="Loading settings"><div className="space-y-2"><Skeleton className="h-7 w-48"/><Skeleton className="h-4 w-full max-w-md"/></div><div className="grid gap-5 sm:grid-cols-2">{Array.from({length:4}).map((_,i)=><div key={i} className="space-y-2"><Skeleton className="h-4 w-24"/><Skeleton className="h-11 w-full rounded-xl"/></div>)}</div><Skeleton className="h-28 w-full rounded-2xl"/></div>;
+}
+
 export default function SettingsPage({ inModal = false }: { inModal?: boolean } = {}) {
   const theme = useTheme();
   const { user } = useAuth();
-  const { data: settingsBusiness } = useBusiness(user?.businessId);
+  const { data: settingsBusiness, isLoading: settingsLoading } = useBusiness(user?.businessId);
   const saveBusiness = useUpdateBusiness();
   const planId = (settingsBusiness?.plan as PlanId | undefined) ?? "beta";
   const isScale = planId === "business";
@@ -1012,7 +1017,7 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
 
         {/* Selected settings page. */}
         <div className={cn("min-w-0", inModal ? "flex-1 overflow-y-auto px-6 py-7 sm:px-9 lg:px-12 lg:py-10" : "")}>
-          {(() => {
+          {settingsLoading ? <SettingsContentSkeleton /> : (() => {
             switch (active) {
               case "business-profile":
                 return (
