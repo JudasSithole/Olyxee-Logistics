@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuSeparator,
@@ -27,6 +27,7 @@ function TopUser() {
   const { logoUrl, businessName } = useTheme();
   const { open: openSettings } = useSettingsModal();
   const [, setLocation] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
   const fullName = user?.name || user?.email || "User";
   const email = user?.email ?? "";
   // Show the plan + an Upgrade entry for anyone not on Scale. Routes to the one
@@ -36,51 +37,50 @@ function TopUser() {
   const showUpgrade = planId !== "business";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+      {menuOpen ? <div className="fixed inset-0 z-40 bg-background/10 backdrop-blur-[3px] motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200" aria-hidden="true" onMouseDown={() => setMenuOpen(false)} /> : null}
       <DropdownMenuTrigger asChild>
         <button
           className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:pr-2"
           data-testid="button-user-menu"
           aria-label="Account menu"
         >
-          <Avatar className="h-7 w-7 flex-shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><User className="h-3.5 w-3.5" /></AvatarFallback></Avatar>
+          <Avatar className="h-7 w-7 flex-shrink-0"><AvatarImage src={user?.avatarUrl || "/avatar-placeholder.png"} alt="" /><AvatarFallback className="bg-primary text-primary-foreground"><User className="h-3.5 w-3.5" /></AvatarFallback></Avatar>
           <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">{fullName}</span>
-          <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+          <ChevronDown className={`hidden h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 sm:block ${menuOpen ? "rotate-180" : ""}`} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" sideOffset={10} className="w-[min(21rem,calc(100vw-1.5rem))] rounded-2xl border-border/70 bg-popover/95 p-2 shadow-[0_24px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=closed]:duration-150">
         {/* The business workspace this account belongs to. */}
-        <div className="flex items-center gap-2 px-2 pb-1.5 pt-2">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-6 w-auto max-w-[72px] flex-shrink-0 object-contain" />
+            <img src={logoUrl} alt="" className="h-8 w-auto max-w-[88px] flex-shrink-0 object-contain" />
           ) : (
-            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-foreground text-[10px] font-bold text-background">{(businessName || "B").charAt(0).toUpperCase()}</div>
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-foreground text-xs font-bold text-background">{(businessName || "B").charAt(0).toUpperCase()}</div>
           )}
-          <span className="truncate text-sm font-semibold">{businessName}</span>
+          <div className="min-w-0"><p className="truncate text-sm font-semibold">{businessName}</p><p className="mt-0.5 text-[11px] text-muted-foreground">Business workspace</p></div>
         </div>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-2" />
         {/* Current signed-in user under that workspace. */}
-        <div className="px-2 py-2">
-          <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"><User className="h-3 w-3" /> Current user</p>
-          <div className="flex items-center gap-2.5">
-            <Avatar className="h-8 w-8 flex-shrink-0"><AvatarFallback className="bg-muted text-muted-foreground"><User className="h-4 w-4" /></AvatarFallback></Avatar>
+        <div className="rounded-xl px-3 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Avatar className="h-10 w-10 flex-shrink-0"><AvatarImage src={user?.avatarUrl || "/avatar-placeholder.png"} alt="" /><AvatarFallback className="bg-muted text-muted-foreground"><User className="h-4 w-4" /></AvatarFallback></Avatar>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{fullName}</p>
               {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
+              <p className="mt-1 text-[11px] font-medium text-muted-foreground">{planLabel} plan</p>
             </div>
           </div>
-          <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">{planLabel} plan</p>
         </div>
         {showUpgrade ? (
           <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setLocation("/upgrade")} className="font-medium" data-testid="link-upgrade"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Scale</DropdownMenuItem>
+            <DropdownMenuSeparator className="my-2" />
+            <DropdownMenuItem onClick={() => setLocation("/upgrade")} className="cursor-pointer rounded-xl px-3 py-2.5 font-medium" data-testid="link-upgrade"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Scale</DropdownMenuItem>
           </>
         ) : null}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => openSettings()} data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/login"); }} className="text-destructive focus:text-destructive" data-testid="button-signout"><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
+        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuItem onClick={() => openSettings()} className="cursor-pointer rounded-xl px-3 py-2.5" data-testid="link-settings"><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
+        <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/login"); }} className="mt-1 cursor-pointer rounded-xl px-3 py-2.5 text-destructive focus:text-destructive" data-testid="button-signout"><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -30,6 +30,7 @@ export const DEMO_USER = {
   name: "Demo User",
   role: "owner" as const,
   businessId: DEMO_BUSINESS_ID,
+  avatarUrl: null,
 };
 
 function hashResetToken(token: string): string {
@@ -303,6 +304,8 @@ router.post("/auth/login", async (req, res) => {
       return;
     }
     const token = signSession(user.id);
+    const activeAt = new Date();
+    await db.update(usersTable).set({ lastActiveAt: activeAt }).where(eq(usersTable.id, user.id));
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
     res.json({
       user: {
@@ -311,6 +314,7 @@ router.post("/auth/login", async (req, res) => {
         name: user.name,
         role: user.role,
         businessId: user.businessId,
+        avatarUrl: user.avatarUrl,
       },
     });
   } catch (err) {
@@ -447,6 +451,12 @@ const UpdateMeBody = z
     email: z.string().trim().toLowerCase().email().optional(),
     currentPassword: z.string().min(1).max(200).optional(),
     newPassword: z.string().min(8).max(200).optional(),
+    avatarUrl: z
+      .union([
+        z.string().max(500_000).regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, "Upload a PNG, JPEG or WebP image."),
+        z.null(),
+      ])
+      .optional(),
   })
   .refine(
     (d) =>
@@ -478,7 +488,7 @@ router.put("/auth/me", async (req, res) => {
     });
     return;
   }
-  const { name, email, currentPassword, newPassword } = parsed.data;
+  const { name, email, currentPassword, newPassword, avatarUrl } = parsed.data;
 
   try {
     const user = await db.query.usersTable.findFirst({
@@ -520,6 +530,7 @@ router.put("/auth/me", async (req, res) => {
       .set({
         name: name ?? user.name,
         email: email ?? user.email,
+        ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         ...(nextPasswordHash ? { passwordHash: nextPasswordHash } : {}),
       })
       .where(eq(usersTable.id, user.id))
@@ -533,6 +544,7 @@ router.put("/auth/me", async (req, res) => {
         name: u.name,
         role: u.role,
         businessId: u.businessId,
+        avatarUrl: u.avatarUrl,
       },
     });
   } catch (err) {
@@ -565,6 +577,8 @@ router.get("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  const activeAt = new Date();
+  await db.update(usersTable).set({ lastActiveAt: activeAt }).where(eq(usersTable.id, user.id));
   res.json({
     user: {
       id: user.id,
@@ -572,6 +586,7 @@ router.get("/auth/me", async (req, res) => {
       name: user.name,
       role: user.role,
       businessId: user.businessId,
+      avatarUrl: user.avatarUrl,
     },
   });
 });

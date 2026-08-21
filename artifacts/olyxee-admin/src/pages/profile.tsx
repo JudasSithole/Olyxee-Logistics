@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Check,
@@ -17,6 +17,8 @@ import {
   Trash2,
   AlertTriangle,
   User,
+  Camera,
+  ImageOff,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -34,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { useBusiness, useDeleteBusiness, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { BUSINESS_TYPES } from "@/components/business-type-selector";
+import { compressAvatar } from "@/lib/image-processing";
 
 // Self-service profile editing for the signed-in admin: name, email, password,
 // and account deletion. Reachable from the sidebar (click your name) or /profile.
@@ -58,6 +61,8 @@ export default function ProfilePage() {
   const [info, setInfo] = useState({ name: "", email: "" });
   const [loaded, setLoaded] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // ── Password ─────────────────────────────────────────────────
   const [showPwdSection, setShowPwdSection] = useState(false);
@@ -146,6 +151,39 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarPicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!(["image/png", "image/jpeg", "image/webp"] as string[]).includes(file.type)) {
+      toast.error("Choose a PNG, JPEG or WebP image");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Choose an image smaller than 10 MB");
+      return;
+    }
+    setSavingAvatar(true);
+    try {
+      const avatarUrl = await compressAvatar(file);
+      const result = await updateProfile({ avatarUrl });
+      if (result.error) toast.error(result.error);
+      else toast.success("Profile photo updated");
+    } catch {
+      toast.error("Could not process that image");
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setSavingAvatar(true);
+    const result = await updateProfile({ avatarUrl: null });
+    setSavingAvatar(false);
+    if (result.error) toast.error(result.error);
+    else toast.success("Profile photo removed");
+  };
+
   const handleChangePassword = async () => {
     if (!canChangePwd) return;
     setSavingPwd(true);
@@ -207,6 +245,7 @@ export default function ProfilePage() {
       {/* ─── Identity card ──────────────────────────────────────── */}
       <header className="flex items-center gap-4 rounded-3xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-sm sm:p-6">
         <Avatar className="h-16 w-16 flex-shrink-0">
+          <AvatarImage src={user.avatarUrl || "/avatar-placeholder.png"} alt={`${fullName}'s profile`} />
           <AvatarFallback className="bg-primary text-primary-foreground">
             <User className="h-8 w-8" />
           </AvatarFallback>
@@ -230,6 +269,18 @@ export default function ProfilePage() {
               Signed in
             </span>
           </div>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <input ref={avatarInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={handleAvatarPicked} />
+          <Button type="button" size="sm" variant="outline" disabled={savingAvatar} className="gap-1.5" onClick={() => avatarInputRef.current?.click()}>
+            {savingAvatar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            {user.avatarUrl ? "Change" : "Upload"}
+          </Button>
+          {user.avatarUrl ? (
+            <Button type="button" size="sm" variant="ghost" disabled={savingAvatar} className="gap-1.5 text-muted-foreground" onClick={handleRemoveAvatar}>
+              <ImageOff className="h-3.5 w-3.5" /> Remove
+            </Button>
+          ) : null}
         </div>
       </header>
 

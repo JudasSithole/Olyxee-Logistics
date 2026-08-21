@@ -855,7 +855,8 @@ export function useTeamMembers(businessId: string | null | undefined) {
     queryKey: qk.teamMembers(businessId ?? ""),
     enabled: !!businessId,
     queryFn: async () => {
-      return [] as unknown[];
+      const response = await apiFetch<{ data: Array<{ id: string; name: string; email: string; role: string; avatarUrl: string | null; lastActiveAt: string | null }> }>("/api/team/members");
+      return response.data;
     },
   });
 }

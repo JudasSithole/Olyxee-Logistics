@@ -143,6 +143,24 @@ router.get("/business", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/team/members", requireAuth, async (req, res) => {
+  const businessId = (req as any).businessId as string;
+  if (businessId === DEMO_BUSINESS_ID) {
+    res.json({ data: [{ id: "demo-usr-000000000001", name: "Demo User", email: "demo@demo.com", role: "owner", avatarUrl: null, lastActiveAt: new Date().toISOString() }] });
+    return;
+  }
+  try {
+    const members = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, role: usersTable.role, avatarUrl: usersTable.avatarUrl, lastActiveAt: usersTable.lastActiveAt })
+      .from(usersTable)
+      .where(eq(usersTable.businessId, businessId));
+    res.json({ data: members });
+  } catch (err) {
+    req.log?.error({ err }, "Failed to list team members");
+    res.status(500).json({ error: "Could not load team members" });
+  }
+});
+
 router.put("/business", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;

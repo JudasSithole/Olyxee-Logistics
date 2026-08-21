@@ -16,6 +16,7 @@ export interface AuthUser {
   name: string;
   role: "owner" | "admin" | "manager" | "staff";
   businessId: string;
+  avatarUrl: string | null;
 }
 
 interface AuthContextValue {
@@ -34,6 +35,7 @@ interface AuthContextValue {
     email?: string;
     currentPassword?: string;
     newPassword?: string;
+    avatarUrl?: string | null;
   }) => Promise<{ error: string | null }>;
   requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
   resetPassword: (args: { password: string; token?: string }) => Promise<{ error: string | null }>;
@@ -47,6 +49,7 @@ interface ApiAuthUser {
   name: string;
   role: string;
   businessId: string;
+  avatarUrl?: string | null;
 }
 
 function toAuthUser(u: ApiAuthUser): AuthUser {
@@ -56,6 +59,7 @@ function toAuthUser(u: ApiAuthUser): AuthUser {
     name: u.name,
     role: (u.role as AuthUser["role"]) ?? "staff",
     businessId: u.businessId ?? "",
+    avatarUrl: u.avatarUrl ?? null,
   };
 }
 
@@ -153,13 +157,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: errMessage(e) };
         }
       },
-      updateProfile: async ({ name, email, currentPassword, newPassword }) => {
+      updateProfile: async ({ name, email, currentPassword, newPassword, avatarUrl }) => {
         try {
           const body: Record<string, unknown> = {};
           if (name !== undefined) body.name = name;
           if (email !== undefined) body.email = email;
           if (currentPassword !== undefined) body.currentPassword = currentPassword;
           if (newPassword !== undefined) body.newPassword = newPassword;
+          if (avatarUrl !== undefined) body.avatarUrl = avatarUrl;
           const data = await apiFetch<{ user: ApiAuthUser }>("/api/auth/me", {
             method: "PUT",
             body,

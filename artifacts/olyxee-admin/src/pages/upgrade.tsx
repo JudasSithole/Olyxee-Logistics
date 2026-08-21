@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bell,
   Check,
+  ChevronDown,
   ClipboardCheck,
   Clock,
   FileSearch,
@@ -45,6 +46,24 @@ function formatPrice(price: number): string {
 }
 
 const TIERS: PlanId[] = ["free", "business"];
+
+const STARTER_CORE = [
+  "Customers, jobs & shipments",
+  "Air & sea workflows",
+  "Customer tracking & status updates",
+  "Invoicing, costs & billing",
+  "Margins & profit per job",
+  "Quotes & landed-cost estimates",
+];
+
+const SCALE_CORE = [
+  "Workflow automation",
+  "Document & customs automation",
+  "Automatic follow-ups",
+  "AI assistant & call agent",
+  "Customer self-service portal",
+  "Carrier, customs & freight integrations",
+];
 
 // Short, plain-language descriptions for this page (the catalog taglines are
 // longer marketing copy used elsewhere).
@@ -260,9 +279,9 @@ export default function UpgradePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
-      <header className="pt-1">
-        <h1 className="text-xl font-bold tracking-tight">Plans</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Free for everyone until {SCALE_BILLING_START_LABEL} - nothing to pay until then.</p>
+      <header className="pt-1 text-center">
+        <h1 className="text-2xl font-bold tracking-tight">Choose how you run freight</h1>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">Starter manages the job. Scale automates the work around it.</p>
       </header>
 
       {errorMsg && (
@@ -279,16 +298,16 @@ export default function UpgradePage() {
             <Card
               key={id}
               data-testid={`plan-${id}`}
-              className="relative flex flex-col rounded-3xl border-border/70 p-6 shadow-sm"
+              className={`relative flex flex-col rounded-3xl p-6 shadow-sm ${id === "business" ? "border-primary/35 bg-primary/[0.025]" : "border-border/70"}`}
             >
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <h2 className="text-xl font-bold">{p.name}</h2>
                   {id === "business" && (
-                    <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Recommended</span>
+                    <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">Recommended</span>
                   )}
                 </div>
-                <p className="mt-1.5 text-sm text-muted-foreground">{PLAN_BLURB[id] ?? p.tagline}</p>
+                <p className="mt-3 min-h-12 text-lg font-semibold leading-snug">{id === "business" ? "Automate the work around every shipment." : "Run your freight jobs in one place."}</p>
               </div>
               <div className="mt-5 border-b border-border pb-5">
                 <div className="flex items-baseline gap-1">
@@ -304,33 +323,18 @@ export default function UpgradePage() {
                 )}
               </div>
 
-              <p className="mt-5 text-xs font-semibold text-foreground">
+              <p className="mt-5 text-sm font-semibold text-foreground">
                 {id === "business" ? "Everything in Starter, plus" : "Included"}
               </p>
-              <ul className="mt-3 space-y-2.5">
-                {(p.features ?? []).filter((f) => id !== "business" || f !== "Everything in Starter").map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm">
-                    <FeatureIcon label={f} />
-                    {renderFeature(f)}
+              <ul className="mt-4 space-y-3">
+                {(id === "business" ? SCALE_CORE : STARTER_CORE).map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5 text-sm">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>{feature}</span>{id === "business" ? <ComingSoonBadge /> : null}</span>
                   </li>
                 ))}
               </ul>
-
-              {(p.comingSoon?.length ?? 0) > 0 && (
-                <>
-                  <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />Coming soon to {p.name} <ComingSoonBadge />
-                  </p>
-                  <ul className="mt-3 space-y-2.5">
-                    {(p.comingSoon ?? []).map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm">
-                        <FeatureIcon label={f} muted />
-                        {renderFeature(f)}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
+              {id === "free" ? <div className="mt-5 rounded-xl bg-muted/50 px-3 py-2.5 text-sm font-medium">Up to 100 status updates per month</div> : <p className="mt-5 text-xs leading-relaxed text-muted-foreground">Scale automation features are being released progressively and are not yet available.</p>}
 
               <div className="mt-7 flex-1" />
               {id === "free" ? (
@@ -352,11 +356,11 @@ export default function UpgradePage() {
         })}
       </div>
 
-      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
-        <div className="border-b border-border px-5 py-5 sm:px-6">
-          <h2 className="text-xl font-bold">Compare plans</h2>
-          <p className="mt-1 text-sm text-muted-foreground">"Coming soon" features are not available yet.</p>
-        </div>
+      <details className="group overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
+          <div><h2 className="text-sm font-semibold">See all features</h2><p className="mt-0.5 text-xs text-muted-foreground">Open the detailed Starter and Scale comparison.</p></div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left">
             <thead>
@@ -379,10 +383,7 @@ export default function UpgradePage() {
                   {group.rows.map(row => (
                     <tr key={row[0]} className="border-b border-border/60 last:border-0">
                       <td className="px-6 py-3">
-                        <span className="flex items-center gap-2.5 text-sm">
-                          <FeatureIcon label={row[0]} muted={"comingSoon" in group && !!group.comingSoon} />
-                          {row[0]}
-                        </span>
+                        <span className="text-sm">{row[0]}</span>
                       </td>
                       <td className="px-4 py-3 text-center"><FeatureValue value={row[1]}/></td>
                       <td className="px-4 py-3 text-center"><FeatureValue value={row[2]}/></td>
@@ -393,7 +394,7 @@ export default function UpgradePage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </details>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-5 text-xs text-muted-foreground">
         <span>Prices in Rand (ZAR)</span>

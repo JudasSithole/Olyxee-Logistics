@@ -8,6 +8,7 @@ export const LOGO_JPEG_QUALITY = 0.85;
 // Favicons are tiny in the browser tab, so we downscale aggressively and keep
 // them as PNGs to preserve transparency (icons usually need it).
 export const FAVICON_MAX_DIMENSION = 64;
+export const AVATAR_SIZE = 384;
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -75,6 +76,26 @@ export async function compressFavicon(file: File): Promise<string> {
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(img, 0, 0, outW, outH);
     return canvas.toDataURL("image/png");
+  } finally {
+    revoke();
+  }
+}
+
+export async function compressAvatar(file: File): Promise<string> {
+  const { img, revoke } = await loadImage(file);
+  try {
+    const sourceSize = Math.min(img.naturalWidth, img.naturalHeight);
+    const sourceX = (img.naturalWidth - sourceSize) / 2;
+    const sourceY = (img.naturalHeight - sourceSize) / 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+    return canvas.toDataURL("image/jpeg", 0.82);
   } finally {
     revoke();
   }
