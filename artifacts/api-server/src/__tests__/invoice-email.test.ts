@@ -42,15 +42,17 @@ describe("invoice email delivery", () => {
     expect(result).toEqual({ success: true, messageId: "email_1" });
     expect(mocks.send).toHaveBeenCalledTimes(1);
     const payload = mocks.send.mock.calls[0][0];
-    expect(payload.html).toContain("Your invoice is ready");
     expect(payload.html).toContain("Hi Thabo Nkosi,");
-    expect(payload.html).toContain("Please find your PDF invoice attached below");
+    expect(payload.html).toContain("Please find your invoice attached to this email as a PDF");
     // Data-URL logos belong in the attached PDF, not the email HTML. Large
     // inline base64 images are rejected or stripped by email providers.
     expect(payload.html).not.toContain("data:image/");
     expect(payload.html).toContain("Acme Freight");
-    expect(payload.html).toContain("JOB-20260822-X7KM");
-    expect(payload.text).toContain("Your invoice from Acme Freight is ready");
+    expect(payload.html).not.toContain("Payment details");
+    expect(payload.html).not.toContain("INV-20260822-TEST01");
+    expect(payload.html).not.toContain("JOB-20260822-X7KM");
+    expect(payload.subject).toBe("Your invoice from Acme Freight");
+    expect(payload.text).toContain("Please find your invoice attached to this email as a PDF");
     expect(payload.attachments).toHaveLength(1);
     expect(payload.attachments[0].filename).toBe("INV-20260822-TEST01.pdf");
     expect(Buffer.isBuffer(payload.attachments[0].content)).toBe(true);

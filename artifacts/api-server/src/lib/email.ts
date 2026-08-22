@@ -367,10 +367,6 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   if(!resend)return {success:false,error:"Email provider not configured"};
   const fromAddress=process.env.EMAIL_FROM_ADDRESS;
   if(!fromAddress)return {success:false,error:"Email sender not configured"};
-  const money=(value:number)=>`${p.currency} ${value.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const date=(value:Date)=>value.toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"});
-  const payment=escapeHtml(p.paymentDetails||"Contact the issuer for payment instructions.").replace(/\n/g,"<br />");
-  const terms=escapeHtml(p.paymentTerms||"Payment due within agreed terms.");
   // Base64 data URLs are supported by the PDF generator, but embedding them
   // in email HTML can make Resend reject the message or be stripped by inbox
   // clients. Only remote HTTP(S) logos are safe in the email body; the branded
@@ -378,48 +374,24 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   const emailLogo=/^https?:\/\//i.test(p.logoUrl||"")?p.logoUrl||"":"";
   const logo=emailLogo?`<img src="${escapeHtml(emailLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:52px;object-fit:contain">`:`<strong style="font-size:19px;color:#1a1a1a">${escapeHtml(p.businessName)}</strong>`;
   const replyTo=p.supportEmail&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.supportEmail.trim())?p.supportEmail.trim():undefined;
-  const route=[p.origin,p.destination].filter(Boolean).join(" → ");
-  const emailHtml=`<!doctype html><html><body style="margin:0;background:#f4f7fb;padding:32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.6">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">Invoice ${escapeHtml(p.invoiceNumber)} is attached. Total due: ${money(p.total)}.</div>
-<table role="presentation" width="100%" bgcolor="#ffffff" style="max-width:600px;margin:auto;border:1px solid #e5e7eb;border-collapse:separate;border-spacing:0">
-  <tr><td style="height:6px;background:${/^#[0-9a-f]{6}$/i.test(p.primaryColor||"")?p.primaryColor:"#10243e"};font-size:0;line-height:0">&nbsp;</td></tr>
-  <tr><td style="padding:24px 32px 22px;border-bottom:1px solid #e5e7eb">${logo}</td></tr>
-  <tr><td style="padding:28px 32px 0">
-    <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;color:#1a1a1a">Your invoice is ready</h1>
-    <p style="margin:0 0 14px;font-size:15px">Hi ${escapeHtml(p.customerName)},</p>
-    <p style="margin:0;font-size:15px;color:#374151">Thank you for confirming your shipment with ${escapeHtml(p.businessName)}. Please find your PDF invoice attached below. A summary is included here for convenience.</p>
-  </td></tr>
-  <tr><td style="padding:24px 32px 0">
-    <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse">
-      <tr><td style="padding:7px 0;color:#6b7280">Invoice number</td><td align="right" style="padding:7px 0">${escapeHtml(p.invoiceNumber)}</td></tr>
-      ${p.jobNumber?`<tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Job reference</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${escapeHtml(p.jobNumber)}</td></tr>`:""}
-      <tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Shipment</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${escapeHtml(p.description)}</td></tr>
-      ${route?`<tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Route</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${escapeHtml(route)}</td></tr>`:""}
-      <tr><td style="padding:7px 0;color:#6b7280;border-top:1px solid #eef0f3">Due date</td><td align="right" style="padding:7px 0;border-top:1px solid #eef0f3">${date(p.dueDate)}</td></tr>
-      <tr><td style="padding:12px 0 0;border-top:2px solid #1a1a1a;font-weight:bold">Total due</td><td align="right" style="padding:12px 0 0;border-top:2px solid #1a1a1a;font-weight:bold;font-size:16px">${money(p.total)}</td></tr>
-    </table>
-  </td></tr>
-  <tr><td style="padding:24px 32px 0;border-top:1px solid #e5e7eb">
-    <p style="margin:24px 0 8px;font-size:14px;font-weight:bold">Payment details</p>
-    <p style="margin:0;font-size:14px;color:#374151">${payment}</p>
-    <p style="margin:10px 0 0;font-size:14px;color:#374151">Payment reference: <strong>${escapeHtml(p.invoiceNumber)}</strong></p>
-    <p style="margin:6px 0 0;font-size:13px;color:#6b7280">${terms}</p>
-  </td></tr>
-  <tr><td style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:14px;color:#374151">
-    <p style="margin:0">Once payment is confirmed, we will begin sharing shipment updates. If you have any questions, simply reply to this email.</p>
-    ${p.footerNote?`<p style="margin:12px 0 0;font-size:13px;color:#6b7280">${escapeHtml(p.footerNote)}</p>`:""}
-  </td></tr>
-  <tr><td style="padding:20px 32px 28px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:#6b7280">
-    <strong style="color:#1a1a1a">${escapeHtml(p.businessName)}</strong><br>${escapeHtml(p.supportEmail)}${p.businessPhone?` &middot; ${escapeHtml(p.businessPhone)}`:""}<br>The PDF invoice is attached to this email.
-  </td></tr>
-</table>
+  const emailHtml=`<!doctype html><html><body style="margin:0;background:#ffffff;padding:40px 24px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.65">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Your PDF invoice is attached.</div>
+<div style="max-width:620px;margin:0 auto">
+  <div style="margin-bottom:38px">${logo}</div>
+  <p style="margin:0 0 22px;font-size:16px">Hi ${escapeHtml(p.customerName)},</p>
+  <p style="margin:0 0 18px;font-size:16px">Thank you for choosing ${escapeHtml(p.businessName)}.</p>
+  <p style="margin:0 0 18px;font-size:16px">Please find your invoice attached to this email as a PDF. All invoice, shipment and payment information is included in the attached document.</p>
+  <p style="margin:0 0 30px;font-size:16px">Once payment has been confirmed, we’ll continue with the next stage of your shipment and keep you updated.</p>
+  <p style="margin:0 0 38px;font-size:16px">If you have any questions, simply reply to this email and our team will assist you.</p>
+  <p style="margin:0;font-size:15px">Kind regards,<br><strong>${escapeHtml(p.businessName)}</strong>${p.businessPhone?`<br><span style="color:#6b7280">${escapeHtml(p.businessPhone)}</span>`:""}</p>
+</div>
 </body></html>`;
-  const text=`Hi ${p.customerName},\n\nYour invoice from ${p.businessName} is ready. Please find the PDF invoice attached to this email.\n\nTotal due: ${money(p.total)}\nDue date: ${date(p.dueDate)}\nInvoice: ${p.invoiceNumber}\nShipment: ${p.description}${route?`\nRoute: ${route}`:""}\n\nPayment details\n${p.paymentDetails||"Contact the issuer for payment instructions."}\nPayment reference: ${p.invoiceNumber}\n\n${p.paymentTerms||"Payment due within agreed terms."}\n\nOnce payment is confirmed, we’ll begin sharing shipment updates. Reply to this email if you need help.\n\n${p.businessName}`;
+  const text=`Hi ${p.customerName},\n\nThank you for choosing ${p.businessName}.\n\nPlease find your invoice attached to this email as a PDF. All invoice, shipment and payment information is included in the attached document.\n\nOnce payment has been confirmed, we’ll continue with the next stage of your shipment and keep you updated.\n\nIf you have any questions, simply reply to this email and our team will assist you.\n\nKind regards,\n${p.businessName}`;
   try{
     const { buildInvoicePdf } = await import("./invoice-pdf");
     const pdf = await buildInvoicePdf(p);
     const senderName=p.businessName.replace(/["\\]/g," ").trim()||"Olyxee";
-    const result=await resend.emails.send({from:`${senderName} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} attached - ${money(p.total)} due`,html:emailHtml,text,...(replyTo?{replyTo}:{}),attachments:[{filename:`${p.invoiceNumber}.pdf`,content:pdf}]});
+    const result=await resend.emails.send({from:`${senderName} <${fromAddress}>`,to:[p.customerEmail],subject:`Your invoice from ${senderName}`,html:emailHtml,text,...(replyTo?{replyTo}:{}),attachments:[{filename:`${p.invoiceNumber}.pdf`,content:pdf}]});
     if(result.error){logger.error({error:result.error,invoiceNumber:p.invoiceNumber},"Failed to send invoice via Resend");return {success:false,error:result.error.message};}
     return {success:true,messageId:result.data?.id};
   }catch(err){logger.error({err,invoiceNumber:p.invoiceNumber},"Exception generating or sending invoice email");return {success:false,error:"Failed to send invoice email"};}
