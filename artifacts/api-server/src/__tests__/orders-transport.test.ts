@@ -106,6 +106,25 @@ function mockInvoiceTransaction() {
 }
 
 describe("POST /orders — transport mode requirements", () => {
+  it("suggests the next company-acronym Job Number", async () => {
+    mockDb.query.businessesTable.findFirst.mockResolvedValue({
+      ...LOGISTICS_BIZ,
+      name: "Freight Solutions Logistics (Pty) Ltd",
+    });
+    const jobs = Array.from({ length: 22 }, (_, index) => ({
+      jobNumber: `FSL-${String(index + 1).padStart(4, "0")}-2026`,
+    }));
+    mockDb.select.mockReturnValue({
+      from: vi.fn(() => ({ where: vi.fn(async () => jobs) })),
+    } as any);
+    const app = await buildApp();
+
+    const res = await request(app).get("/orders/next-job-number");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ acronym: "FSL", sequence: 23, jobNumber: "FSL-0023-2026" });
+  });
+
   it("rejects cross-border order creation without transportMode", async () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
     mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);

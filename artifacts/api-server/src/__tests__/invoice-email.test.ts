@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 
 const mocks = vi.hoisted(() => ({ send: vi.fn() }));
 
@@ -18,6 +19,7 @@ const invoice: SendInvoiceEmailParams = {
   serviceDetails: "Air freight", quantity: 1, subtotal: 637.23,
   additionalCharges: 22, total: 659.23, currency: "ZAR",
   businessName: "Olyxee Logistics", supportEmail: "accounts@olyxee.com",
+  logoUrl: `data:image/png;base64,${readFileSync(new URL("../../../olyxee-admin/public/favicon.png", import.meta.url)).toString("base64")}`,
   paymentDetails: "Bank: FNB\nAccount: 62123456789", paymentTerms: "Due within 7 days",
   primaryColor: "#146C94", jobNumber: "JOB-20260822-X7KM",
   origin: "Shenzhen, China", destination: "Johannesburg, South Africa",
@@ -39,11 +41,15 @@ describe("invoice email delivery", () => {
     expect(mocks.send).toHaveBeenCalledTimes(1);
     const payload = mocks.send.mock.calls[0][0];
     expect(payload.html).toContain("Your invoice is ready");
+    expect(payload.html).toContain("Hi Thabo Nkosi,");
+    expect(payload.html).toContain("Please find your PDF invoice attached below");
+    expect(payload.html).toContain("<img");
     expect(payload.html).toContain("JOB-20260822-X7KM");
     expect(payload.text).toContain("Your invoice from Olyxee Logistics is ready");
     expect(payload.attachments).toHaveLength(1);
     expect(payload.attachments[0].filename).toBe("INV-20260822-TEST01.pdf");
     expect(Buffer.isBuffer(payload.attachments[0].content)).toBe(true);
     expect(payload.attachments[0].content.subarray(0, 4).toString()).toBe("%PDF");
+    expect(payload.attachments[0].content.toString("latin1")).toContain("/Subtype /Image");
   });
 });

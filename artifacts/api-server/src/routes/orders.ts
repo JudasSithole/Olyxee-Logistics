@@ -49,6 +49,17 @@ export function isLogisticsBusiness(industry: string | null | undefined): boolea
   return !!industry && industry.toLowerCase().includes("logistics");
 }
 
+export function companyAcronym(name: string | null | undefined): string {
+  const ignored = new Set(["PTY", "LTD", "LIMITED", "INC", "LLC", "COMPANY", "CO"]);
+  const words = (name ?? "")
+    .toUpperCase()
+    .match(/[A-Z0-9]+/g)
+    ?.filter(word => !ignored.has(word)) ?? [];
+  if (words.length >= 2) return words.slice(0, 4).map(word => word[0]).join("");
+  if (words.length === 1) return words[0].slice(0, 3).padEnd(3, "X");
+  return "JOB";
+}
+
 const router = Router();
 const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
 const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
@@ -241,6 +252,32 @@ router.get("/orders", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to list orders");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/orders/next-job-number", requireAuth, async (req, res) => {
+  try {
+    const businessId = (req as any).businessId;
+    const [business, jobs] = await Promise.all([
+      db.query.businessesTable.findFirst({ where: eq(businessesTable.id, businessId) }),
+      db.select({ jobNumber: ordersTable.jobNumber }).from(ordersTable).where(eq(ordersTable.businessId, businessId)),
+    ]);
+    if (!business) { res.status(404).json({ error: "Business not found" }); return; }
+
+    const highestSequence = jobs.reduce((highest, job) => {
+      const match = job.jobNumber?.match(/^[A-Z0-9]+-(\d+)-(\d{4})$/i);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    const nextSequence = Math.max(jobs.length + 1, highestSequence + 1);
+    const year = new Date().getFullYear();
+    res.json({
+      acronym: companyAcronym(business.name),
+      sequence: nextSequence,
+      jobNumber: `${companyAcronym(business.name)}-${String(nextSequence).padStart(4, "0")}-${year}`,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to generate next Job Number");
+    res.status(500).json({ error: "Could not generate a Job Number" });
   }
 });
 

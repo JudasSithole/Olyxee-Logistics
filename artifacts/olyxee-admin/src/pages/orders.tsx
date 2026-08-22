@@ -18,6 +18,7 @@ import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, ClipboardChec
 import { toast } from "sonner";
 import { format, isValid } from "date-fns";
 import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
+import { apiFetch } from "@/lib/api";
 
 function displayDate(value: string | Date | null | undefined, pattern = "MMM d, yyyy", fallback = "-") {
   if (!value) return fallback;
@@ -38,7 +39,7 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
-function generateJobNumber(): string {
+function fallbackJobNumber(): string {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -55,12 +56,13 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
-    jobNumber: generateJobNumber(),
+    jobNumber: "",
     billingType: "PREPAID" as "PREPAID" | "POSTPAID",
     description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
-    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "",
+    dimensionLength: "", dimensionWidth: "", dimensionHeight: "", dimensionUnit: "cm",
     invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
   }));
   const createMutation = useCreateOrder();
@@ -81,31 +83,45 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   // Guided wizard: 1 = customer, 2 = shipment, 3 = billing. Keeps each screen
   // small instead of one long form.
   const [step, setStep] = useState(1);
+  const [jobNumberLoading, setJobNumberLoading] = useState(false);
   const invoiceTotal = (Number(form.invoiceSubtotal) || 0) + (Number(form.invoiceAdditionalCharges) || 0);
 
   React.useEffect(() => {
+    let cancelled = false;
     if (open) {
       setStep(1);
       setForm({
         customerId: "",
-        jobNumber: generateJobNumber(),
+        jobNumber: "",
         billingType: "PREPAID",
         description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
-        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
+        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "",
+        dimensionLength: "", dimensionWidth: "", dimensionHeight: "", dimensionUnit: "cm",
         invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
       });
       setSelectedCustomer(null);
       setCustomerSearch("");
       setDebouncedSearch("");
+      setJobNumberLoading(true);
+      apiFetch<{ jobNumber: string }>("/api/orders/next-job-number")
+        .then(data => { if (!cancelled) setForm(current => ({ ...current, jobNumber: data.jobNumber })); })
+        .catch(() => { if (!cancelled) setForm(current => ({ ...current, jobNumber: fallbackJobNumber() })); })
+        .finally(() => { if (!cancelled) setJobNumberLoading(false); });
     }
+    return () => { cancelled = true; };
   }, [open]);
 
   const isPrepaid = form.billingType === "PREPAID";
+  const hasAnyDimension = !!(form.dimensionLength || form.dimensionWidth || form.dimensionHeight);
+  const dimensionsComplete = !hasAnyDimension || !!(form.dimensionLength && form.dimensionWidth && form.dimensionHeight);
+  const formattedDimensions = dimensionsComplete && hasAnyDimension
+    ? `${form.dimensionLength} × ${form.dimensionWidth} × ${form.dimensionHeight} ${form.dimensionUnit}`
+    : undefined;
   // Per-step completeness so "Next" only enables once the step is valid.
   const step1Ok = !!form.customerId;
-  const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && !!form.weight.trim();
+  const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && !!form.weight.trim() && dimensionsComplete;
   const step3Ok = !!form.jobNumber.trim() && (!isPrepaid || !!form.invoiceSubtotal);
   const STEP_LABELS = ["Customer", "Shipment", "Billing"];
   const STEP_SUBTITLES = ["Who is this Job for?", "Where's it going and what's inside?", "Reference and how it's billed"];
@@ -138,7 +154,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         origin: form.origin || undefined,
         destination: form.destination || undefined,
         weight: form.weight || undefined,
-        dimensions: form.dimensions || undefined,
+        dimensions: formattedDimensions,
         transport_mode: form.transportMode,
         // PREPAID invoices at creation; POSTPAID is invoiced after delivery.
         invoice_subtotal: isPrepaid ? form.invoiceSubtotal : undefined,
@@ -258,13 +274,35 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 ["cargoType", "Cargo / invoice item", "e.g. Handbags"],
                 ["serviceRequired", "Service required", "e.g. Customs & tax"],
                 ["weight", "Weight", "e.g. 1.5 kg"],
-                ["dimensions", "Dimensions (optional)", "e.g. 40 × 30 × 25 cm"],
               ] as const).map(([key, label, ph]) => (
                 <div key={key} className="space-y-2">
                   <Label className="text-[13px] font-medium text-muted-foreground">{label}</Label>
                   <Input value={(form as Record<string, string>)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} className={field} />
                 </div>
               ))}
+            </div>
+            <div className="space-y-2.5 rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div>
+                <Label className="text-[13px] font-medium">Package dimensions <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <p className="mt-1 text-xs text-muted-foreground">Enter the package size as Length × Width × Height.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_90px]">
+                {([['dimensionLength','Length'],['dimensionWidth','Width'],['dimensionHeight','Height']] as const).map(([key,label]) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">{label}</Label>
+                    <Input type="number" min="0" step="0.01" inputMode="decimal" value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder="0" className={field} />
+                  </div>
+                ))}
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Unit</Label>
+                  <Select value={form.dimensionUnit} onValueChange={value => setForm(f => ({ ...f, dimensionUnit: value }))}>
+                    <SelectTrigger className={field}><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="cm">cm</SelectItem><SelectItem value="m">m</SelectItem><SelectItem value="in">in</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {!dimensionsComplete && <p className="text-xs font-medium text-amber-700">Add all three measurements, or leave all three blank.</p>}
+              {formattedDimensions && <p className="text-xs text-muted-foreground">Saved as <span className="font-medium text-foreground">{formattedDimensions}</span></p>}
             </div>
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-muted-foreground">Handling notes (optional)</Label>
@@ -277,8 +315,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-muted-foreground">Job Number</Label>
-                <Input value={form.jobNumber} onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))} placeholder="JOB-20260822-ABCD" className={`font-mono ${field}`} />
-                <p className="text-xs text-muted-foreground">Generated automatically. You can edit it to match your own numbering system.</p>
+                <Input value={form.jobNumber} onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))} placeholder={jobNumberLoading ? "Generating…" : "FSL-0023-2026"} className={`font-mono ${field}`} disabled={jobNumberLoading} />
+                <p className="text-xs text-muted-foreground">Based on your company acronym and next Job sequence. You can still edit it.</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-muted-foreground">Est. delivery (optional)</Label>

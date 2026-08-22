@@ -382,7 +382,7 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   <tr><td style="padding:28px 32px 0">
     <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;color:#1a1a1a">Your invoice is ready</h1>
     <p style="margin:0 0 14px;font-size:15px">Hi ${escapeHtml(p.customerName)},</p>
-    <p style="margin:0;font-size:15px;color:#374151">Thank you for confirming your shipment with ${escapeHtml(p.businessName)}. Your invoice is attached to this email as a PDF. A summary is below.</p>
+    <p style="margin:0;font-size:15px;color:#374151">Thank you for confirming your shipment with ${escapeHtml(p.businessName)}. Please find your PDF invoice attached below. A summary is included here for convenience.</p>
   </td></tr>
   <tr><td style="padding:24px 32px 0">
     <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse">
@@ -409,7 +409,7 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   </td></tr>
 </table>
 </body></html>`;
-  const text=`Hi ${p.customerName},\n\nYour invoice from ${p.businessName} is ready and attached as a PDF.\n\nTotal due: ${money(p.total)}\nDue date: ${date(p.dueDate)}\nInvoice: ${p.invoiceNumber}\nShipment: ${p.description}${route?`\nRoute: ${route}`:""}\n\nPayment details\n${p.paymentDetails||"Contact the issuer for payment instructions."}\nPayment reference: ${p.invoiceNumber}\n\n${p.paymentTerms||"Payment due within agreed terms."}\n\nOnce payment is confirmed, we’ll begin sharing shipment updates. Reply to this email if you need help.\n\n${p.businessName}`;
+  const text=`Hi ${p.customerName},\n\nYour invoice from ${p.businessName} is ready. Please find the PDF invoice attached to this email.\n\nTotal due: ${money(p.total)}\nDue date: ${date(p.dueDate)}\nInvoice: ${p.invoiceNumber}\nShipment: ${p.description}${route?`\nRoute: ${route}`:""}\n\nPayment details\n${p.paymentDetails||"Contact the issuer for payment instructions."}\nPayment reference: ${p.invoiceNumber}\n\n${p.paymentTerms||"Payment due within agreed terms."}\n\nOnce payment is confirmed, we’ll begin sharing shipment updates. Reply to this email if you need help.\n\n${p.businessName}`;
   try{
     const { buildInvoicePdf } = await import("./invoice-pdf");
     const pdf = await buildInvoicePdf(p);

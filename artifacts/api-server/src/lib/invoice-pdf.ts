@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
+import PDFDocument from "pdfkit";
 import type { SendInvoiceEmailParams } from "./email";
 
 // Keep the emailed attachment aligned with the structured invoice shown in the
