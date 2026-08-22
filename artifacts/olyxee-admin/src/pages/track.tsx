@@ -182,13 +182,12 @@ export default function TrackPage() {
       className="min-h-screen bg-[#f5f5f7] text-neutral-900 flex flex-col items-center px-4 py-6 sm:py-12"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      {/* Brand dateline */}
-      <div className="w-full max-w-2xl flex items-center justify-between mb-7">
+      {/* Show the tenant identity once. The shipment card does not repeat it. */}
+      <div className="mb-7 flex w-full max-w-2xl items-center gap-3">
         <div className="flex items-center gap-3">
           {data?.business?.logoUrl ? <img src={data.business.logoUrl} alt="" className="h-9 w-9 rounded-xl object-contain bg-white border border-black/5" /> : <div className="h-9 w-9 rounded-xl bg-neutral-900 text-white grid place-items-center font-semibold">{data?.business?.name?.[0] || "O"}</div>}
           <div><p className="text-sm font-semibold">{data?.business?.name || "Olyxee Logistics"}</p><p className="text-xs text-neutral-500">Shipment tracking</p></div>
         </div>
-        <span className="rounded-full bg-white border border-black/5 px-3 py-1.5 text-xs text-neutral-500">Secure shipment page</span>
       </div>
 
       <div className="w-full max-w-2xl">
@@ -226,7 +225,7 @@ export default function TrackPage() {
             {/* Header */}
             <div className="px-6 sm:px-9 pt-8 pb-7 border-b border-neutral-100">
               <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-3">
-                {data.business?.name ? `${data.business.name} Tracking ID` : "Tracking ID"}
+                Tracking ID
               </p>
               <p style={mono} className="text-lg font-medium text-neutral-900 mb-5">
                 {data.trackingId}
@@ -252,36 +251,50 @@ export default function TrackPage() {
               {data.estimatedDeliveryDate && (
                 <div className="mt-5 flex items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3"><CalendarDays className="h-5 w-5 text-neutral-500"/><div><p className="text-xs text-neutral-500">Estimated delivery</p><p className="text-sm font-semibold">{formatDate(data.estimatedDeliveryDate)}</p></div></div>
               )}
-              <p className="mt-5 max-w-xl text-sm leading-6 text-neutral-600">
-                {data.events[0] ? statusExplanation(data.events[0]) : "Your shipment has been registered. New updates will appear here as they are confirmed."}
-              </p>
             </div>
 
-            {/* One interactive journey replaces the old duplicate checklist + history. */}
+            {/* The complete workflow is one connected timeline. Confirmed events
+                enrich their matching stage instead of becoming a second list. */}
             <div className="px-6 sm:px-9 py-7">
-              <div className="mb-5 flex items-end justify-between gap-4"><div><p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400 uppercase">Shipment journey</p><h2 className="mt-1 text-lg font-semibold">Updates from the logistics team</h2></div><span className="text-xs text-neutral-400">Select an update for details</span></div>
-              {data.events.length === 0 ? (
-                <p className="text-sm text-neutral-500">No updates yet. Check back soon.</p>
-              ) : (
-                <ol className="space-y-2">
-                  {data.events.map((e, i) => {
-                    const Icon = iconForStep(e.status, e.label);
+              <div className="mb-6"><p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400 uppercase">Shipment journey</p><h2 className="mt-1 text-lg font-semibold">Full timeline</h2></div>
+              {(data.flow?.length || data.events.length) ? (
+                <ol>
+                  {(data.flow?.length
+                    ? data.flow.map((step) => ({
+                        ...step,
+                        event: data.events.find((event) => event.status === step.status),
+                      }))
+                    : [...data.events].reverse().map((event, index, all) => ({
+                        status: event.status,
+                        label: event.label,
+                        state: index === all.length - 1 ? "current" as const : "completed" as const,
+                        event,
+                      }))).map((step, i, timeline) => {
+                    const event = step.event;
+                    const Icon = iconForStep(step.status, step.label);
                     const expanded = openEvent === i;
+                    const isUpcoming = step.state === "upcoming";
+                    const isCurrent = step.state === "current";
                     return (
-                      <li key={`${e.at}-${i}`} className={`overflow-hidden rounded-2xl border transition-colors ${expanded ? "border-neutral-300 bg-neutral-50" : "border-neutral-200 bg-white hover:bg-neutral-50"}`}>
-                        <button type="button" aria-expanded={expanded} onClick={()=>setOpenEvent(expanded?null:i)} className="flex w-full items-center gap-3 p-4 text-left">
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{backgroundColor:i===0?(data.business?.primaryColor || "#171717"):"#a3a3a3"}}><Icon className="h-4.5 w-4.5"/></span>
-                          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-neutral-900">{e.label}</span><span className="mt-0.5 block text-xs text-neutral-500">{eventDate(e.at)} · {eventTime(e.at)}</span></span>
-                          {i===0 && <span className="hidden sm:inline rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">Latest</span>}
-                          <ChevronDown className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${expanded?"rotate-180":""}`}/>
+                      <li key={`${step.status}-${i}`} className="relative flex gap-4 pb-7 last:pb-0">
+                        {i < timeline.length - 1 ? <span className={`absolute left-5 top-10 h-[calc(100%-1.5rem)] w-px ${isUpcoming ? "bg-neutral-200" : "bg-neutral-400"}`} /> : null}
+                        <span
+                          className={`relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full border ${isUpcoming ? "border-neutral-200 bg-white text-neutral-400" : "border-transparent text-white"}`}
+                          style={!isUpcoming ? { backgroundColor: isCurrent ? (data.business?.primaryColor || "#171717") : "#737373" } : undefined}
+                        ><Icon className="h-4.5 w-4.5"/></span>
+                        <div className="min-w-0 flex-1 pt-1">
+                        <button type="button" disabled={!event} aria-expanded={event ? expanded : undefined} onClick={()=>event&&setOpenEvent(expanded?null:i)} className="flex w-full items-start gap-3 text-left disabled:cursor-default">
+                          <span className="min-w-0 flex-1"><span className={`block text-sm font-semibold ${isUpcoming ? "text-neutral-400" : "text-neutral-900"}`}>{step.label}</span><span className="mt-1 block text-xs text-neutral-500">{event ? `${eventDate(event.at)} · ${eventTime(event.at)}` : isUpcoming ? "Upcoming" : "Confirmed"}</span></span>
+                          {isCurrent ? <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">Current</span> : null}
+                          {event ? <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-neutral-400 transition-transform ${expanded?"rotate-180":""}`}/> : null}
                         </button>
-                        {expanded && <div className="border-t border-neutral-200 px-4 pb-4 pt-3 sm:pl-[68px]"><p className="text-sm leading-6 text-neutral-600">{statusExplanation(e)}</p>{e.location&&<p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-neutral-500"><MapPin className="h-3.5 w-3.5"/>{e.location}</p>}{e.exceptionType&&<p className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{shipmentExceptionLabel(e.exceptionType)}</p>}</div>}
+                        {expanded && event ? <div className="mt-3 rounded-xl bg-neutral-50 p-3"><p className="text-sm leading-6 text-neutral-600">{statusExplanation(event)}</p>{event.location&&<p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500"><MapPin className="h-3.5 w-3.5"/>{event.location}</p>}{event.exceptionType&&<p className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{shipmentExceptionLabel(event.exceptionType)}</p>}</div> : null}
+                        </div>
                       </li>
                     );
                   })}
                 </ol>
-              )}
-              {data.flow?.find(step=>step.state==="upcoming") && <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 px-4 py-3"><p className="text-xs font-medium uppercase tracking-wider text-neutral-400">What happens next</p><p className="mt-1 text-sm font-semibold text-neutral-700">{data.flow.find(step=>step.state==="upcoming")?.label}</p></div>}
+              ) : <p className="text-sm text-neutral-500">No updates yet. Check back soon.</p>}
             </div>
 
             {(data.selfService.canCancel || data.selfService.canReschedule || data.business?.phone || data.business?.email) && (
@@ -298,18 +311,10 @@ export default function TrackPage() {
               </div>
             )}
 
-            {/* Footer */}
-            <div className="px-8 py-5 bg-neutral-50 border-t border-neutral-200">
-              <p style={mono} className="text-[11px] tracking-[0.15em] text-neutral-400 uppercase">
-                Last updated {formatDateTime(data.lastUpdated)}
-              </p>
-            </div>
           </div>
         )}
 
-        <p className="mt-8 text-center text-xs text-neutral-400">
-          Powered by Olyxee
-        </p>
+        {data ? <p className="mt-6 text-center text-xs text-neutral-400">Last updated {formatDateTime(data.lastUpdated)} · Powered by Olyxee</p> : null}
       </div>
 
       {action && data && <div className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center" onMouseDown={(e)=>{if(e.target===e.currentTarget)setAction(null);}}>
