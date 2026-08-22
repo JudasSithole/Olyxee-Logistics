@@ -51,8 +51,8 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
           </div>
         </header>
 
-        <section className="mt-9 grid grid-cols-[1.5fr_1fr_1fr] gap-6 border-t border-slate-100 pt-6">
-          <div>
+        <section className="mt-9 grid grid-cols-[1.35fr_1fr] border border-slate-200">
+          <div className="border-r border-slate-200 p-5">
             <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Billed to</p>
             <p className="mt-1.5 text-[15px] font-semibold">{customer?.fullName}</p>
             {customer?.companyName ? <p className="text-slate-500">{customer.companyName}</p> : null}
@@ -60,43 +60,54 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
             <p className="mt-0.5 text-[12px] text-slate-500">{customer?.email}</p>
             {customer?.phone ? <p className="text-[12px] text-slate-500">{customer.phone}</p> : null}
           </div>
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Issued</p>
-            <p className="mt-1.5 font-medium">{issueDate}</p>
-          </div>
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due</p>
-            <p className="mt-1.5 font-medium">{dueDate}</p>
+          <div className="divide-y divide-slate-200">
+            {([['Invoice number', invoice.invoiceNumber], ['Issue date', issueDate], ['Due date', dueDate], ['Job reference', jobNumber]] as [string, string][]).map(([label, value]) => (
+              <div key={label} className="grid grid-cols-[112px_1fr] px-4 py-3">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+                <p className={`text-right text-[12px] font-medium text-slate-700 ${label === 'Invoice number' ? 'font-mono' : ''}`}>{value}</p>
+              </div>
+            ))}
           </div>
         </section>
 
         <section className="mt-8">
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-slate-400">Shipment</p>
-          <div className="grid grid-cols-4 gap-4 rounded-2xl bg-slate-50 px-6 py-5 text-[12px]">{([
-            ["Cargo", order?.cargoType || order?.description || "-"], ["Route", [order?.origin, order?.destination].filter(Boolean).join(" → ") || "-"],
-            ["Transport", transportLabel || "-"], ["Job number", jobNumber],
-          ] as [string, string][]).map(([label, value]) => <div key={label}><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 font-medium text-slate-700">{value}</p></div>)}</div>
-        </section>
-
-        <section className="mt-8">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">Charges</p>
-          <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-200 text-[11px] font-medium uppercase tracking-wide text-slate-400"><th className="py-2.5 text-left font-medium">Description</th><th className="py-2.5 text-right font-medium">Amount</th></tr></thead>
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Shipment reference</p>
+          <table className="w-full border-collapse border border-slate-200 text-[12px]">
             <tbody>
-              <tr className="border-b border-slate-100"><td className="py-4 pr-4 font-medium">{chargeDescription}</td><td className="py-4 text-right font-medium">{money(invoice.subtotal)}</td></tr>
-              {Number(invoice.additionalCharges) > 0 ? <tr className="border-b border-slate-100"><td className="py-3 pr-4 text-slate-500">Additional charges</td><td className="py-3 text-right text-slate-600">{money(invoice.additionalCharges)}</td></tr> : null}
+              <tr className="border-b border-slate-200">
+                <th className="w-[18%] bg-slate-50 px-3 py-2.5 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">Cargo</th>
+                <td className="w-[32%] px-3 py-2.5 font-medium text-slate-700">{order?.cargoType || order?.description || "-"}</td>
+                <th className="w-[18%] border-l border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">Transport</th>
+                <td className="w-[32%] px-3 py-2.5 font-medium text-slate-700">{transportLabel || "-"}</td>
+              </tr>
+              <tr>
+                <th className="bg-slate-50 px-3 py-2.5 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">Origin</th>
+                <td className="px-3 py-2.5 font-medium text-slate-700">{order?.origin || "-"}</td>
+                <th className="border-l border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">Destination</th>
+                <td className="px-3 py-2.5 font-medium text-slate-700">{order?.destination || "-"}</td>
+              </tr>
             </tbody>
           </table>
-          <div className="ml-auto mt-5 w-[290px] space-y-2.5">
-            <div className="flex justify-between text-[12px] text-slate-400"><span>VAT</span><span>Not separately charged</span></div>
-            <div className="flex items-center justify-between rounded-2xl px-5 py-3.5" style={{ backgroundColor: brandColor }}>
-              <span className="text-[13px] font-medium text-white/85">Total due</span>
-              <span className="text-[20px] font-semibold text-white">{money(invoice.total)}</span>
-            </div>
+        </section>
+
+        <section className="mt-8">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Invoice items</p>
+          <table className="w-full border-collapse border border-slate-200">
+            <thead style={{ backgroundColor: brandColor }}><tr className="text-[10px] uppercase tracking-wide text-white"><th className="px-3 py-3 text-left font-medium">Description</th><th className="w-[70px] px-3 py-3 text-center font-medium">Qty</th><th className="w-[125px] px-3 py-3 text-right font-medium">Rate</th><th className="w-[125px] px-3 py-3 text-right font-medium">Amount</th></tr></thead>
+            <tbody>
+              <tr className="border-b border-slate-200"><td className="px-3 py-4 font-medium">{chargeDescription}</td><td className="px-3 py-4 text-center text-slate-600">1</td><td className="px-3 py-4 text-right text-slate-600">{money(invoice.subtotal)}</td><td className="px-3 py-4 text-right font-medium">{money(invoice.subtotal)}</td></tr>
+              {Number(invoice.additionalCharges) > 0 ? <tr><td className="px-3 py-3 text-slate-600">Additional charges</td><td className="px-3 py-3 text-center text-slate-600">1</td><td className="px-3 py-3 text-right text-slate-600">{money(invoice.additionalCharges)}</td><td className="px-3 py-3 text-right font-medium">{money(invoice.additionalCharges)}</td></tr> : null}
+            </tbody>
+          </table>
+          <div className="ml-auto w-[330px] border-x border-b border-slate-200">
+            <div className="flex justify-between border-b border-slate-200 px-4 py-2.5 text-[12px]"><span className="text-slate-500">Subtotal</span><span className="font-medium">{money(invoice.subtotal)}</span></div>
+            {Number(invoice.additionalCharges) > 0 ? <div className="flex justify-between border-b border-slate-200 px-4 py-2.5 text-[12px]"><span className="text-slate-500">Additional charges</span><span className="font-medium">{money(invoice.additionalCharges)}</span></div> : null}
+            <div className="flex justify-between border-b border-slate-200 px-4 py-2.5 text-[12px]"><span className="text-slate-500">VAT</span><span className="font-medium">Not separately charged</span></div>
+            <div className="flex items-center justify-between px-4 py-3.5" style={{ color: brandColor }}><span className="text-[13px] font-semibold uppercase tracking-wide">Total due</span><span className="text-[20px] font-bold">{money(invoice.total)}</span></div>
           </div>
         </section>
 
-        <section className="mt-8 rounded-2xl bg-slate-50 p-6">
+        <section className="mt-8 border border-slate-200 bg-slate-50 p-5">
           <div className="flex items-start justify-between gap-8">
             <div className="max-w-[320px]">
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">How to pay</p>

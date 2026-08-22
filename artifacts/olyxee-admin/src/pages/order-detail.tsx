@@ -7,6 +7,7 @@ import {
   useUpdateOrderStatus,
   useSendNotification,
   useNotificationLogs,
+  useUpdateCustomer,
 } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -33,8 +33,6 @@ import {
   House,
   PackageX,
   ChevronDown,
-  Building2,
-  Phone,
   Clock,
   Activity,
   Package,
@@ -221,6 +219,7 @@ export default function OrderDetailPage() {
   const { data: notificationLogs } = useNotificationLogs(id);
   const updateStatusMutation = useUpdateOrderStatus();
   const resendMutation = useSendNotification();
+  const updateCustomer = useUpdateCustomer();
 
   const [statusForm, setStatusForm] = useState({
     status: "",
@@ -233,9 +232,13 @@ export default function OrderDetailPage() {
   const [invoiceCost, setInvoiceCost] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [editOpen,setEditOpen]=useState(false);
+  const [customerEditOpen,setCustomerEditOpen]=useState(false);
+  const [customerForm,setCustomerForm]=useState({fullName:"",email:"",phone:"",companyName:"",address:""});
   const [editForm,setEditForm]=useState({orderReference:"",description:"",cargoType:"",serviceRequired:"",origin:"",destination:"",weight:"",dimensions:"",estimatedDeliveryDate:""});
   const editOrder=useMutation({mutationFn:()=>apiFetch(`/api/orders/${id}`,{method:"PUT",body:editForm}),onSuccess:async()=>{await queryClient.invalidateQueries({queryKey:["order",id]});toast.success("Order updated");setEditOpen(false);refetch();},onError:(error:Error)=>toast.error(error.message)});
   const openOrderEdit=()=>{if(!order)return;setEditForm({orderReference:order.order_reference??"",description:order.description??"",cargoType:order.cargo_type??"",serviceRequired:order.service_required??"",origin:order.origin??"",destination:order.destination??"",weight:order.weight??"",dimensions:order.dimensions??"",estimatedDeliveryDate:order.estimated_delivery_date??""});setEditOpen(true);};
+  const openCustomerEdit=()=>{if(!order?.customers)return;setCustomerForm({fullName:order.customers.full_name??"",email:order.customers.email??"",phone:order.customers.phone??"",companyName:order.customers.company_name??"",address:order.customers.address??""});setCustomerEditOpen(true);};
+  const saveCustomer=(e:React.FormEvent)=>{e.preventDefault();if(!order?.customers||!user)return;updateCustomer.mutate({id:order.customers.id,business_id:user.businessId,full_name:customerForm.fullName,email:customerForm.email,phone:customerForm.phone||undefined,company_name:customerForm.companyName||undefined,address:customerForm.address||undefined},{onSuccess:async()=>{await queryClient.invalidateQueries({queryKey:["order",id]});toast.success("Customer information updated");setCustomerEditOpen(false);refetch();},onError:()=>toast.error("Failed to update customer information")});};
   const deleteOrder = useMutation({ mutationFn: () => apiFetch(`/api/orders/${id}`, { method: "DELETE" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["orders"] }); toast.success("Order and its linked invoice deleted"); navigate("/orders"); }, onError: (error: Error) => toast.error(error.message) });
   const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
   const isPostpaid = order?.billing_type === "POSTPAID";
@@ -380,26 +383,19 @@ export default function OrderDetailPage() {
   return (
     <div className="space-y-6 max-w-6xl pb-8">
 
-      {/* Nav + resend */}
+      {/* Navigation and the one primary page-level action */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/orders">
           <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground">
             <ArrowLeft className="h-4 w-4" /> Orders
           </Button>
         </Link>
-        <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" className="rounded-xl" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit order</Button><Button
-          variant="outline"
-          size="sm"
-          className="gap-2 rounded-xl"
-          onClick={handleResend}
-          disabled={resendMutation.isPending}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? "animate-spin" : ""}`} />
-          Resend update
-        </Button><Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-1 h-3.5 w-3.5"/>Delete</Button></div>
+        <Button variant="outline" size="sm" className="rounded-xl" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit order</Button>
       </div>
 
-      <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form></SheetContent></Sheet>
+      <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form><div className="mt-8 border-t pt-5"><p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">More actions</p><div className="grid gap-2"><Button variant="outline" className="justify-start rounded-xl" onClick={handleResend} disabled={resendMutation.isPending}><RefreshCw className={`mr-2 h-4 w-4 ${resendMutation.isPending ? "animate-spin" : ""}`}/>Resend latest customer update</Button><Button variant="ghost" className="justify-start rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-2 h-4 w-4"/>Delete order</Button></div></div></SheetContent></Sheet>
+
+      <Sheet open={customerEditOpen} onOpenChange={setCustomerEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit customer information</SheetTitle></SheetHeader><p className="mt-2 text-sm text-muted-foreground">Changes apply to this customer everywhere, including future invoices.</p><form className="mt-6 space-y-4" onSubmit={saveCustomer}><div className="space-y-1.5"><Label>Full name</Label><Input value={customerForm.fullName} onChange={e=>setCustomerForm(f=>({...f,fullName:e.target.value}))} required/></div><div className="space-y-1.5"><Label>Company</Label><Input value={customerForm.companyName} onChange={e=>setCustomerForm(f=>({...f,companyName:e.target.value}))} placeholder="Optional"/></div><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-1.5"><Label>Email</Label><Input type="email" value={customerForm.email} onChange={e=>setCustomerForm(f=>({...f,email:e.target.value}))} required/></div><div className="space-y-1.5"><Label>Phone</Label><Input value={customerForm.phone} onChange={e=>setCustomerForm(f=>({...f,phone:e.target.value}))} placeholder="Optional"/></div></div><div className="space-y-1.5"><Label>Billing / delivery address</Label><textarea className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" value={customerForm.address} onChange={e=>setCustomerForm(f=>({...f,address:e.target.value}))} placeholder="Street, city, province, postal code"/></div><Button className="w-full rounded-xl" disabled={updateCustomer.isPending}>{updateCustomer.isPending?'Saving...':'Save customer information'}</Button></form></SheetContent></Sheet>
 
       {/* Order identity */}
       <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
@@ -423,7 +419,7 @@ export default function OrderDetailPage() {
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing</div><p className={`mt-2 text-sm font-semibold ${billingStatus === "PAID" ? "text-emerald-700" : billingStatus === "AWAITING_PAYMENT" ? "text-amber-700" : "text-foreground"}`}>{isPostpaid ? "POSTPAID" : "PREPAID"} · {billingLabel}</p><p className="mt-0.5 text-xs text-muted-foreground">{isPostpaid ? "Invoiced after delivery" : "Payment before shipment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
           <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {displayDate(order.estimated_delivery_date, "MMM d, yyyy")}</p>}</div>
-          <div className="p-4 sm:p-5"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
+          <div className="p-4 sm:p-5"><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers&&<button type="button" onClick={openCustomerEdit} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><Edit className="h-3 w-3"/>Edit</button>}</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
         </div>
       </div>
 
@@ -648,65 +644,14 @@ export default function OrderDetailPage() {
           </Card>
         </div>
 
-        {/* Right sidebar */}
+        {/* Secondary tools: only controls that are not already explained above */}
         <div className="space-y-5">
-
-          {/* Customer */}
-          {order.customers && (
-            <Card className="rounded-3xl border-border/70 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <User className="h-3.5 w-3.5" />
-                  Customer contact
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-xs">
-                <div>
-                  <Link
-                    href={`/customers/${order.customers.id}`}
-                    className="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1"
-                  >
-                    {order.customers.full_name}
-                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                  </Link>
-                  {order.customers.company_name && (
-                    <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      {order.customers.company_name}
-                    </p>
-                  )}
-                </div>
-                <Separator />
-                <div className="space-y-1.5">
-                  {order.customers.email && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Mail className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{order.customers.email}</span>
-                    </div>
-                  )}
-                  {order.customers.phone && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Phone className="h-3 w-3 flex-shrink-0" />
-                      {order.customers.phone}
-                    </div>
-                  )}
-                  {order.customers.address && (
-                    <div className="flex items-start gap-1.5 text-muted-foreground">
-                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                      <span className="leading-snug">{order.customers.address}</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Order details */}
+          {/* Internal handling and billing */}
           <Card className="rounded-3xl border-border/70 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Package className="h-3.5 w-3.5" />
-                Shipment details
+                Job tools
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
@@ -716,28 +661,6 @@ export default function OrderDetailPage() {
                   <p className="text-sm">{order.description}</p>
                 </div>
               )}
-              {order.estimated_delivery_date && (
-                <div>
-                  <p className="text-muted-foreground uppercase font-medium mb-0.5">Est. Delivery</p>
-                  <p className="text-sm">{displayDate(order.estimated_delivery_date, "MMMM d, yyyy")}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Last Updated</p>
-                <p className="text-sm">{displayDate(order.updated_at, "MMM d, yyyy · HH:mm")}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Job Number</p>
-                <p className="text-sm font-mono">{order.job_number ?? order.order_reference ?? "-"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">Billing Type</p>
-                <p className="text-sm">{isPostpaid ? "Invoice After Delivery" : "Invoice Before Delivery"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground uppercase font-medium mb-0.5">{companyName} Tracking ID</p>
-                <p className="text-sm font-mono">{order.tracking_id}</p>
-              </div>
               <div>
                 <p className="text-muted-foreground uppercase font-medium mb-0.5">Supplier Tracking Number</p>
                 {order.supplier_tracking_number ? (
@@ -777,7 +700,6 @@ export default function OrderDetailPage() {
                 <Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={()=>createInvoice(isPostpaid && isDelivered)}>{creatingInvoice ? "Working…" : isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button>
               </div>}
               {isDelivered && order.invoice_id && invoiceStatus === "paid" && <div className="flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-950/30 dark:text-green-300"><CheckCircle2 className="h-4 w-4"/>Job complete - delivered &amp; paid.</div>}
-              {(order.origin || order.destination) && <div><p className="text-muted-foreground uppercase font-medium mb-0.5">Route</p><p className="text-sm">{order.origin || "-"} → {order.destination || "-"}</p></div>}
             </CardContent>
           </Card>
         </div>
