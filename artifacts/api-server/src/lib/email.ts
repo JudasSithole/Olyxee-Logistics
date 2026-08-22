@@ -377,6 +377,7 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   // PDF attachment still receives p.logoUrl unchanged.
   const emailLogo=/^https?:\/\//i.test(p.logoUrl||"")?p.logoUrl||"":"";
   const logo=emailLogo?`<img src="${escapeHtml(emailLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:52px;object-fit:contain">`:`<strong style="font-size:19px;color:#1a1a1a">${escapeHtml(p.businessName)}</strong>`;
+  const replyTo=p.supportEmail&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.supportEmail.trim())?p.supportEmail.trim():undefined;
   const route=[p.origin,p.destination].filter(Boolean).join(" → ");
   const emailHtml=`<!doctype html><html><body style="margin:0;background:#f4f7fb;padding:32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.6">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">Invoice ${escapeHtml(p.invoiceNumber)} is attached. Total due: ${money(p.total)}.</div>
@@ -417,7 +418,8 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   try{
     const { buildInvoicePdf } = await import("./invoice-pdf");
     const pdf = await buildInvoicePdf(p);
-    const result=await resend.emails.send({from:`${p.businessName.replace(/["\\]/g," ")} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} attached - ${money(p.total)} due`,html:emailHtml,text,replyTo:p.supportEmail,attachments:[{filename:`${p.invoiceNumber}.pdf`,content:pdf}]});
+    const senderName=p.businessName.replace(/["\\]/g," ").trim()||"Olyxee";
+    const result=await resend.emails.send({from:`${senderName} <${fromAddress}>`,to:[p.customerEmail],subject:`Invoice ${p.invoiceNumber} attached - ${money(p.total)} due`,html:emailHtml,text,...(replyTo?{replyTo}:{}),attachments:[{filename:`${p.invoiceNumber}.pdf`,content:pdf}]});
     if(result.error){logger.error({error:result.error,invoiceNumber:p.invoiceNumber},"Failed to send invoice via Resend");return {success:false,error:result.error.message};}
     return {success:true,messageId:result.data?.id};
   }catch(err){logger.error({err,invoiceNumber:p.invoiceNumber},"Exception generating or sending invoice email");return {success:false,error:"Failed to send invoice email"};}

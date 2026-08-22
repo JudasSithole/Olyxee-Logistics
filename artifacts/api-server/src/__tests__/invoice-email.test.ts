@@ -57,4 +57,13 @@ describe("invoice email delivery", () => {
     expect(payload.attachments[0].content.subarray(0, 4).toString()).toBe("%PDF");
     expect(payload.attachments[0].content.toString("latin1")).toContain("/Subtype /Image");
   });
+
+  it("does not let an invalid tenant reply-to address block delivery", async () => {
+    const result = await sendInvoiceEmail({ ...invoice, supportEmail: "not configured" });
+
+    expect(result).toEqual({ success: true, messageId: "email_1" });
+    const payload = mocks.send.mock.calls[0][0];
+    expect(payload).not.toHaveProperty("replyTo");
+    expect(payload.attachments[0].content.toString("latin1")).toContain("/Subtype /Image");
+  });
 });
