@@ -12,6 +12,7 @@ import {
   auditLogsTable,
   businessesTable,
   invoicesTable,
+  jobCostsTable,
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
@@ -75,6 +76,7 @@ const CreateJobBody = z
     // POSTPAID where the amount is set when invoicing after delivery.
     invoiceSubtotal: z.string().optional(),
     invoiceAdditionalCharges: z.string().optional(),
+    jobCost: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.billingType === "PREPAID" && !data.invoiceSubtotal?.trim()) {
@@ -102,6 +104,18 @@ async function ensureJobsSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_status" text NOT NULL DEFAULT 'NOT_INVOICED'`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "delivered_at" timestamp`);
     await db.execute(sql`ALTER TABLE "tracking_events" ADD COLUMN IF NOT EXISTS "exception_type" text`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS "job_costs" (
+      "id" text PRIMARY KEY NOT NULL,
+      "business_id" text NOT NULL,
+      "order_id" text NOT NULL,
+      "category" text NOT NULL DEFAULT 'OTHER',
+      "amount" numeric(14,2) NOT NULL,
+      "currency" text NOT NULL DEFAULT 'ZAR',
+      "note" text,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS "job_costs_business_order_idx" ON "job_costs" ("business_id","order_id")`);
     await db.execute(
       sql`CREATE UNIQUE INDEX IF NOT EXISTS "orders_business_job_number_unique" ON "orders" ("business_id", "job_number") WHERE "job_number" IS NOT NULL`,
     );
@@ -299,10 +313,17 @@ router.post("/orders", requireAuth, async (req, res) => {
     // POSTPAID enters its amount when invoicing after delivery.
     const subtotal = Number(parse.data.invoiceSubtotal ?? "0");
     const additionalCharges = Number(parse.data.invoiceAdditionalCharges ?? "0");
+    const rawJobCost = parse.data.jobCost?.trim();
+    const jobCost = rawJobCost ? Number(rawJobCost) : 0;
     if (isPrepaid && (!Number.isFinite(subtotal) || !Number.isFinite(additionalCharges) || subtotal < 0 || additionalCharges < 0)) {
       res.status(400).json({ error: "Invoice amounts must be non-negative numbers" });
       return;
     }
+    if (rawJobCost && (!Number.isFinite(jobCost) || jobCost < 0)) {
+      res.status(400).json({ error: "Job cost must be a non-negative number" });
+      return;
+    }
+    const hasJobCost = !!rawJobCost && jobCost > 0;
 
     // Generate a unique tracking ID. We let the DB enforce uniqueness via
     // the trackingId unique constraint and retry on a 23505 (unique_violation)
@@ -391,6 +412,7 @@ router.post("/orders", requireAuth, async (req, res) => {
     // it back through orders.invoice_id).
     if (!isPrepaid) {
       await db.transaction(async (tx) => {
+        if (hasJobCost) await tx.insert(jobCostsTable).values({id:generateId(),businessId,orderId:o.id,category:"OTHER",amount:jobCost.toFixed(2),currency:"ZAR",note:"Recorded when Job was created"});
         await tx.insert(trackingEventsTable).values({id:generateId(),orderId:o.id,status:initialStatus,message:initialMessage,createdBy:userId});
         await tx.insert(auditLogsTable).values({id:generateId(),businessId,userId,action:"CREATE_JOB",entityType:"order",entityId:o.id,metadata:{trackingId:o.trackingId,jobNumber,billingType}});
       });
@@ -406,6 +428,7 @@ router.post("/orders", requireAuth, async (req, res) => {
 
     await db.transaction(async (tx) => {
       await tx.insert(invoicesTable).values({id:invoiceId,businessId,invoiceNumber:invoiceNo,customerId:customer.id,orderId:o.id,subtotal:String(subtotal),additionalCharges:String(additionalCharges),total:String(total),currency:"ZAR",dueDate,status:"draft",notes:"Payment due within agreed terms."});
+      if (hasJobCost) await tx.insert(jobCostsTable).values({id:generateId(),businessId,orderId:o.id,category:"OTHER",amount:jobCost.toFixed(2),currency:"ZAR",note:"Recorded when Job was created"});
       // Invoice now exists -> billing_status INVOICED (advances to
       // AWAITING_PAYMENT below once the email actually sends).
       await tx.update(ordersTable).set({invoiceId,billingStatus:"INVOICED",updatedAt:new Date()}).where(and(eq(ordersTable.id,o.id),eq(ordersTable.businessId,businessId)));

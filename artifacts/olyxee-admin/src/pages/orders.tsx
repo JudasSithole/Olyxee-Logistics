@@ -38,17 +38,30 @@ function generateOrderReference(): string {
   return `REF-${yy}${mm}${dd}-${suffix}`;
 }
 
+function generateJobNumber(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) {
+    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return `JOB-${yyyy}${mm}${dd}-${suffix}`;
+}
+
 function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; businessId: string }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => ({
     customerId: "",
-    jobNumber: "",
+    jobNumber: generateJobNumber(),
     billingType: "PREPAID" as "PREPAID" | "POSTPAID",
     description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
     cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
-    invoiceSubtotal: "", invoiceAdditionalCharges: "0",
+    invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
   }));
   const createMutation = useCreateOrder();
   // Server-side customer search so every customer is reachable, not just the
@@ -75,13 +88,13 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
       setStep(1);
       setForm({
         customerId: "",
-        jobNumber: "",
+        jobNumber: generateJobNumber(),
         billingType: "PREPAID",
         description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
         cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "", dimensions: "",
-        invoiceSubtotal: "", invoiceAdditionalCharges: "0",
+        invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
       });
       setSelectedCustomer(null);
       setCustomerSearch("");
@@ -130,6 +143,7 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         // PREPAID invoices at creation; POSTPAID is invoiced after delivery.
         invoice_subtotal: isPrepaid ? form.invoiceSubtotal : undefined,
         invoice_additional_charges: isPrepaid ? form.invoiceAdditionalCharges : undefined,
+        job_cost: form.jobCost || undefined,
       },
       {
         onSuccess: (created) => {
@@ -263,7 +277,8 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-muted-foreground">Job Number</Label>
-                <Input value={form.jobNumber} onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))} placeholder="CFS-0024" className={`font-mono ${field}`} />
+                <Input value={form.jobNumber} onChange={e => setForm(f => ({ ...f, jobNumber: e.target.value }))} placeholder="JOB-20260822-ABCD" className={`font-mono ${field}`} />
+                <p className="text-xs text-muted-foreground">Generated automatically. You can edit it to match your own numbering system.</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-muted-foreground">Est. delivery (optional)</Label>
@@ -303,6 +318,11 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
             ) : (
               <div className="rounded-2xl bg-muted/40 px-4 py-3.5 text-xs leading-relaxed text-muted-foreground">No invoice yet - the shipment can start right away, and you'll invoice this Job after it's delivered.</div>
             )}
+            <div className="space-y-2 rounded-2xl border border-dashed border-border bg-muted/20 p-4">
+              <Label className="text-[13px] font-medium">Your cost for this Job <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input type="number" min="0" step="0.01" value={form.jobCost} onChange={e => setForm(f => ({ ...f, jobCost: e.target.value }))} placeholder="Internal cost in ZAR" className="h-11 rounded-xl bg-background" />
+              <p className="text-xs leading-relaxed text-muted-foreground">Internal only. This is never shown to the customer and is used to calculate profit for this Job.</p>
+            </div>
           </div>
           )}
           <div className="mt-8 flex items-center gap-2.5">

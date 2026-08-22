@@ -600,6 +600,7 @@ export function useCreateOrder() {
         billing_type: "PREPAID" | "POSTPAID";
         invoice_subtotal?: string;
         invoice_additional_charges?: string;
+        job_cost?: string;
       },
     ) => {
       const data = await apiFetch<ApiOrder>("/api/orders", {
@@ -621,6 +622,7 @@ export function useCreateOrder() {
           // PREPAID sends the accepted amount; POSTPAID omits it (invoiced later).
           invoiceSubtotal: input.invoice_subtotal || undefined,
           invoiceAdditionalCharges: input.invoice_additional_charges || undefined,
+          jobCost: input.job_cost || undefined,
         },
       });
       return { ...mapOrder(data), invoice_email_status: (data as ApiOrder & { invoiceEmailStatus?: string }).invoiceEmailStatus };

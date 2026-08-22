@@ -28,6 +28,7 @@ vi.mock("@workspace/db", () => ({
   auditLogsTable: {},
   businessesTable: {},
   invoicesTable: { id: "id", businessId: "businessId" },
+  jobCostsTable: {},
 }));
 
 vi.mock("../lib/auth", () => ({
@@ -179,6 +180,35 @@ describe("POST /orders — transport mode requirements", () => {
     expect(res.status).toBe(201);
     expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
     expect(res.body.transportMode).toBe("SEA");
+  });
+
+  it("records the optional internal Job cost during billing setup", async () => {
+    mockDb.query.customersTable.findFirst.mockResolvedValue(CUSTOMER);
+    mockDb.query.businessesTable.findFirst.mockResolvedValue(LOGISTICS_BIZ);
+    const inserted = {
+      id: "ord_with_cost", businessId: "biz_test", customerId: "cust_1",
+      trackingId: "OLY-AAA-BBBB", jobNumber: "JOB-COST-1",
+      currentStatus: "ORDER_CONFIRMED", transportMode: "AIR",
+      createdAt: new Date(), updatedAt: new Date(),
+    };
+    mockDb.insert.mockReturnValueOnce(insertChain([inserted]) as any);
+    const costValues = vi.fn(async () => undefined);
+    const txInsert = vi.fn()
+      .mockReturnValueOnce({ values: costValues })
+      .mockReturnValue(insertChainPlain());
+    mockDb.transaction.mockImplementation(async (fn: any) => fn({ insert: txInsert }));
+    const app = await buildApp();
+
+    const res = await request(app).post("/orders").send({
+      customerId: "cust_1", jobNumber: "JOB-COST-1", billingType: "POSTPAID",
+      transportMode: "AIR", cargoType: "Electronics", serviceRequired: "Freight",
+      weight: "4 kg", jobCost: "325.50",
+    });
+
+    expect(res.status).toBe(201);
+    expect(costValues).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: "ord_with_cost", amount: "325.50", currency: "ZAR",
+    }));
   });
 
   it("requires transport mode even for legacy non-logistics business records", async () => {

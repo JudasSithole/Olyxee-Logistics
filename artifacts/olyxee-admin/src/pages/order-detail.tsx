@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Collapsible,
@@ -237,7 +238,6 @@ export default function OrderDetailPage() {
   const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
   const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
   const [invoiceCharges, setInvoiceCharges] = useState("0");
-  const [invoiceCost, setInvoiceCost] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [editOpen,setEditOpen]=useState(false);
   const [customerEditOpen,setCustomerEditOpen]=useState(false);
@@ -281,7 +281,7 @@ export default function OrderDetailPage() {
     if (!id || !invoiceSubtotal.trim()) return;
     setCreatingInvoice(true);
     try {
-      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR", ...(invoiceCost.trim() ? { cost: invoiceCost.trim() } : {}) } });
+      const invoice = await apiFetch<{id:string}>("/api/invoices", { method: "POST", body: { orderId: id, subtotal: invoiceSubtotal, additionalCharges: invoiceCharges, currency: "ZAR" } });
       if (send) {
         // Close-the-job flow: create the invoice and email it to the customer
         // in one action, then open it so the admin can confirm payment later.
@@ -411,7 +411,41 @@ export default function OrderDetailPage() {
         <Button variant="outline" size="sm" className="rounded-xl" onClick={openOrderEdit}><Edit className="mr-1 h-3.5 w-3.5"/>Edit order</Button>
       </div>
 
-      <Sheet open={editOpen} onOpenChange={setEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit order</SheetTitle></SheetHeader><form className="mt-6 space-y-3" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>{([['orderReference','Reference'],['description','Description'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=><div className="space-y-1.5" key={key}><Label>{label}</Label><Input type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/></div>)}<Button className="w-full" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button></form><div className="mt-8 border-t pt-5"><p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">More actions</p><div className="grid gap-2"><Button variant="outline" className="justify-start rounded-xl" onClick={handleResend} disabled={resendMutation.isPending}><RefreshCw className={`mr-2 h-4 w-4 ${resendMutation.isPending ? "animate-spin" : ""}`}/>Resend latest customer update</Button><Button variant="ghost" className="justify-start rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-2 h-4 w-4"/>Delete order</Button></div></div></SheetContent></Sheet>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent
+          overlayClassName="bg-black/35 backdrop-blur-md"
+          className="max-h-[88vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-3xl border-border/70 p-0 shadow-2xl duration-300 sm:max-w-2xl"
+        >
+          <DialogHeader className="border-b px-7 py-6">
+            <DialogTitle className="text-xl">Edit order</DialogTitle>
+            <DialogDescription>Update the shipment information used across the job and invoice.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto px-7 py-6">
+            <form className="space-y-5" onSubmit={e=>{e.preventDefault();editOrder.mutate();}}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {([['orderReference','Reference'],['cargoType','Cargo / invoice item'],['serviceRequired','Service required'],['origin','Origin'],['destination','Destination'],['weight','Weight'],['dimensions','Dimensions'],['estimatedDeliveryDate','Estimated delivery date']] as const).map(([key,label])=>(
+                  <div className="space-y-1.5" key={key}>
+                    <Label>{label}</Label>
+                    <Input className="h-11 rounded-xl" type={key==='estimatedDeliveryDate'?'date':'text'} value={editForm[key]} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}/>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Description</Label>
+                <textarea className="flex min-h-24 w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))}/>
+              </div>
+              <Button className="h-11 w-full rounded-xl" disabled={editOrder.isPending}>{editOrder.isPending?'Saving...':'Save order changes'}</Button>
+            </form>
+            <div className="mt-6 border-t pt-5">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">More actions</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button variant="outline" className="justify-start rounded-xl" onClick={handleResend} disabled={resendMutation.isPending}><RefreshCw className={`mr-2 h-4 w-4 ${resendMutation.isPending ? "animate-spin" : ""}`}/>Resend latest customer update</Button>
+                <Button variant="ghost" className="justify-start rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleteOrder.isPending} onClick={() => { if (window.confirm(`Permanently delete order ${order.tracking_id}, its invoice, and tracking history?`)) deleteOrder.mutate(); }}><Trash2 className="mr-2 h-4 w-4"/>Delete order</Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={customerEditOpen} onOpenChange={setCustomerEditOpen}><SheetContent className="w-[420px] overflow-y-auto"><SheetHeader><SheetTitle>Edit customer information</SheetTitle></SheetHeader><p className="mt-2 text-sm text-muted-foreground">Changes apply to this customer everywhere, including future invoices.</p><form className="mt-6 space-y-4" onSubmit={saveCustomer}><div className="space-y-1.5"><Label>Full name</Label><Input value={customerForm.fullName} onChange={e=>setCustomerForm(f=>({...f,fullName:e.target.value}))} required/></div><div className="space-y-1.5"><Label>Company</Label><Input value={customerForm.companyName} onChange={e=>setCustomerForm(f=>({...f,companyName:e.target.value}))} placeholder="Optional"/></div><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-1.5"><Label>Email</Label><Input type="email" value={customerForm.email} onChange={e=>setCustomerForm(f=>({...f,email:e.target.value}))} required/></div><div className="space-y-1.5"><Label>Phone</Label><Input value={customerForm.phone} onChange={e=>setCustomerForm(f=>({...f,phone:e.target.value}))} placeholder="Optional"/></div></div><div className="space-y-1.5"><Label>Billing / delivery address</Label><textarea className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" value={customerForm.address} onChange={e=>setCustomerForm(f=>({...f,address:e.target.value}))} placeholder="Street, city, province, postal code"/></div><Button className="w-full rounded-xl" disabled={updateCustomer.isPending}>{updateCustomer.isPending?'Saving...':'Save customer information'}</Button></form></SheetContent></Sheet>
 
@@ -753,11 +787,6 @@ export default function OrderDetailPage() {
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Charge the customer</p>
                   <Input value={invoiceSubtotal} onChange={e=>setInvoiceSubtotal(e.target.value)} placeholder="Subtotal (ZAR)"/>
                   <Input value={invoiceCharges} onChange={e=>setInvoiceCharges(e.target.value)} placeholder="Additional charges"/>
-                </div>
-                <div className="space-y-1 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/20 p-2.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Your cost for this job <span className="normal-case text-muted-foreground/70">· internal only</span></p>
-                  <Input value={invoiceCost} onChange={e=>setInvoiceCost(e.target.value)} placeholder="What this job cost you (optional)"/>
-                  <p className="text-[11px] leading-4 text-muted-foreground">Never shown to the customer or on the invoice. Feeds the Finance tab so you can see profit per job. You can leave this blank and add costs later.</p>
                 </div>
                 <Button size="sm" disabled={creatingInvoice||!invoiceSubtotal.trim()} onClick={()=>createInvoice(isPostpaid && isDelivered)}>{creatingInvoice ? "Working…" : isPostpaid && isDelivered ? "Create & send invoice" : "Generate draft invoice"}</Button>
               </div>}
