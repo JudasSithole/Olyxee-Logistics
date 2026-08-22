@@ -34,7 +34,7 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
 
         <header className="flex items-start justify-between gap-8">
           <div className="max-w-[330px]">
-            {(business?.invoiceLogoUrl || business?.businessLogoUrl) ? <img src={business.invoiceLogoUrl || business.businessLogoUrl} alt={`${business.invoiceLegalName || business.name} logo`} className="mb-4 max-h-[44px] object-contain object-left" /> : null}
+            {(business?.businessLogoUrl || business?.invoiceLogoUrl) ? <img src={business.businessLogoUrl || business.invoiceLogoUrl} alt={`${business.invoiceLegalName || business.name} logo`} className="mb-4 max-h-[44px] object-contain object-left" /> : null}
             <h1 className="text-[20px] font-semibold tracking-[-0.01em]">{business?.invoiceLegalName || business?.name || "Business"}</h1>
             <div className="mt-2 space-y-0.5 text-[12px] text-slate-500">
               {business?.invoiceRegistrationNumber ? <p>Reg No. {business.invoiceRegistrationNumber}</p> : null}

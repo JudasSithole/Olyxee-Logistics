@@ -18,7 +18,9 @@ const invoice: SendInvoiceEmailParams = {
   dueDate: new Date("2026-08-29T10:00:00Z"), description: "Handbags",
   serviceDetails: "Air freight", quantity: 1, subtotal: 637.23,
   additionalCharges: 22, total: 659.23, currency: "ZAR",
-  businessName: "Olyxee Logistics", supportEmail: "accounts@olyxee.com",
+  // This fixture represents whichever tenant is currently authenticated. The
+  // image is local test data only; production receives the workspace logo URL.
+  businessName: "Acme Freight", supportEmail: "accounts@acmefreight.test",
   logoUrl: `data:image/png;base64,${readFileSync(new URL("../../../olyxee-admin/public/favicon.png", import.meta.url)).toString("base64")}`,
   paymentDetails: "Bank: FNB\nAccount: 62123456789", paymentTerms: "Due within 7 days",
   primaryColor: "#146C94", jobNumber: "JOB-20260822-X7KM",
@@ -45,7 +47,7 @@ describe("invoice email delivery", () => {
     expect(payload.html).toContain("Please find your PDF invoice attached below");
     expect(payload.html).toContain("<img");
     expect(payload.html).toContain("JOB-20260822-X7KM");
-    expect(payload.text).toContain("Your invoice from Olyxee Logistics is ready");
+    expect(payload.text).toContain("Your invoice from Acme Freight is ready");
     expect(payload.attachments).toHaveLength(1);
     expect(payload.attachments[0].filename).toBe("INV-20260822-TEST01.pdf");
     expect(Buffer.isBuffer(payload.attachments[0].content)).toBe(true);
