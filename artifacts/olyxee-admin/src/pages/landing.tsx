@@ -43,8 +43,8 @@ const OLD_WAY_SLIDES = [
 const DEMO_CUSTOMERS = [
   { name: "Cape Cargo Imports", initials: "CC", phone: "+27 83 902 7714", address: "Foreshore · Cape Town" },
 ];
-const DEMO_DETAILS = ["20ft container · Shanghai → Durban · sea freight"];
-const DEMO_REFS = ["#OLY-2101"];
+const DEMO_DETAILS = ["Sea Freight · China → South Africa · 20 ft container"];
+const DEMO_REFS = ["FSL-0023-2026"];
 
 const WORKFLOW_STEPS = [
   { label: "Create the job", body: "Customer, cargo, route and air or sea details in one record.", icon: Package },
@@ -123,17 +123,12 @@ const HeroSection = ({ onWorkflowClick }: { onWorkflowClick: (e: React.MouseEven
 
     <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-[1.2fr_1fr] gap-16 items-center">
       <div className="max-w-2xl">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-200 bg-white mb-8 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span className="font-code text-[10px] tracking-widest text-neutral-600 uppercase">Starter · {STARTER_PRICE}/Month</span>
-        </motion.div>
-
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }} className="text-[3.2rem] md:text-7xl lg:text-[5rem] font-editorial leading-[1.05] tracking-tight text-neutral-950 mb-6 text-balance">
           Run every cross-border <span className="text-orange-500">freight job</span> in one place.
         </motion.h1>
 
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-10 max-w-lg font-ui">
-          Confident, connected operating system for South African freight forwarders. Quotes, routing, customs, and tracking.
+          Quotes, routing, customs, and tracking for South African freight forwarders.
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 font-ui">
@@ -147,7 +142,7 @@ const HeroSection = ({ onWorkflowClick }: { onWorkflowClick: (e: React.MouseEven
         </motion.div>
       </div>
 
-      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.4 }} className="relative mx-auto w-full max-w-xl lg:max-w-none">
+      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.4 }} className="relative mx-auto w-full max-w-xl scale-110 lg:max-w-none lg:scale-[1.18]">
         <img
           src={heroCourier}
           alt="Logistics operator coordinating deliveries with live customer updates"
@@ -160,6 +155,16 @@ const HeroSection = ({ onWorkflowClick }: { onWorkflowClick: (e: React.MouseEven
 
 const ProblemSection = () => {
   const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const intervalId = window.setInterval(() => {
+      setActive((current) => (current + 1) % OLD_WAY_SLIDES.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <section className="bg-white text-neutral-900 py-24 md:py-32 rounded-t-[2.5rem] md:rounded-t-[4rem] -mt-12 relative z-20">
@@ -214,7 +219,7 @@ const ProblemSection = () => {
                   animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
                   exit={{ opacity: 0, filter: "blur(10px)", scale: 0.95 }}
                   transition={{ duration: 0.5 }}
-                  className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-xl mix-blend-multiply"
+                  className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-xl"
                 />
               </AnimatePresence>
             </div>
@@ -265,8 +270,8 @@ const AirSeaSection = () => (
     <div className="max-w-7xl mx-auto px-6">
       <div className="grid md:grid-cols-2 gap-6">
         <div className="group relative overflow-hidden rounded-[2.5rem] bg-neutral-100 border border-neutral-200 p-8 md:p-12 min-h-[440px] flex flex-col justify-end shadow-sm">
-          <img src={oceanCargoImg} alt="Ocean freight" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] mix-blend-multiply group-hover:opacity-[0.25] group-hover:scale-105 transition-all duration-1000" loading="lazy" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+          <img src={oceanCargoImg} alt="Ocean freight" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-65 group-hover:scale-105 transition-all duration-1000" loading="lazy" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/35 to-transparent" />
           <div className="relative z-10">
             <Anchor className="w-8 h-8 text-orange-500 mb-6" />
             <h3 className="text-4xl font-editorial text-neutral-900 mb-4">Ocean Freight</h3>
@@ -276,8 +281,8 @@ const AirSeaSection = () => (
           </div>
         </div>
         <div className="group relative overflow-hidden rounded-[2.5rem] bg-neutral-100 border border-neutral-200 p-8 md:p-12 min-h-[440px] flex flex-col justify-end shadow-sm">
-          <img src={airCargoImg} alt="Air cargo" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] mix-blend-multiply group-hover:opacity-[0.25] group-hover:scale-105 transition-all duration-1000" loading="lazy" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+          <img src={airCargoImg} alt="Air cargo" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-65 group-hover:scale-105 transition-all duration-1000" loading="lazy" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/35 to-transparent" />
           <div className="relative z-10">
             <Plane className="w-8 h-8 text-orange-500 mb-6" />
             <h3 className="text-4xl font-editorial text-neutral-900 mb-4">Air Cargo</h3>
@@ -292,20 +297,31 @@ const AirSeaSection = () => (
 );
 
 const OrderForm: FC<{ step: number }> = ({ step }) => {
-  const custOpen = step === 0;
-  const custSelected = step >= 1;
-  const detailsFilled = step >= 3;
+  const customerSelected = step >= 1;
+  const shipmentComplete = step >= 2;
+  const billingVisible = step >= 3;
   const creating = step === 4;
   const done = step >= 5;
   const cust = DEMO_CUSTOMERS[0];
-  const detail = DEMO_DETAILS[0];
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-3 gap-2">
+        {["Customer", "Shipment", "Billing"].map((label, index) => {
+          const complete = step > index;
+          const current = step === index;
+          return (
+            <div key={label} className={`rounded-xl border px-3 py-2 text-center transition-colors ${complete ? "border-orange-200 bg-orange-50 text-orange-700" : current ? "border-orange-500 bg-white text-neutral-900" : "border-neutral-200 bg-neutral-50 text-neutral-400"}`}>
+              <span className="font-code text-[9px] tracking-widest uppercase">{index + 1} · {label}</span>
+            </div>
+          );
+        })}
+      </div>
+
       <div>
         <label className="font-code text-[10px] text-neutral-500 tracking-widest block mb-2 uppercase">Customer</label>
-        <div className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-500 ${custOpen ? "border-orange-500 bg-orange-50/50 shadow-md" : "border-neutral-200 bg-white"}`}>
-          {custSelected ? (
+        <div className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-500 ${step === 0 ? "border-orange-500 bg-orange-50/50 shadow-md" : "border-neutral-200 bg-white"}`}>
+          {customerSelected ? (
             <>
               <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-medium shrink-0">{cust.initials}</div>
               <div className="min-w-0">
@@ -322,13 +338,14 @@ const OrderForm: FC<{ step: number }> = ({ step }) => {
             </>
           )}
         </div>
+        <p className="mt-2 text-xs text-neutral-500 font-ui">This customer receives invoice and shipment updates.</p>
       </div>
 
       <AnimatePresence>
-        {custSelected && (
+        {customerSelected && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
             <div className="bg-neutral-100/80 p-3.5 rounded-xl flex flex-wrap items-center gap-4 text-xs text-neutral-600 font-ui">
-              <span className="font-code text-[9px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-widest">Auto-filled</span>
+              <span className="font-code text-[9px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-widest">Selected</span>
               <div className="flex items-center gap-1.5"><Phone size={14} className="text-neutral-400" /> {cust.phone}</div>
             </div>
           </motion.div>
@@ -336,33 +353,55 @@ const OrderForm: FC<{ step: number }> = ({ step }) => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {step >= 1 && (
+        {customerSelected && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
-            <label className="font-code text-[10px] text-neutral-500 tracking-widest block mb-2 uppercase">Shipment Details</label>
-            <div className={`p-4 rounded-2xl border min-h-[4rem] flex items-center transition-all duration-500 ${step === 2 ? "border-orange-500 bg-orange-50/50 shadow-md" : "border-neutral-200 bg-white"}`}>
-              {detailsFilled ? (
-                <span className="text-[15px] text-neutral-900 font-ui">{detail}</span>
-              ) : step === 2 ? (
-                <span className="text-[15px] text-neutral-400 flex items-center gap-2 font-ui">
-                  Typing details <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="w-1.5 h-4 bg-orange-500" />
-                </span>
-              ) : (
-                <span className="text-[15px] text-neutral-300 font-ui">Enter route and cargo details...</span>
-              )}
+            <label className="font-code text-[10px] text-neutral-500 tracking-widest block mb-2 uppercase">Shipment</label>
+            <div className={`rounded-2xl border p-4 transition-all duration-500 ${step === 1 ? "border-orange-500 bg-orange-50/50 shadow-md" : "border-neutral-200 bg-white"}`}>
+              <div className="mb-4">
+                <p className="font-code text-[9px] tracking-widest text-neutral-500 uppercase mb-2">Transport mode</p>
+                <div className="flex gap-2">
+                  <span className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-400 font-ui">Air Freight</span>
+                  <span className="rounded-lg border border-orange-500 bg-orange-500 px-3 py-2 text-xs text-white font-ui">Sea Freight</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs font-ui">
+                {[
+                  ["Origin", "China"],
+                  ["Destination", "South Africa"],
+                  ["Cargo / invoice item", "20 ft container"],
+                  ["Service required", "Port-to-door"],
+                  ["Weight", "8 500 kg"],
+                ].map(([label, value]) => (
+                  <div key={label} className={`rounded-lg border px-3 py-2.5 ${shipmentComplete ? "border-neutral-200 bg-white text-neutral-900" : "border-neutral-100 bg-neutral-50 text-neutral-400"}`}>
+                    <p className="font-code text-[8px] tracking-widest uppercase text-neutral-400 mb-1">{label}</p>
+                    <p className="truncate">{shipmentComplete ? value : "…"}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {step >= 3 && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`w-full py-4 mt-2 rounded-2xl text-[15px] font-medium flex items-center justify-center gap-2 transition-all font-ui ${done ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : creating ? "bg-orange-500/80 text-white cursor-wait" : "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/20"}`}
-          >
-            {creating ? <><Loader2 size={18} className="animate-spin" /> Creating Order...</> : done ? <><Check size={18} strokeWidth={3} /> Order Created</> : "Create Order"}
-          </motion.button>
+        {billingVisible && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+            <label className="font-code text-[10px] text-neutral-500 tracking-widest block mb-2 uppercase">Billing</label>
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-neutral-900 font-ui">Invoice before delivery</p>
+                  <p className="mt-1 font-code text-[9px] tracking-widest text-orange-600 uppercase">Prepaid</p>
+                </div>
+                <p className="text-sm font-semibold text-neutral-900 font-ui">R48 600</p>
+              </div>
+            </div>
+            <motion.button
+              className={`w-full py-4 mt-4 rounded-2xl text-[15px] font-medium flex items-center justify-center gap-2 transition-all font-ui ${done ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : creating ? "bg-orange-500/80 text-white cursor-wait" : "bg-orange-500 text-white shadow-lg shadow-orange-500/20"}`}
+            >
+              {creating ? <><Loader2 size={18} className="animate-spin" /> Creating Job...</> : done ? <><Check size={18} strokeWidth={3} /> Job Created</> : "Create Job & send invoice"}
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -396,7 +435,7 @@ const SimulatedOrderCreation = () => {
         await new Promise((r) => { timeout = setTimeout(r, 1500); });
         if (!mounted) break;
         setStep(3);
-        await new Promise((r) => { timeout = setTimeout(r, 1000); });
+        await new Promise((r) => { timeout = setTimeout(r, 2500); });
         if (!mounted) break;
         setStep(4);
         await new Promise((r) => { timeout = setTimeout(r, 800); });
@@ -427,7 +466,7 @@ const SimulatedOrderCreation = () => {
           <div className="w-3 h-3 rounded-full bg-green-400" />
         </div>
         <div className="mx-auto font-code text-[11px] text-neutral-400 tracking-widest uppercase">
-          New Order · {DEMO_REFS[0]}
+          New Job · {DEMO_REFS[0]}
         </div>
         <div className="w-14" />
       </div>
@@ -471,7 +510,7 @@ const ShipmentExampleSection = () => (
           Watch a job come to life.
         </h2>
         <p className="text-neutral-500 text-lg font-ui leading-relaxed">
-          See how fast a Shanghai-to-Durban sea freight order is created, documented, and dispatched.
+          Follow the real Customer, Shipment, and Billing flow used to create a sea freight job.
         </p>
       </div>
 
@@ -482,78 +521,73 @@ const ShipmentExampleSection = () => (
   </section>
 );
 
-const CustomerDirectorySection = () => (
+const CustomerExperienceSection = () => (
   <section className="bg-neutral-50 py-24 md:py-32 border-y border-neutral-200">
-    <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-[0.86fr_1.14fr] gap-12 lg:gap-20 items-center">
-      <div>
-        <p className="font-code text-[10px] tracking-[0.2em] text-orange-500 mb-4 uppercase">Customer directory</p>
+    <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-2xl mb-16 md:mb-20">
+        <p className="font-code text-[10px] tracking-[0.2em] text-orange-500 mb-4 uppercase">Customer experience</p>
         <h2 className="text-4xl md:text-5xl font-editorial tracking-tight text-neutral-900 leading-tight mb-6">
           Every customer, ready for the next move.
         </h2>
-        <p className="text-neutral-600 text-lg font-ui leading-relaxed max-w-lg mb-8">
-          Keep billing and delivery contacts organised alongside the jobs they trust you to move. Your team starts every order with the right information.
+        <p className="text-neutral-600 text-lg font-ui leading-relaxed">
+          Keep customer records, billing contacts, and shipment updates connected from the first job to final delivery.
         </p>
-        <div className="space-y-4">
-          {[
-            "One clear customer record for every job",
-            "Contacts ready for billing and delivery",
-            "Customer details that stay connected to operations",
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-3 text-neutral-700 font-ui">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                <Check size={14} strokeWidth={3} />
-              </span>
-              <span className="text-[15px] font-medium">{item}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
-      <div className="relative">
-        <div className="absolute -inset-6 rounded-[2.5rem] bg-orange-200/30 blur-3xl" aria-hidden />
-        <div className="relative overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white p-2 shadow-[0_30px_80px_-45px_rgba(24,24,27,0.34)] sm:p-3">
-          <img
-            src={customerDirectoryPreview}
-            alt="Olyxee customer directory showing contacts and companies ready for a new order"
-            className="w-full rounded-[1rem] border border-neutral-100"
-            loading="lazy"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const TrackingSection = () => (
-  <section className="bg-[#F4F4F5] text-neutral-900 py-24 md:py-32">
-    <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-[1fr_1fr] gap-16 items-center">
-      <div className="order-2 lg:order-1">
-        <p className="font-code text-[10px] tracking-[0.2em] text-orange-500 mb-4 uppercase">Customer Experience</p>
-        <h2 className="text-4xl md:text-5xl font-editorial tracking-tight mb-6 leading-tight">
-          Keep customers in the loop.
-        </h2>
-        <p className="text-neutral-600 text-lg font-ui leading-relaxed mb-10 max-w-lg">
-          Share a branded tracking page. Every time you log a milestone—customs cleared, vessel departed—your customer sees it instantly. No more "where is my cargo?" emails.
-        </p>
-        <ul className="space-y-5">
-          {[
-            "Live status timeline",
-            "Upload BOL and commercial invoices",
-            "Branded with your logo",
-            "Mobile-friendly for clients",
-          ].map((item, i) => (
-            <li key={i} className="flex items-center gap-4 text-neutral-700 font-ui">
-              <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                <Check size={14} strokeWidth={3} />
+      <div className="grid lg:grid-cols-[0.86fr_1.14fr] gap-12 lg:gap-20 items-center">
+        <div>
+          <p className="font-code text-[10px] tracking-[0.2em] text-neutral-500 mb-4 uppercase">Customer directory</p>
+          <h3 className="text-3xl md:text-4xl font-editorial tracking-tight text-neutral-900 leading-tight mb-6">Start every job with the right details.</h3>
+          <div className="space-y-4">
+            {[
+              "One clear customer record for every job",
+              "Contacts ready for billing and delivery",
+              "Customer details that stay connected to operations",
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3 text-neutral-700 font-ui">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                  <Check size={14} strokeWidth={3} />
+                </span>
+                <span className="text-[15px] font-medium">{item}</span>
               </div>
-              <span className="text-[15px] font-medium">{item}</span>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        </div>
+        <div className="relative">
+          <div className="absolute -inset-6 rounded-[2.5rem] bg-orange-200/30 blur-3xl" aria-hidden />
+          <div className="relative overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white p-2 shadow-[0_30px_80px_-45px_rgba(24,24,27,0.34)] sm:p-3">
+            <img src={customerDirectoryPreview} alt="Olyxee customer directory showing contacts and companies ready for a new order" className="w-full rounded-[1rem] border border-neutral-100" loading="lazy" />
+          </div>
+        </div>
       </div>
-      <div className="relative order-1 lg:order-2">
-        <div className="absolute inset-0 bg-orange-200/60 rounded-full blur-[80px] transform translate-x-10 translate-y-10" />
-        <img src={notifyTracking} alt="Customer tracking interface" className="relative z-10 w-full max-w-md mx-auto drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)] rounded-[2.5rem] border-[8px] border-white" loading="lazy" />
+
+      <div className="mt-20 md:mt-28 pt-16 md:pt-20 border-t border-neutral-200 grid lg:grid-cols-[1fr_1fr] gap-16 items-center">
+        <div className="order-2 lg:order-1">
+          <p className="font-code text-[10px] tracking-[0.2em] text-neutral-500 mb-4 uppercase">Tracking updates</p>
+          <h3 className="text-3xl md:text-4xl font-editorial tracking-tight mb-6 leading-tight">Keep customers in the loop.</h3>
+          <p className="text-neutral-600 text-lg font-ui leading-relaxed mb-8 max-w-lg">
+            Share a branded tracking page so customers see every confirmed milestone as their shipment moves.
+          </p>
+          <ul className="space-y-4">
+            {[
+              "Live status timeline",
+              "Upload BOL and commercial invoices",
+              "Branded with your logo",
+              "Mobile-friendly for clients",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-4 text-neutral-700 font-ui">
+                <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                  <Check size={14} strokeWidth={3} />
+                </div>
+                <span className="text-[15px] font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="relative order-1 lg:order-2">
+          <div className="absolute inset-0 bg-orange-200/60 rounded-full blur-[80px] transform translate-x-10 translate-y-10" />
+          <img src={notifyTracking} alt="Customer tracking interface" className="relative z-10 w-full max-w-md mx-auto drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)] rounded-[2.5rem] border-[8px] border-white" loading="lazy" />
+        </div>
       </div>
     </div>
   </section>
@@ -641,8 +675,7 @@ const Landing: FC = () => {
         <WorkflowSection />
         <AirSeaSection />
         <ShipmentExampleSection />
-        <CustomerDirectorySection />
-        <TrackingSection />
+        <CustomerExperienceSection />
         <PricingSection />
         <CTASection />
       </main>

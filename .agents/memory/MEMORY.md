@@ -11,3 +11,4 @@
 - [Logistics transport flows](logistics-transport-flows.md) — AIR/SEA flows live in lib/order-statuses/logistics.ts; every order-mutating endpoint must enforce mode rules; labels never leak enum codes.
 - [Artifact router ports](artifact-router-ports.md) — preview routes / → port 23915 (artifact.toml), /api → 8080; running Vite on 5000 502s the external preview.
 - [Plan catalog](plan-catalog.md) — IDs frozen (DB enum + codegen); catalog is Free + Scale (R1,499, billing starts 30 Sep 2026), pro/Growth retired, SMS removed; edit @workspace/plans, never hardcode names in JSX.
+- [GitHub writes from Replit](github-writes.md) — CLI pushes may lack credentials; use the connected GitHub SDK for atomic, fast-forward-only commits.
