@@ -371,8 +371,12 @@ export async function sendInvoiceEmail(p: SendInvoiceEmailParams): Promise<{succ
   const date=(value:Date)=>value.toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"});
   const payment=escapeHtml(p.paymentDetails||"Contact the issuer for payment instructions.").replace(/\n/g,"<br />");
   const terms=escapeHtml(p.paymentTerms||"Payment due within agreed terms.");
-  const safeLogo=/^(https?:\/\/|data:image\/(png|jpeg|jpg|webp);base64,)/i.test(p.logoUrl||"")?p.logoUrl||"":"";
-  const logo=safeLogo?`<img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:52px;object-fit:contain">`:`<strong style="font-size:19px;color:#1a1a1a">${escapeHtml(p.businessName)}</strong>`;
+  // Base64 data URLs are supported by the PDF generator, but embedding them
+  // in email HTML can make Resend reject the message or be stripped by inbox
+  // clients. Only remote HTTP(S) logos are safe in the email body; the branded
+  // PDF attachment still receives p.logoUrl unchanged.
+  const emailLogo=/^https?:\/\//i.test(p.logoUrl||"")?p.logoUrl||"":"";
+  const logo=emailLogo?`<img src="${escapeHtml(emailLogo)}" alt="${escapeHtml(p.businessName)}" style="display:block;max-width:150px;max-height:52px;object-fit:contain">`:`<strong style="font-size:19px;color:#1a1a1a">${escapeHtml(p.businessName)}</strong>`;
   const route=[p.origin,p.destination].filter(Boolean).join(" → ");
   const emailHtml=`<!doctype html><html><body style="margin:0;background:#f4f7fb;padding:32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.6">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">Invoice ${escapeHtml(p.invoiceNumber)} is attached. Total due: ${money(p.total)}.</div>

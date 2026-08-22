@@ -45,7 +45,10 @@ describe("invoice email delivery", () => {
     expect(payload.html).toContain("Your invoice is ready");
     expect(payload.html).toContain("Hi Thabo Nkosi,");
     expect(payload.html).toContain("Please find your PDF invoice attached below");
-    expect(payload.html).toContain("<img");
+    // Data-URL logos belong in the attached PDF, not the email HTML. Large
+    // inline base64 images are rejected or stripped by email providers.
+    expect(payload.html).not.toContain("data:image/");
+    expect(payload.html).toContain("Acme Freight");
     expect(payload.html).toContain("JOB-20260822-X7KM");
     expect(payload.text).toContain("Your invoice from Acme Freight is ready");
     expect(payload.attachments).toHaveLength(1);
