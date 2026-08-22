@@ -5,6 +5,7 @@ import {
   Package, ClipboardCheck, Warehouse, FileCheck, Plane, Ship, Navigation,
   Truck, Clock, Undo2, PackageX,
 } from "lucide-react";
+import { shipmentExceptionLabel } from "@workspace/order-statuses";
 
 // Newsreader is the serif the app actually loads (see index.html). Lora was
 // referenced before but never loaded, so headings silently fell back to Georgia.
@@ -37,6 +38,7 @@ interface TrackingEvent {
   status: string;
   label: string;
   message: string | null;
+  exceptionType: string | null;
   location: string | null;
 }
 
@@ -326,6 +328,9 @@ export default function TrackPage() {
                         </div>
                         {e.location && (
                           <p className="mt-0.5 text-sm text-neutral-500">{e.location}</p>
+                        )}
+                        {e.exceptionType && (
+                          <p className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{shipmentExceptionLabel(e.exceptionType)}</p>
                         )}
                         {e.message && (
                           <p className="mt-1 text-sm text-neutral-600">{e.message}</p>

@@ -14,6 +14,10 @@ import {
   isLogisticsTerminal,
   nextLogisticsStatus,
   remainingLogisticsStatuses,
+  isForwardLogisticsProgression,
+  SHIPMENT_EXCEPTION_TYPES,
+  shipmentExceptionExplanation,
+  shipmentExceptionLabel,
   statusCopy,
 } from "./index";
 
@@ -132,6 +136,23 @@ describe("legacy status compatibility", () => {
   it("legacy codes still render friendly labels", () => {
     expect(logisticsStatusLabel("VESSEL_DEPARTED")).toBe("Vessel Departed");
     expect(isLogisticsStatus("RECEIVED_FROM_SUPPLIER")).toBe(true);
+  });
+});
+
+describe("incremental shipment exceptions", () => {
+  it("provides customer-friendly copy for every optional exception", () => {
+    expect(SHIPMENT_EXCEPTION_TYPES).toHaveLength(9);
+    for (const type of SHIPMENT_EXCEPTION_TYPES) {
+      expect(shipmentExceptionExplanation(type).length).toBeGreaterThan(20);
+    }
+    expect(shipmentExceptionLabel("Customs — Physical Inspection")).toBe("Physical Inspection");
+  });
+
+  it("allows forward skips and cancellation but prevents backwards movement", () => {
+    expect(isForwardLogisticsProgression("SEA", "ORDER_CONFIRMED", "ARRIVED_AT_DESTINATION")).toBe(true);
+    expect(isForwardLogisticsProgression("SEA", "ARRIVED_AT_DESTINATION", "LOADING")).toBe(false);
+    expect(isForwardLogisticsProgression("SEA", "VESSEL_ARRIVED", "AWAITING_VAT_DUTY_PAYMENT")).toBe(true);
+    expect(isForwardLogisticsProgression("AIR", "IN_TRANSIT", "CANCELLED")).toBe(true);
   });
 });
 

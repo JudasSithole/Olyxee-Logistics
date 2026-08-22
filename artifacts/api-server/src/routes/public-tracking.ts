@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, ordersTable, trackingEventsTable, businessesTable, auditLogsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { generateId } from "../lib/id";
@@ -12,6 +12,20 @@ import {
 } from "@workspace/order-statuses";
 
 const router = Router();
+
+// Public tracking may be the first route hit after a deployment, so it cannot
+// rely on an authenticated order request having applied the additive migration.
+let trackingExceptionSchemaReady: Promise<void> | null = null;
+router.use((req, res, next) => {
+  trackingExceptionSchemaReady ??= db.execute(sql`ALTER TABLE "tracking_events" ADD COLUMN IF NOT EXISTS "exception_type" text`).then(() => undefined).catch((error) => {
+    trackingExceptionSchemaReady = null;
+    throw error;
+  });
+  trackingExceptionSchemaReady.then(() => next()).catch((error) => {
+    req.log?.error?.({ error }, "Failed to ensure tracking exception schema");
+    res.status(503).json({ error: "Service temporarily unavailable" });
+  });
+});
 
 const selfServiceLimiter = rateLimit({
   windowMs: 15 * 60_000,
@@ -197,6 +211,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
           statusLabel: label,
           message: e.message ?? null,
           notes: e.message ?? null,
+          exceptionType: e.exceptionType ?? null,
           location: e.location ?? null,
         };
       }),

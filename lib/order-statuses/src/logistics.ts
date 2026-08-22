@@ -177,6 +177,17 @@ export function remainingLogisticsStatuses(mode: string, current: string): strin
   return flow.slice(idx + 1) as string[];
 }
 
+/** True when a transport-aware update stays at the current stage or moves
+ * forward. CANCELLED is always allowed as a terminal exception. */
+export function isForwardLogisticsProgression(mode: string, current: string, target: string): boolean {
+  if (target === CANCELLED_STATUS) return true;
+  const flow = logisticsFlow(mode);
+  if (!flow) return false;
+  const currentIndex = flow.indexOf(normalizeLogisticsStatus(current));
+  const targetIndex = flow.indexOf(normalizeLogisticsStatus(target));
+  return currentIndex >= 0 && targetIndex >= currentIndex;
+}
+
 // ─── Customer email copy for logistics statuses ─────────────────────────────
 // Keyed by internal code; statusCopy() in index.ts consults this map so
 // notification emails show friendly copy, never raw enum names.

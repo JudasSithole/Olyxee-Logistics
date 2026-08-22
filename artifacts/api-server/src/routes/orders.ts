@@ -37,6 +37,9 @@ import {
   isLogisticsTerminal,
   logisticsFlow,
   logisticsStatusLabel,
+  isForwardLogisticsProgression,
+  SHIPMENT_EXCEPTION_TYPES,
+  shipmentExceptionExplanation,
 } from "@workspace/order-statuses";
 
 // A business is "logistics" when its industry (aka business type in the UI)
@@ -98,6 +101,7 @@ async function ensureJobsSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_type" text NOT NULL DEFAULT 'PREPAID'`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "billing_status" text NOT NULL DEFAULT 'NOT_INVOICED'`);
     await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "delivered_at" timestamp`);
+    await db.execute(sql`ALTER TABLE "tracking_events" ADD COLUMN IF NOT EXISTS "exception_type" text`);
     await db.execute(
       sql`CREATE UNIQUE INDEX IF NOT EXISTS "orders_business_job_number_unique" ON "orders" ("business_id", "job_number") WHERE "job_number" IS NOT NULL`,
     );
@@ -589,6 +593,9 @@ const UpdateJobStatusBody = z.object({
   status: z.string().trim().min(1).max(100),
   message: z.string().max(2000).optional(),
   location: z.string().max(500).optional(),
+  exceptionType: z.enum(SHIPMENT_EXCEPTION_TYPES).optional(),
+  notifyCustomer: z.boolean().default(true),
+  skipReason: z.string().trim().max(500).optional(),
 });
 
 router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
@@ -602,7 +609,10 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       return;
     }
 
-    const { status, message, location } = parse.data;
+    const { status, location, exceptionType, notifyCustomer, skipReason } = parse.data;
+    const message = exceptionType
+      ? parse.data.message?.trim() || shipmentExceptionExplanation(exceptionType)
+      : parse.data.message?.trim() || undefined;
 
     const order = await db.query.ordersTable.findFirst({
       where: and(eq(ordersTable.id, orderId), eq(ordersTable.businessId, businessId)),
@@ -644,6 +654,14 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         });
         return;
       }
+      // Freight teams may skip forward when intermediate carrier updates never
+      // arrive, but a normal status update must never move a shipment backwards.
+      // Legacy codes are normalized before comparison so older Jobs continue
+      // safely from their equivalent position in the current AIR/SEA flow.
+      if (!isForwardLogisticsProgression(order.transportMode, order.currentStatus, status)) {
+        res.status(409).json({ error: "Shipment status cannot move backwards", currentStatus: order.currentStatus });
+        return;
+      }
     } else if (isLogisticsStatus(status)) {
       res.status(422).json({
         error:
@@ -675,6 +693,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
           orderId,
           status,
           message: message ?? null,
+          exceptionType: exceptionType ?? null,
           location: location ?? null,
           createdBy: userId,
         })
@@ -721,7 +740,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     let emailUsage: number | undefined;
     let emailLimit: number | undefined;
 
-    if (customer && business) {
+    if (notifyCustomer && customer && business) {
       // Build a customer-facing progress timeline from this Job's tracking
       // events. Only reached, customer-visible logistics statuses are included,
       // and only their friendly LABEL is used — the event notes/messages (which
@@ -804,18 +823,18 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
     }
 
     // 5b. Send SMS if the customer has a phone number and SMS is configured.
-    const sms = await sendOrderSms({
+    const sms = notifyCustomer && business ? await sendOrderSms({
       orderId,
       customerPhone: customer?.phone ?? undefined,
-      businessName: business!.name,
+      businessName: business.name,
       trackingId: order.trackingId,
       // SMS is customer-facing too: send the friendly label, not the code.
       status: order.transportMode ? logisticsStatusLabel(status) : status,
       statusMessage: message ?? null,
       trackingLink,
-      businessPlan: business!.plan,
+      businessPlan: business.plan,
       businessId,
-    });
+    }) : { smsStatus: "skipped" as const, smsNotificationId: undefined, smsUsage: undefined, smsLimit: undefined };
     const smsStatus = sms.smsStatus;
     const smsNotificationId = sms.smsNotificationId;
     const smsUsage = sms.smsUsage;
@@ -829,7 +848,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
       action: "UPDATE_ORDER_STATUS",
       entityType: "order",
       entityId: orderId,
-      metadata: { previousStatus: order.currentStatus, newStatus: status, emailStatus, smsStatus },
+      metadata: { previousStatus: order.currentStatus, newStatus: status, exceptionType: exceptionType ?? null, skipReason: skipReason ?? null, notifyCustomer, emailStatus, smsStatus },
     });
 
     // 6b. Shared notification history (best-effort, additive). Mirrors the email

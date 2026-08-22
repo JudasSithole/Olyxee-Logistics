@@ -234,6 +234,7 @@ export interface Database {
           order_id: string;
           status: string;
           message: string | null;
+          exception_type: string | null;
           location: string | null;
           created_by: string | null;
           notified: boolean;
@@ -244,6 +245,7 @@ export interface Database {
           order_id: string;
           status: string;
           message?: string | null;
+          exception_type?: string | null;
           location?: string | null;
           created_by?: string | null;
           notified?: boolean;

@@ -10,6 +10,7 @@ export const trackingEventsTable = pgTable("tracking_events", {
     .references(() => ordersTable.id),
   status: text("status").notNull(),
   message: text("message"),
+  exceptionType: text("exception_type"),
   location: text("location"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

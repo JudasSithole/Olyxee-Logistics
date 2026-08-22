@@ -18,6 +18,7 @@ const mockDb:any = {
   },
   select:vi.fn(()=>({from:vi.fn(()=>({where:vi.fn(()=>({orderBy:vi.fn().mockResolvedValue(events)}))}))})),
   insert:vi.fn(()=>({ values:auditValues })),
+  execute:vi.fn().mockResolvedValue(undefined),
 };
 vi.mock("@workspace/db", async(importOriginal)=>({...(await importOriginal<any>()),db:mockDb}));
 
@@ -30,7 +31,7 @@ it("keeps customer, invoice, supplier and staff data out of public tracking", as
   }
   expect(res.body.trackingId).toBe("OLY-ABC-2345");
   expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
-  expect(res.body.statusLabel).toBe("Order Confirmed");
+  expect(res.body.statusLabel).toBe("Job Confirmed");
   expect(JSON.stringify(res.body)).not.toContain("PENDING_TRACKING_NUMBER");
 });
 

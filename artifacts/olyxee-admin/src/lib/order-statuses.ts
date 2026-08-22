@@ -34,6 +34,11 @@ export {
   isLogisticsTerminal,
   nextLogisticsStatus,
   remainingLogisticsStatuses,
+  SHIPMENT_EXCEPTION_TYPES,
+  SHIPMENT_EXCEPTION_EXPLANATIONS,
+  shipmentExceptionExplanation,
+  shipmentExceptionLabel,
+  type ShipmentExceptionType,
 } from "@workspace/order-statuses";
 
 import { logisticsStatusLabel as logiLabel, isLogisticsStatus as isLogiStatus } from "@workspace/order-statuses";

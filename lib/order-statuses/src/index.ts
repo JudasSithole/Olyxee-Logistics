@@ -6,6 +6,7 @@
 import { LOGISTICS_STATUS_COPY, logisticsStatusLabel } from "./logistics";
 
 export * from "./logistics";
+export * from "./exceptions";
 
 export const ORDER_STATUSES = [
   "Created",

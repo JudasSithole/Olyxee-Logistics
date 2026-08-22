@@ -9,6 +9,7 @@ const mockDb = {
   update: vi.fn(),
   delete: vi.fn(),
   transaction: vi.fn(),
+  execute: vi.fn(async () => undefined),
   query: {
     ordersTable: { findFirst: vi.fn() },
     customersTable: { findFirst: vi.fn() },
@@ -136,7 +137,7 @@ describe("POST /orders — transport mode requirements", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
+      .send({ customerId: "cust_1", jobNumber: "JOB-1", billingType: "PREPAID", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.transportMode).toBe("SEA");
   });
@@ -174,7 +175,7 @@ describe("POST /orders — transport mode requirements", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders")
-      .send({ customerId: "cust_1", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
+      .send({ customerId: "cust_1", jobNumber: "JOB-2", billingType: "PREPAID", transportMode: "SEA", cargoType: "Handbags", serviceRequired: "Customs", weight: "1.5 kg", invoiceSubtotal: "600" });
     expect(res.status).toBe(201);
     expect(res.body.currentStatus).toBe("ORDER_CONFIRMED");
     expect(res.body.transportMode).toBe("SEA");
@@ -197,6 +198,7 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     customerId: "cust_1",
     trackingId: "OLY-AAA-BBBB",
     currentStatus: "ORDER_CONFIRMED",
+    billingType: "PREPAID",
     invoiceId: "inv_1",
     supplierTrackingNumber: "CN-TRACK-1",
     transportMode: "SEA",
@@ -210,19 +212,26 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders/ord_1/status")
-      .send({ status: "RECEIVED_FROM_SUPPLIER" });
+      .send({ status: "COLLECTED_FROM_SUPPLIER" });
     expect(res.status).toBe(409);
     expect(res.body.error).toMatch(/Payment must be confirmed/);
     expect(mockDb.transaction).not.toHaveBeenCalled();
   });
 
-  it("blocks tracking updates until the supplier tracking number is recorded", async () => {
+  it("does not gate tracking updates on the optional supplier tracking number", async () => {
     mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "PENDING_TRACKING_NUMBER", supplierTrackingNumber: null });
+    mockDb.query.customersTable.findFirst.mockResolvedValue(null);
+    mockDb.query.businessesTable.findFirst.mockResolvedValue({ ...LOGISTICS_BIZ, plan: "beta", monthlyEmailLimit: 500 });
+    mockDb.insert.mockReturnValue(insertChainPlain() as any);
+    const updated = { ...SEA_ORDER, currentStatus: "RECEIVED_AT_WAREHOUSE", supplierTrackingNumber: null };
+    mockDb.transaction.mockImplementation(async (fn: any) => fn({
+      insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_optional", status: "RECEIVED_AT_WAREHOUSE", createdAt: new Date() }]) })) })),
+      update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [updated]) })) })) })),
+    }));
     const app = await buildApp();
-    const res = await request(app).post("/orders/ord_1/status").send({ status: "RECEIVED_FROM_SUPPLIER" });
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/tracking number must be added/);
-    expect(mockDb.transaction).not.toHaveBeenCalled();
+    const res = await request(app).post("/orders/ord_1/status").send({ status: "RECEIVED_AT_WAREHOUSE" });
+    expect(res.status).toBe(200);
+    expect(mockDb.transaction).toHaveBeenCalled();
   });
 
   it("keeps pre-invoice legacy orders updateable after the rollout", async () => {
@@ -230,13 +239,13 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     mockDb.query.customersTable.findFirst.mockResolvedValue(null);
     mockDb.query.businessesTable.findFirst.mockResolvedValue({ ...LOGISTICS_BIZ, plan: "beta", monthlyEmailLimit: 500 });
     mockDb.insert.mockReturnValue(insertChainPlain() as any);
-    const updated = { ...SEA_ORDER, invoiceId: null, currentStatus: "RECEIVED_FROM_SUPPLIER" };
+    const updated = { ...SEA_ORDER, invoiceId: null, currentStatus: "COLLECTED_FROM_SUPPLIER" };
     mockDb.transaction.mockImplementation(async (fn: any) => fn({
-      insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_legacy", status: "RECEIVED_FROM_SUPPLIER", createdAt: new Date() }]) })) })),
+      insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_legacy", status: "COLLECTED_FROM_SUPPLIER", createdAt: new Date() }]) })) })),
       update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [updated]) })) })) })),
     }));
     const app = await buildApp();
-    const res = await request(app).post("/orders/ord_1/status").send({ status: "RECEIVED_FROM_SUPPLIER" });
+    const res = await request(app).post("/orders/ord_1/status").send({ status: "COLLECTED_FROM_SUPPLIER" });
     expect(res.status).toBe(200);
   });
 
@@ -281,8 +290,17 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     expect(res.status).toBe(409);
   });
 
+  it("prevents moving a SEA shipment backwards", async () => {
+    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "ARRIVED_AT_DESTINATION" });
+    const app = await buildApp();
+    const res = await request(app).post("/orders/ord_1/status").send({ status: "LOADING" });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/cannot move backwards/);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
   it("accepts a valid SEA transition and records a tracking event", async () => {
-    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "RECEIVED_FROM_SUPPLIER" });
+    mockDb.query.ordersTable.findFirst.mockResolvedValue({ ...SEA_ORDER, currentStatus: "RECEIVED_AT_WAREHOUSE" });
     mockDb.query.customersTable.findFirst.mockResolvedValue(null);
     mockDb.query.businessesTable.findFirst.mockResolvedValue({
       ...LOGISTICS_BIZ,
@@ -290,9 +308,9 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
       monthlyEmailLimit: 500,
     });
     mockDb.insert.mockReturnValue(insertChainPlain() as any);
-    const updated = { ...SEA_ORDER, currentStatus: "EXPORT_CUSTOMS_CLEARED" };
+    const updated = { ...SEA_ORDER, currentStatus: "PREPARING_FOR_SHIPMENT" };
     const txInsert = vi.fn(() => ({
-      values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_1", status: "EXPORT_CUSTOMS_CLEARED", createdAt: new Date() }]) })),
+      values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "tev_1", status: "PREPARING_FOR_SHIPMENT", createdAt: new Date() }]) })),
     }));
     const txUpdate = vi.fn(() => ({
       set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => [updated]) })) })),
@@ -303,7 +321,7 @@ describe("POST /orders/:orderId/status — transport-aware validation", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/orders/ord_1/status")
-      .send({ status: "EXPORT_CUSTOMS_CLEARED" });
+      .send({ status: "PREPARING_FOR_SHIPMENT" });
     expect(res.status).toBe(200);
     expect(mockDb.transaction).toHaveBeenCalled();
   });

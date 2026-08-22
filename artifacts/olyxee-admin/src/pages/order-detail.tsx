@@ -57,6 +57,10 @@ import {
   nextLogisticsStatus,
   remainingLogisticsStatuses,
   TRANSPORT_MODE_LABELS,
+  SHIPMENT_EXCEPTION_TYPES,
+  shipmentExceptionExplanation,
+  shipmentExceptionLabel,
+  type ShipmentExceptionType,
   type TransportMode,
 } from "@/lib/order-statuses";
 
@@ -115,8 +119,8 @@ function StatusPicker({
     primaryStep = next;
     exceptionSteps = remainingLogisticsStatuses(transportMode, currentStatus).filter(
       (s) => s !== next,
-    );
-    exceptionsHeading = "Skip ahead";
+    ).slice(0, 2);
+    exceptionsHeading = "Other next steps";
   } else {
     const choices = statusChoices(currentStatus);
     if (!choices) return null;
@@ -224,6 +228,10 @@ export default function OrderDetailPage() {
   const [statusForm, setStatusForm] = useState({
     status: "",
     location: "",
+    exceptionType: "" as ShipmentExceptionType | "",
+    customerExplanation: "",
+    notifyCustomer: true,
+    skipReason: "",
   });
   const [supplierTracking, setSupplierTracking] = useState("");
   const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
@@ -301,6 +309,10 @@ export default function OrderDetailPage() {
         businessId: user!.businessId,
         status: statusForm.status,
         location: statusForm.location || undefined,
+        exceptionType: statusForm.exceptionType || undefined,
+        message: statusForm.exceptionType ? statusForm.customerExplanation || undefined : undefined,
+        notifyCustomer: statusForm.notifyCustomer,
+        skipReason: statusForm.skipReason || undefined,
         userId: user!.id,
       },
       {
@@ -311,10 +323,12 @@ export default function OrderDetailPage() {
             );
           } else if (data?.emailStatus === "failed") {
             toast.warning(`Status updated to "${statusForm.status}", but the status update failed to send.`);
+          } else if (!statusForm.notifyCustomer) {
+            toast.success(`Status updated to "${statusForm.status}" without notifying the customer.`);
           } else {
             toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
           }
-          setStatusForm({ status: "", location: "" });
+          setStatusForm({ status: "", location: "", exceptionType: "", customerExplanation: "", notifyCustomer: true, skipReason: "" });
           refetch();
         },
         onError: () => toast.error("Failed to update status"),
@@ -380,6 +394,10 @@ export default function OrderDetailPage() {
   }
 
   const lastEvent = (order.tracking_events as any[])?.[0];
+  const selectedForwardIndex = order.transport_mode && statusForm.status
+    ? remainingLogisticsStatuses(order.transport_mode, order.current_status).indexOf(statusForm.status)
+    : -1;
+  const skipsMultipleStages = selectedForwardIndex > 1;
   return (
     <div className="space-y-6 max-w-6xl pb-8">
 
@@ -501,6 +519,49 @@ export default function OrderDetailPage() {
                     />
                   </div>
 
+                  {/* Optional exception context. Normal updates remain a
+                      status + optional location + submit flow. */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-normal text-muted-foreground">Issue / Reason <span className="text-muted-foreground/60">(optional)</span></Label>
+                    <select
+                      value={statusForm.exceptionType}
+                      onChange={e => {
+                        const exceptionType = e.target.value as ShipmentExceptionType | "";
+                        setStatusForm(f => ({
+                          ...f,
+                          exceptionType,
+                          customerExplanation: exceptionType ? shipmentExceptionExplanation(exceptionType) : "",
+                        }));
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="">None</option>
+                      {SHIPMENT_EXCEPTION_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                  </div>
+
+                  {statusForm.exceptionType && (
+                    <div className="space-y-1.5 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                      <Label className="text-xs font-semibold text-amber-950 dark:text-amber-100">Customer explanation</Label>
+                      <textarea
+                        value={statusForm.customerExplanation}
+                        onChange={e => setStatusForm(f => ({ ...f, customerExplanation: e.target.value }))}
+                        rows={3}
+                        maxLength={2000}
+                        className="flex w-full resize-none rounded-md border border-amber-200 bg-background px-3 py-2 text-sm leading-5 shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring dark:border-amber-900"
+                      />
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300">This appears in the customer timeline and notification.</p>
+                    </div>
+                  )}
+
+                  {skipsMultipleStages && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-normal text-muted-foreground">Reason for skipping <span className="text-muted-foreground/60">(optional)</span></Label>
+                      <Input value={statusForm.skipReason} onChange={e => setStatusForm(f => ({ ...f, skipReason: e.target.value }))} maxLength={500} placeholder="For the internal audit trail" />
+                    </div>
+                  )}
+
+
                   {/* Submit */}
                   <Button
                     type="submit"
@@ -514,10 +575,8 @@ export default function OrderDetailPage() {
                   >
                     <Send className="h-4 w-4" />
                     {updateStatusMutation.isPending
-                      ? "Updating and notifying customer…"
-                      : statusForm.status
-                      ? `Update status and notify ${order.customers?.full_name?.split(" ")[0] ?? "customer"}`
-                      : "Update status and notify customer"}
+                      ? "Updating status…"
+                      : "Update status"}
                   </Button>
                 </form>
               )}
@@ -574,6 +633,9 @@ export default function OrderDetailPage() {
                                 Package received by customer
                               </span>
                             </div>
+                          )}
+                          {event.exception_type && (
+                            <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">{shipmentExceptionLabel(event.exception_type)}</span>
                           )}
                           {event.message && (
                             <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">

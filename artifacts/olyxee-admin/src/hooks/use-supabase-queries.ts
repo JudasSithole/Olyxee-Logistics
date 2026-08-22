@@ -169,6 +169,7 @@ interface ApiTrackingEvent {
   orderId: string;
   status: string;
   message?: string | null;
+  exceptionType?: string | null;
   location?: string | null;
   createdBy?: string | null;
   createdAt: string;
@@ -180,6 +181,7 @@ function mapTrackingEvent(e: ApiTrackingEvent) {
     order_id: e.orderId,
     status: e.status,
     message: e.message ?? null,
+    exception_type: e.exceptionType ?? null,
     location: e.location ?? null,
     created_by: e.createdBy ?? null,
     notified: false,
@@ -639,6 +641,9 @@ export function useUpdateOrderStatus() {
       status,
       message,
       location,
+      exceptionType,
+      notifyCustomer,
+      skipReason,
       userId: _userId,
     }: {
       orderId: string;
@@ -646,6 +651,9 @@ export function useUpdateOrderStatus() {
       status: string;
       message?: string;
       location?: string;
+      exceptionType?: string;
+      notifyCustomer?: boolean;
+      skipReason?: string;
       userId?: string;
     }) => {
       return await apiFetch<{
@@ -659,6 +667,9 @@ export function useUpdateOrderStatus() {
           status,
           message: message ?? undefined,
           location: location ?? undefined,
+          exceptionType: exceptionType ?? undefined,
+          notifyCustomer: notifyCustomer ?? true,
+          skipReason: skipReason ?? undefined,
         },
       });
     },
