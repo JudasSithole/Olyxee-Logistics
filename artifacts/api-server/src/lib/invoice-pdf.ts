@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import type { SendInvoiceEmailParams } from "./email";
 
 // Keep the emailed attachment aligned with the structured invoice shown in the
@@ -23,17 +23,21 @@ export async function buildInvoicePdf(p: SendInvoiceEmailParams): Promise<Buffer
 
   if (p.logoUrl) {
     try {
-      let logo: Buffer | null = null;
+      // Use a data URL with the standalone build. Its internal Buffer shim is
+      // different from Node's Buffer, so passing a Node Buffer makes it fall
+      // through to fs.readFileSync. Data URLs are decoded by PDFKit itself and
+      // remain safe inside a filesystem-free Vercel Function bundle.
+      let logo: string | null = null;
       const dataMatch = p.logoUrl.match(/^data:image\/(png|jpe?g);base64,([a-z0-9+/=]+)$/i);
       if (dataMatch) {
         const decoded = Buffer.from(dataMatch[2], "base64");
-        if (decoded.length <= 1_500_000) logo = decoded;
+        if (decoded.length <= 1_500_000) logo = p.logoUrl;
       } else if (/^https?:\/\//i.test(p.logoUrl)) {
         const response = await fetch(p.logoUrl, { signal: AbortSignal.timeout(5000) });
         const type = response.headers.get("content-type") ?? "";
         if (response.ok && /^image\/(png|jpe?g)/i.test(type)) {
           const downloaded = Buffer.from(await response.arrayBuffer());
-          if (downloaded.length <= 1_500_000) logo = downloaded;
+          if (downloaded.length <= 1_500_000) logo = `data:${type.split(";")[0]};base64,${downloaded.toString("base64")}`;
         }
       }
       if (logo) doc.image(logo, 48, 46, { fit: [132, 42] });
