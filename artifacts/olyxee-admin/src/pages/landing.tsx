@@ -1,4 +1,4 @@
-import { FC, ReactNode, useEffect, useState } from "react";
+import { FC, ReactNode, useEffect, useRef, useState, type WheelEvent } from "react";
 import notifyTracking from "@assets/image_1783706089743.png";
 import ctaWarehouse from "@assets/cta-warehouse.png";
 import olyxeeLogo from "@assets/Order-Loop-LOGO_1786979611771.png";
@@ -10,6 +10,7 @@ import freightVisual from "@assets/image_1786981575568.png";
 import airCargoImg from "@assets/air-cargo.png";
 import heroCourier from "@assets/hero-courier.png";
 import oceanCargoImg from "@assets/ocean-cargo.jpg";
+import { plans } from "@/lib/launch";
 
 // ─── "The old way" exhibit showcase ──────────────────────────────────────────
 const OLD_WAY_SLIDES = [
@@ -19,92 +20,41 @@ const OLD_WAY_SLIDES = [
   { img: oldWayPaper, tag: "EXHIBIT D", label: "Print. Check. Re-check.", body: "Line by line, job by job, every week." },
 ];
 
-const OldWayShowcase: FC = () => {
-  const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    if (paused) return;
-    const t = setInterval(() => setActive((a) => (a + 1) % OLD_WAY_SLIDES.length), 5000);
-    return () => clearInterval(t);
-  }, [paused]);
-
+const OldWayShowcase: FC<{ active: number }> = ({ active }) => {
   const slide = OLD_WAY_SLIDES[active];
 
   return (
     <div
-      className="relative rounded-[2rem] bg-neutral-950 text-white overflow-hidden"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      className="relative overflow-hidden rounded-[2.25rem] border border-orange-100 bg-[#fffaf5] p-3 sm:p-5 lg:p-7"
+      style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(249,115,22,0.09) 1px, transparent 0)", backgroundSize: "22px 22px" }}
     >
-      <div className="grid lg:grid-cols-2 items-stretch">
-        {/* Left: giant numeral + one line */}
-        <div className="relative flex flex-col justify-between p-7 sm:p-10 lg:p-12 min-h-[15rem]">
-          {/* watermark numeral */}
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={`num-${active}`}
-              aria-hidden
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5, ease }}
-              style={serif}
-              className="pointer-events-none select-none absolute -bottom-10 -right-2 lg:right-6 text-[11rem] sm:text-[15rem] leading-none text-white/[0.06]"
-            >
-              {String(active + 1).padStart(2, "0")}
-            </motion.span>
-          </AnimatePresence>
-
-          <div style={mono} className="text-[10px] tracking-[0.3em] text-orange-400">
-            {slide.tag} · FOUND ON EVERY FORWARDER'S DESK
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`copy-${active}`}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.45, ease }}
-              className="mt-10 lg:mt-0"
-            >
-              <h3 style={serif} className="text-2xl sm:text-4xl lg:text-[2.75rem] leading-[1.05] tracking-tight max-w-md">
-                {slide.label}
-              </h3>
-              <p className="mt-3 text-sm sm:text-base text-white/55 max-w-sm">{slide.body}</p>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* segmented rail */}
-          <div className="relative mt-10 flex gap-2" role="tablist" aria-label="The old way exhibits">
-            {OLD_WAY_SLIDES.map((s, i) => (
-              <button
-                key={s.tag}
-                role="tab"
-                aria-selected={i === active}
-                aria-label={s.label}
-                onClick={() => setActive(i)}
-                className="group relative h-8 flex-1 flex items-end"
-              >
-                <span className={`relative block w-full h-1 rounded-full overflow-hidden transition-colors ${i === active ? "bg-white/20" : "bg-white/10 group-hover:bg-white/25"}`}>
-                  {i === active && (
-                    <motion.span
-                      key={`fill-${active}-${paused}`}
-                      initial={{ scaleX: paused ? 1 : 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: paused ? 0 : 5, ease: "linear" }}
-                      className="absolute inset-0 origin-left bg-orange-500"
-                    />
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-orange-200/30 blur-3xl" aria-hidden />
+      <div className="relative mb-4 flex items-center justify-between px-2 sm:mb-6">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-orange-500" />
+          <p style={mono} className="text-[9px] tracking-[0.25em] text-neutral-500">FREIGHT OPERATIONS · EVIDENCE BOARD</p>
         </div>
+        <p style={mono} className="text-[9px] tracking-[0.2em] text-neutral-400">CASE 0{active + 1}</p>
+      </div>
 
-        {/* Right: the evidence photo */}
-        <div className="relative aspect-[16/11] lg:aspect-auto lg:min-h-[26rem] bg-neutral-900">
+      <div className="relative grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-6">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-1" aria-label={`Problem ${active + 1} of ${OLD_WAY_SLIDES.length}`}>
+        {OLD_WAY_SLIDES.map((item, index) => (
+          <div key={item.tag} className={`group flex min-w-0 items-center gap-3 rounded-2xl border p-2 transition-all ${index === active ? "border-orange-300 bg-white shadow-sm" : "border-white/80 bg-white/65"}`}>
+            <div className="relative h-14 w-16 shrink-0 overflow-hidden rounded-xl bg-neutral-100 sm:h-16 sm:w-20">
+              <img src={item.img} alt="" className={`h-full w-full object-cover transition-all ${index === active ? "saturate-100" : "saturate-50 opacity-70"}`} />
+              <span className={`absolute inset-0 ring-1 ring-inset ${index === active ? "ring-orange-300" : "ring-black/5"}`} />
+            </div>
+            <div className="min-w-0">
+              <span style={mono} className={`text-[8px] tracking-[0.16em] ${index === active ? "text-orange-600" : "text-neutral-400"}`}>0{index + 1} · {item.tag}</span>
+              <p className={`mt-1 line-clamp-2 text-[11px] font-medium leading-snug sm:text-xs ${index === active ? "text-neutral-900" : "text-neutral-500"}`}>{item.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white shadow-[0_28px_70px_-50px_rgba(0,0,0,0.3)]">
+        <div className="relative aspect-[16/9] bg-neutral-200 sm:aspect-[16/7]">
           <AnimatePresence mode="wait">
             <motion.img
               key={`img-${active}`}
@@ -114,18 +64,61 @@ const OldWayShowcase: FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.55, ease }}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </AnimatePresence>
-          {/* blend into the dark panel on desktop */}
-          <div aria-hidden className="hidden lg:block absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-neutral-950 to-transparent" />
-          <div aria-hidden className="lg:hidden absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-neutral-950 to-transparent" />
-          {/* corner stamp */}
-          <div style={mono} className="absolute bottom-4 right-4 text-[9px] tracking-[0.25em] text-white/80 bg-neutral-950/70 backdrop-blur-sm rounded-full px-3 py-1.5">
-            {String(active + 1).padStart(2, "0")} / 04
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" aria-hidden />
+          <span style={mono} className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] tracking-[0.2em] text-neutral-600 shadow-sm backdrop-blur-md">EVIDENCE · {slide.tag}</span>
         </div>
+        <AnimatePresence mode="wait">
+          <motion.div key={`detail-${active}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease }} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+            <div>
+              <p style={mono} className="mb-2 text-[9px] tracking-[0.22em] text-orange-600">OPERATIONAL FRICTION</p>
+              <h3 style={serif} className="text-2xl leading-tight tracking-tight sm:text-3xl">{slide.label}</h3>
+            </div>
+            <p className="max-w-sm text-sm leading-relaxed text-neutral-500 sm:text-right">{slide.body}</p>
+          </motion.div>
+        </AnimatePresence>
       </div>
+      </div>
+    </div>
+  );
+};
+
+const ScrollProblemShowcase: FC = () => {
+  const [active, setActive] = useState(0);
+  const wheelLock = useRef(0);
+
+  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(event.deltaY) < 12) return;
+    const direction = event.deltaY > 0 ? 1 : -1;
+    const next = active + direction;
+    if (next < 0 || next >= OLD_WAY_SLIDES.length) return;
+    event.preventDefault();
+    const now = Date.now();
+    if (now < wheelLock.current) return;
+    wheelLock.current = now + 550;
+    setActive(next);
+  };
+
+  return (
+    <div className="relative" onWheel={handleWheel}>
+        <div className="mb-5 flex items-end justify-between gap-5">
+          <div>
+            <p style={mono} className="mb-2 text-[10px] tracking-[0.3em] text-neutral-400">THE PROBLEM</p>
+            <h2 style={serif} className="text-3xl leading-none tracking-tight sm:text-4xl">
+              Sound <em className="not-italic text-orange-500">familiar?</em>
+            </h2>
+          </div>
+          <p className="hidden max-w-xs text-right text-sm leading-relaxed text-neutral-500 sm:block">
+            One freight problem at a time. Scroll over the card to move through them.
+          </p>
+        </div>
+        <OldWayShowcase active={active} />
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <p className="text-xs text-neutral-500">{active === OLD_WAY_SLIDES.length - 1 ? "Keep scrolling to continue" : "Scroll for the next problem"}</p>
+          <p style={mono} className="text-[10px] tracking-[0.2em] text-neutral-400">{String(active + 1).padStart(2, "0")} / {String(OLD_WAY_SLIDES.length).padStart(2, "0")}</p>
+        </div>
     </div>
   );
 };
@@ -147,23 +140,11 @@ import {
   Bell,
   PhoneCall,
   ClipboardList,
-  MessagesSquare,
   Layers,
   Package,
 } from "lucide-react";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
-
-const statusWords = [
-  "QUOTE ACCEPTED",
-  "ORDER CONFIRMED",
-  "RECEIVED FROM SUPPLIER",
-  "EXPORT CUSTOMS CLEARED",
-  "IN TRANSIT",
-  "IMPORT CUSTOMS CLEARANCE",
-  "OUT FOR DELIVERY",
-  "DELIVERED",
-];
 
 const serif = { fontFamily: '"Inter", system-ui, -apple-system, sans-serif', fontWeight: 650, letterSpacing: "-0.02em" };
 const mono = { fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace' };
@@ -478,41 +459,20 @@ const JOB_TIMELINE = [
 
 // ─── Workflow chain ──────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
-  { label: "Add your customer", body: "Customer and their freight activity in one place.", icon: User },
-  { label: "Send a quote", body: "Customer accepts, and you convert it to an order.", icon: MessagesSquare },
-  { label: "Add freight details", body: "Air or sea, origin, destination, cargo, references.", icon: Package },
-  { label: "Update shipment stages", body: "Your team moves the job through each stage.", icon: Ship },
-  { label: "Customer tracks it", body: "Public branded tracking page, no account needed.", icon: MapPin },
-  { label: "Invoice & payment status", body: "Know which jobs are paid and which are outstanding.", icon: FileText },
-  { label: "Job history kept", body: "Statuses, documents, and records stay together.", icon: Check },
+  { label: "Create the job", body: "Customer, cargo, route and air or sea details in one record.", icon: Package },
+  { label: "Invoice and confirm payment", body: "Send a professional invoice and record payment manually.", icon: FileText },
+  { label: "Move the shipment", body: "Update the right cross-border stage as the cargo progresses.", icon: Ship },
+  { label: "Keep customers informed", body: "A branded tracking timeline shows every confirmed update.", icon: MapPin },
 ];
 
-// ─── Free product value ──────────────────────────────────────────────────────
-const FREE_VALUE = [
-  { title: "Customers, leads, and quotes" },
-  { title: "Convert accepted quotes to orders" },
-  { title: "Air and sea freight orders" },
-  { title: "Shipment status history and documents" },
-  { title: "Public customer tracking and status updates" },
-  { title: "Invoices and payment status" },
-];
-
-
-// ─── Free plan list ──────────────────────────────────────────────────────────
+// ─── Starter plan list ───────────────────────────────────────────────────────
 const FREE_PLAN_ITEMS = [
-  "Customer management",
-  "Jobs and shipments",
-  "Air and sea workflows",
-  "Customer tracking page",
-  "Invoices and billing status",
-  "Costs and expenses",
-  "Margin tracking",
-  "Profit per job",
-  "Landed-cost estimates",
-  "Freight-rate and quote support",
-  "Shipment status updates",
-  "Email shipment notifications",
-  "Basic reporting",
+  "Customers, jobs and shipments",
+  "Air and sea freight workflows",
+  "Customer tracking and status updates",
+  "Invoicing, costs and billing",
+  "Margins and profit per job",
+  "Quotes and landed-cost estimates",
   "Up to 100 status updates per month",
 ];
 
@@ -527,10 +487,10 @@ const Landing: FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <img src={olyxeeLogo} alt="Olyxee Logistics logo" className="h-8 w-8 object-contain" />
-            <span className="text-lg font-bold tracking-tight sm:text-xl">Olyxee Logistics</span>
+            <span className="text-base font-bold tracking-tight sm:text-xl"><span className="sm:hidden">Olyxee</span><span className="hidden sm:inline">Olyxee Logistics</span></span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1">
-            <Link href="/upgrade" className="hidden sm:inline-block text-sm font-medium px-3 py-2 rounded-full text-neutral-600 hover:text-neutral-900 transition-colors">
+            <Link href="/upgrade" className="inline-block rounded-full px-2.5 py-2 text-xs font-medium text-neutral-600 transition-colors hover:text-neutral-900 sm:px-3 sm:text-sm">
               Pricing
             </Link>
             <Link href="/login" className="ml-1 text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full bg-neutral-900 text-white hover:bg-black transition-colors">
@@ -560,9 +520,9 @@ const Landing: FC = () => {
             style={serif}
             className="text-[2.6rem] sm:text-[3.8rem] lg:text-[4.4rem] leading-[1.02] tracking-[-0.03em]"
           >
-            The platform that powers
+            Run every cross-border
             <br className="hidden sm:block" />{" "}
-            <span className="text-orange-500">global logistics</span>
+            <span className="text-orange-500">freight job in one place.</span>
           </motion.h1>
 
           <motion.p
@@ -571,8 +531,8 @@ const Landing: FC = () => {
             transition={{ duration: 0.8, delay: 0.35, ease }}
             className="mt-7 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0"
           >
-            Customers, quotes, orders, shipment progress, payments, and customer
-            tracking, all connected in one place.
+            Give your team one clear workflow for customers, air and sea jobs,
+            invoices, shipment updates, tracking, costs and profit.
           </motion.p>
 
           <motion.div
@@ -585,14 +545,14 @@ const Landing: FC = () => {
               href="/login?mode=signup"
               className="group inline-flex items-center justify-between gap-6 px-8 py-4 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-[0_20px_50px_-20px_rgba(249,115,22,0.6)]"
             >
-              <span className="text-sm font-medium tracking-wide">Start Free</span>
+              <span className="text-sm font-medium tracking-wide">Create your workspace</span>
               <ArrowUpRight className="w-4 h-4 group-hover:rotate-45 transition-transform duration-500" />
             </Link>
             <Link
-              href="/login"
+              href="#workflow"
               className="inline-flex items-center px-8 py-4 rounded-full bg-white ring-1 ring-neutral-200 text-sm font-medium text-neutral-800 hover:ring-neutral-400 transition-all"
             >
-              Sign In
+              See how it works
             </Link>
           </motion.div>
 
@@ -603,7 +563,7 @@ const Landing: FC = () => {
             style={mono}
             className="mt-7 text-[11px] tracking-[0.18em] text-neutral-400"
           >
-            R0/MONTH · NO CREDIT CARD REQUIRED
+            STARTER · R{plans.free.price}/MONTH
           </motion.p>
 
           </div>
@@ -623,76 +583,17 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === MARQUEE === */}
-      <section
-        aria-hidden="true"
-        className="relative border-y border-neutral-200 bg-neutral-950 text-white overflow-hidden py-5"
-      >
-        <div className="flex whitespace-nowrap animate-[olyxee-marquee_38s_linear_infinite]">
-          {[...Array(3)].map((_, loop) => (
-            <div key={loop} className="flex shrink-0 items-center">
-              {statusWords.map((word, i) => (
-                <span
-                  key={`${loop}-${i}`}
-                  style={serif}
-                  className="flex items-center italic text-3xl sm:text-5xl tracking-tight px-8"
-                >
-                  {word}
-                  <span className="ml-8 inline-block w-2 h-2 rounded-full bg-orange-400" />
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-        <style>{`
-          @keyframes olyxee-marquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-33.3333%); }
-          }
-        `}</style>
-      </section>
-
       {/* === PAIN - the old way === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8">
+      <section className="px-4 py-16 sm:px-8 sm:py-20">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-10 sm:mb-12 flex flex-wrap items-end justify-between gap-6">
-            <div className="max-w-2xl">
-              <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">THE PROBLEM</p>
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, ease }}
-                style={serif}
-                className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.98]"
-              >
-                Sound <em className="not-italic text-orange-500">familiar?</em>
-              </motion.h2>
-            </div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, delay: 0.15, ease }}
-              className="text-sm sm:text-base text-neutral-500 max-w-xs leading-relaxed"
-            >
-              Four exhibits from freight ops run the old way.
-            </motion.p>
+          <div>
+            <ScrollProblemShowcase />
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, ease }}
-          >
-            <OldWayShowcase />
-          </motion.div>
         </div>
       </section>
 
       {/* === WORKFLOW === */}
-      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-neutral-950 text-white">
+      <section id="workflow" className="scroll-mt-16 border-y border-neutral-200 bg-neutral-100 px-4 py-24 text-neutral-900 sm:px-8 sm:py-32">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-3xl mb-16">
             <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">THE WORKFLOW</p>
@@ -706,16 +607,16 @@ const Landing: FC = () => {
             >
               Built around the way <em className="not-italic text-orange-400">freight forwarders</em> work.
             </motion.h2>
-            <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl">
+            <p className="max-w-2xl text-base leading-relaxed text-neutral-600 sm:text-lg">
               From quote to delivery, your team manages every step in Olyxee Logistics.
             </p>
           </div>
 
           {/* Wide operational rail: thin connecting line, small nodes, interface labels */}
           <div className="relative">
-            <div aria-hidden className="hidden lg:block absolute top-[13px] left-4 right-4 h-px bg-white/15" />
-            <div aria-hidden className="lg:hidden absolute top-2 bottom-2 left-[13px] w-px bg-white/15" />
-            <div className="grid gap-8 lg:gap-3 lg:grid-cols-7">
+            <div aria-hidden className="absolute left-4 right-4 top-[13px] hidden h-px bg-neutral-300 lg:block" />
+            <div aria-hidden className="absolute bottom-2 left-[13px] top-2 w-px bg-neutral-300 lg:hidden" />
+            <div className="grid gap-8 lg:gap-6 lg:grid-cols-4">
               {WORKFLOW_STEPS.map((step, i) => {
                 const Icon = step.icon;
                 const isLast = i === WORKFLOW_STEPS.length - 1;
@@ -732,17 +633,17 @@ const Landing: FC = () => {
                       className={`relative z-10 w-[27px] h-[27px] rounded-full flex items-center justify-center shrink-0 ring-1 ${
                         isLast
                           ? "bg-orange-500 ring-orange-400 text-white"
-                          : "bg-neutral-950 ring-white/25 text-orange-400"
+                          : "bg-white ring-neutral-300 text-orange-500"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" strokeWidth={2.2} />
                     </span>
                     <div className="lg:mt-5 min-w-0">
-                      <p style={mono} className="text-[9px] tracking-[0.2em] text-white/35 mb-1.5">
+                      <p style={mono} className="mb-1.5 text-[9px] tracking-[0.2em] text-neutral-400">
                         STEP {String(i + 1).padStart(2, "0")}
                       </p>
-                      <p className="text-[13px] font-medium leading-snug text-white/90">{step.label}</p>
-                      <p className="mt-1.5 text-[11px] leading-snug text-white/45">{step.body}</p>
+                      <p className="text-[13px] font-medium leading-snug text-neutral-900">{step.label}</p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-neutral-500">{step.body}</p>
                     </div>
                   </motion.div>
                 );
@@ -817,8 +718,8 @@ const Landing: FC = () => {
       {/* === REAL-WORLD EXAMPLE === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="relative rounded-[2rem] bg-neutral-950 text-white overflow-hidden">
-            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
+          <div className="relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-neutral-100 text-neutral-900">
+            <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" aria-hidden />
             <div className="relative grid grid-cols-12 gap-8 p-8 sm:p-14 lg:p-16 items-center">
               <div className="col-span-12 lg:col-span-6">
                 <p style={mono} className="text-[11px] tracking-[0.3em] text-orange-400 mb-4">MANAGE THE SHIPMENT</p>
@@ -832,35 +733,35 @@ const Landing: FC = () => {
                 >
                   One China shipment. One clear <em className="not-italic text-orange-400">workflow</em>.
                 </motion.h2>
-                <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-lg">
+                <p className="max-w-lg text-base leading-relaxed text-neutral-600 sm:text-lg">
                   From the customer's request to final delivery, everything about the job lives together.
                 </p>
               </div>
               <div className="col-span-12 lg:col-span-6">
-                <div className="rounded-2xl bg-white/5 ring-1 ring-white/10 p-6 sm:p-8">
+                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8">
                   <div className="flex items-center justify-between mb-7">
                     <div>
-                      <div style={mono} className="text-[9px] tracking-widest text-white/40 mb-1">ORIGIN</div>
+                      <div style={mono} className="mb-1 text-[9px] tracking-widest text-neutral-400">ORIGIN</div>
                       <div style={serif} className="text-2xl">Shanghai</div>
                     </div>
                     <div className="flex-1 mx-5 relative">
-                      <div className="border-t border-dashed border-white/25" />
-                      <Ship className="absolute left-1/2 -translate-x-1/2 -top-2.5 w-5 h-5 text-orange-400 bg-neutral-950 px-0.5" />
+                      <div className="border-t border-dashed border-neutral-300" />
+                      <Ship className="absolute -top-2.5 left-1/2 h-5 w-5 -translate-x-1/2 bg-white px-0.5 text-orange-500" />
                     </div>
                     <div className="text-right">
-                      <div style={mono} className="text-[9px] tracking-widest text-white/40 mb-1">DESTINATION</div>
+                      <div style={mono} className="mb-1 text-[9px] tracking-widest text-neutral-400">DESTINATION</div>
                       <div style={serif} className="text-2xl">Durban</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     {["Customer", "Order", "Invoice & payment", "Tracking reference", "Shipment progress", "Customer updates", "Clearance progress", "Final delivery"].map((chip) => (
-                      <div key={chip} className="flex items-center gap-2 rounded-lg bg-white/[0.04] ring-1 ring-white/10 px-3 py-2.5">
-                        <Check className="w-3 h-3 text-emerald-400 shrink-0" strokeWidth={3} />
-                        <span className="text-[12px] text-white/80">{chip}</span>
+                      <div key={chip} className="flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2.5 ring-1 ring-neutral-200">
+                        <Check className="h-3 w-3 shrink-0 text-emerald-600" strokeWidth={3} />
+                        <span className="text-[12px] text-neutral-700">{chip}</span>
                       </div>
                     ))}
                   </div>
-                  <p style={mono} className="mt-5 text-[9px] tracking-[0.2em] text-white/35 text-center">
+                  <p style={mono} className="mt-5 text-center text-[9px] tracking-[0.2em] text-neutral-400">
                     ONE JOB · EVERYTHING CONNECTED
                   </p>
                 </div>
@@ -913,11 +814,11 @@ const Landing: FC = () => {
         </div>
       </section>
 
-      {/* === FREE PLAN - editorial layout === */}
+      {/* === STARTER PLAN - editorial layout === */}
       <section className="py-24 sm:py-32 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-x-8 gap-y-14 items-start">
           <div className="col-span-12 lg:col-span-5 lg:sticky lg:top-28">
-            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">FREE PLAN</p>
+            <p style={mono} className="text-[11px] tracking-[0.3em] text-neutral-400 mb-4">STARTER PLAN</p>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -929,8 +830,8 @@ const Landing: FC = () => {
               Start with the freight workflow you need <em className="not-italic text-orange-500">today</em>.
             </motion.h2>
             <p className="text-base text-neutral-600 leading-relaxed max-w-md mb-10">
-              Everything your team uses to run jobs day to day: customers, quotes,
-              orders, shipment stages, tracking, invoices. Included from day one.
+              The essential operating system for a growing freight business, without
+              the complexity of enterprise forwarding software.
             </p>
             <motion.img
               src={freightVisual}
@@ -954,14 +855,14 @@ const Landing: FC = () => {
             >
               <div className="px-7 sm:px-9 pt-8 pb-7 border-b border-neutral-100 flex items-end justify-between gap-4">
                 <div>
-                  <p style={mono} className="text-[10px] tracking-[0.25em] text-neutral-400 mb-3">FREE · AVAILABLE NOW</p>
+                  <p style={mono} className="text-[10px] tracking-[0.25em] text-neutral-400 mb-3">{plans.free.name.toUpperCase()} · AVAILABLE NOW</p>
                   <div className="flex items-baseline gap-2">
-                    <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R0</span>
+                    <span style={serif} className="text-5xl sm:text-6xl tracking-tight">R{plans.free.price}</span>
                     <span className="text-neutral-500">/ month</span>
                   </div>
                 </div>
                 <span style={mono} className="hidden sm:inline-block text-[9px] tracking-[0.2em] px-3 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200 text-emerald-700">
-                  NO CREDIT CARD
+                  MONTHLY
                 </span>
               </div>
               <div className="px-7 sm:px-9 py-7">
@@ -979,7 +880,7 @@ const Landing: FC = () => {
                   href="/login?mode=signup"
                   className="group mt-8 inline-flex w-full sm:w-auto items-center justify-between gap-6 px-7 py-4 bg-neutral-900 text-white rounded-full hover:bg-black transition-colors"
                 >
-                  <span className="text-sm font-medium tracking-wide">Start Free</span>
+                  <span className="text-sm font-medium tracking-wide">Choose Starter</span>
                   <span className="w-9 h-9 rounded-full bg-orange-400 text-neutral-900 flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
                     <ArrowUpRight className="w-4 h-4" />
                   </span>
@@ -993,7 +894,7 @@ const Landing: FC = () => {
       {/* === FINAL CTA === */}
       <section className="relative px-4 sm:px-8 pt-6 pb-20 sm:pb-28">
         <div className="max-w-7xl mx-auto">
-          <div className="relative rounded-[2rem] overflow-hidden bg-neutral-950">
+          <div className="relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-neutral-100">
             <img
               src={ctaWarehouse}
               alt=""
@@ -1001,7 +902,7 @@ const Landing: FC = () => {
               className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/55 to-neutral-950/10" aria-hidden />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/20" aria-hidden />
             <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-20 sm:py-28 grid grid-cols-12 gap-8 items-end">
@@ -1012,7 +913,7 @@ const Landing: FC = () => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.9, ease }}
                   style={serif}
-                  className="text-white text-4xl sm:text-6xl md:text-7xl tracking-[-0.02em] leading-[0.95] break-words"
+                  className="break-words text-4xl leading-[0.95] tracking-[-0.02em] text-neutral-950 sm:text-6xl md:text-7xl"
                 >
                   Try <em className="text-orange-400 not-italic">Olyxee</em> on your next order.
                 </motion.h2>
@@ -1027,22 +928,22 @@ const Landing: FC = () => {
               >
                 <Link
                   href="/login?mode=signup"
-                  className="group inline-flex items-center justify-between gap-6 px-7 py-5 bg-white text-neutral-900 rounded-full hover:bg-orange-400 transition-colors"
+                  className="group inline-flex items-center justify-between gap-6 rounded-full bg-neutral-900 px-7 py-5 text-white transition-colors hover:bg-neutral-800"
                 >
-                  <span className="text-sm font-medium tracking-wide">Start Free</span>
-                  <span className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
+                  <span className="text-sm font-medium tracking-wide">Create your workspace</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-400 text-neutral-900 transition-transform duration-500 group-hover:rotate-45">
                     <ArrowUpRight className="w-4 h-4" />
                   </span>
                 </Link>
                 <Link
                   href="/login"
                   style={mono}
-                  className="text-[11px] tracking-[0.22em] text-white/70 hover:text-white transition-colors pl-2"
+                  className="pl-2 text-[11px] tracking-[0.22em] text-neutral-600 transition-colors hover:text-neutral-950"
                 >
                   → SIGN IN
                 </Link>
-                <p style={mono} className="text-[10px] tracking-[0.18em] text-white/40 pl-2 leading-relaxed">
-                  BUILT FOR FREIGHT FORWARDERS · R0/MONTH · NO CREDIT CARD REQUIRED
+                <p style={mono} className="pl-2 text-[10px] leading-relaxed tracking-[0.18em] text-neutral-500">
+                  BUILT FOR CROSS-BORDER FREIGHT TEAMS · STARTER R{plans.free.price}/MONTH
                 </p>
               </motion.div>
             </div>
@@ -1074,7 +975,7 @@ export const SiteFooter: FC = () => (
             href="/login?mode=signup"
             className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-900 hover:gap-2.5 transition-all"
           >
-            Start free <ArrowUpRight className="w-4 h-4" />
+            Create your workspace <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
 
