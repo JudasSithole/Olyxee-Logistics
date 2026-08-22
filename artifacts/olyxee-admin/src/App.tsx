@@ -197,7 +197,7 @@ function AppRoutes() {
       <Route path="/updates" component={() => <PublicOrApp component={UpdatesPage} />} />
       <Route path="/whats-new"><Redirect to="/updates" /></Route>
       <Route path="/coming-soon"><Redirect to="/updates" /></Route>
-      <Route path="/upgrade" component={() => <PublicOrApp component={UpgradePage} />} />
+      <Route path="/upgrade" component={UpgradePage} />
       <Route path="/pricing"><Redirect to="/" /></Route>
       <Route
         path="/billing/callback"

@@ -188,7 +188,10 @@ router.get("/public/track/:trackingId", async (req, res) => {
         name: business.invoiceLegalName || business.name,
         phone: business.invoicePhone || business.phone || null,
         email: business.invoiceEmail || business.supportEmail || null,
-        logoUrl: business.invoiceLogoUrl || business.businessLogoUrl || null,
+        // Public tracking is part of the SaaS workspace brand, so always use
+        // the current Branding logo first. Keep the older invoice logo only as
+        // a migration fallback for tenants that have not saved Branding yet.
+        logoUrl: business.businessLogoUrl || business.invoiceLogoUrl || null,
         primaryColor: business.primaryBrandColour || null,
       } : null,
       selfService: {

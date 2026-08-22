@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useBusiness, useTeamMembers, useUpdateBusiness } from "@/hooks/use-supabase-queries";
 import { useAuth } from "@/contexts/auth-context";
-import { plans, isFeatureEnabled, type PlanId, SCALE_BILLING_START_LABEL } from "@/lib/launch";
+import { plans, isFeatureEnabled, type PlanId } from "@/lib/launch";
 import { Link } from "wouter";
 import { LogoUpload } from "@/components/logo-upload";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -497,129 +497,7 @@ const NAV_ITEMS = [
   { id: "identity", label: "Business", icon: Building2, tint: TINTS.blue },
   { id: "invoice", label: "Invoices", icon: FileText, tint: TINTS.green },
   { id: "appearance", label: "Display", icon: SunMoon, tint: TINTS.orange },
-  { id: "billing", label: "Plan & Billing", icon: CreditCard, tint: TINTS.green },
 ] as const;
-
-// ─── Billing & plan ───────────────────────────────────────────────────────────
-// Shows the business's current plan straight from the shared plan catalog
-// (@workspace/plans): its name, monthly ZAR price, and exactly what it includes.
-// Billing is handled through the Upgrade flow, so this surface is informational
-// and links out to change plans - it is not itself a checkout.
-function BillingSection() {
-  const { user } = useAuth();
-  const { data: business } = useBusiness(user?.businessId);
-
-  const planId = (business?.plan as PlanId | undefined) ?? "beta";
-  const plan = plans[planId] ?? plans.beta;
-  const isBeta = planId === "beta";
-
-  // Price straight from the catalog so it never drifts from the pricing/upgrade
-  // pages. All paid plans are billed monthly in ZAR.
-  const priceLabel = plan.price === 0 ? "Free" : `R${plan.price}`;
-
-  // What the plan includes. Paid tiers carry an explicit marketing bullet list
-  // in the catalog; beta has none, so fall back to its "no limits" promise.
-  const includes =
-    plan.features && plan.features.length > 0
-      ? plan.features
-      : [
-          "Unlimited jobs",
-          "Up to 100 status updates per month",
-          "Unlimited customers",
-        ];
-
-  const emailsSent = business?.email_usage_this_month ?? 0;
-  // The monthly status-update allowance actually applied at send time: the
-  // tighter of the plan's cap and the per-business safety cap. Mirrors the
-  // server's effectiveEmailLimit so the number here matches what's enforced.
-  const statusUpdateLimit =
-    plan.emailLimit == null
-      ? business?.monthly_email_limit ?? 500
-      : Math.min(plan.emailLimit, business?.monthly_email_limit ?? 500);
-
-  return (
-    <SectionShell
-      icon={CreditCard}
-      tint={TINTS.green}
-      title="Olyxee Subscription"
-      description="Manage your Olyxee Logistics plan, usage and subscription - separate from the invoices you send customers."
-      action={
-        <Button asChild variant="outline" size="sm">
-          <Link href="/upgrade" data-testid="link-view-plans">
-            {isBeta ? "View plans" : "Change plan"}
-          </Link>
-        </Button>
-      }
-    >
-      {/* Current plan header - name, price and a "Current" badge. */}
-      <div className="px-4 py-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-base font-semibold text-foreground">{plan.name}</p>
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
-              Current
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isBeta
-              ? "Unlimited access with no limits while we're in beta."
-              : "Billed monthly, in South African Rand (ZAR)."}
-          </p>
-        </div>
-        <div className="flex-shrink-0 text-right">
-          <span className="text-2xl font-bold tracking-tight text-foreground">{priceLabel}</span>
-          {plan.price > 0 && (
-            <span className="block text-xs text-muted-foreground">per month</span>
-          )}
-        </div>
-      </div>
-
-      {/* What the plan includes - mirrors the pricing/upgrade feature list. */}
-      <div className="px-4 py-4">
-        <p className="text-sm font-medium text-foreground">What&apos;s included</p>
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {includes.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Usage snapshot - the monthly status-update allowance included with the
-          plan, and how many have gone out this month. */}
-      <div className="px-4 py-4 flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">Status updates this month</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Included with your plan · resets on the 1st.
-          </p>
-        </div>
-        <span className="flex-shrink-0 font-mono text-sm text-foreground">
-          {emailsSent.toLocaleString()} / {statusUpdateLimit.toLocaleString()}
-        </span>
-      </div>
-
-      {/* Launch note - paid plans and the existing-business trial go live at
-          launch. Only relevant while the business is still on beta. */}
-      {isBeta && (
-        <div className="px-4 py-4">
-          <div className="rounded-[12px] border border-primary/25 bg-primary/[0.04] p-4">
-            <p className="text-sm font-semibold text-foreground">
-              {plans.business.name} billing begins on {SCALE_BILLING_START_LABEL}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Nothing changes for you before then. Your business stays on the{" "}
-              <span className="font-semibold text-foreground">{plans.free.name}</span> plan at no
-              cost - no payment is required.
-            </p>
-          </div>
-        </div>
-      )}
-    </SectionShell>
-  );
-}
 
 const EMPTY_INVOICE_PROFILE = {legalName:"",registrationNumber:"",taxNumber:"",streetAddress:"",city:"",province:"",postalCode:"",country:"",email:"",phone:"",logoUrl:"",bank:"",accountName:"",accountNumber:"",branchCode:"",accountType:"",paymentExtra:"",paymentTerms:"Payment due on receipt.",footerNote:""};
 const SOUTH_AFRICAN_BANKS=["Absa","African Bank","Bank Zero","Bidvest Bank","Capitec Bank","Discovery Bank","FNB","Investec","Nedbank","Standard Bank","TymeBank"];
@@ -762,10 +640,9 @@ const NAV_GROUPS = [
   { group: "Customer Invoicing", items: [
     { id: "invoicing", label: "Invoice Settings", icon: FileText },
   ]},
-  { group: "Account", items: [
-    { id: "profile", label: "Profile", icon: User },
-    { id: "subscription", label: "Olyxee Subscription", icon: CreditCard },
-  ]},
+    { group: "Account", items: [
+      { id: "profile", label: "Profile", icon: User },
+    ]},
 ] as const;
 const SETTINGS_PAGES = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
 
@@ -1081,8 +958,6 @@ export default function SettingsPage({ inModal = false }: { inModal?: boolean } 
                     <ProfilePage />
                   </div>
                 );
-              case "subscription":
-                return <BillingSection />;
               default:
                 return null;
             }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ComponentType } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
-  CalendarDays, Check, Headphones, Mail, PackageCheck, Phone, X, XCircle,
+  CalendarDays, Check, ChevronDown, Headphones, Mail, MapPin, PackageCheck, Phone, X, XCircle,
   Package, ClipboardCheck, Warehouse, FileCheck, Plane, Ship, Navigation,
   Truck, Clock, Undo2, PackageX,
 } from "lucide-react";
@@ -63,25 +63,6 @@ interface TrackingResponse {
   selfService: { canCancel: boolean; canReschedule: boolean };
 }
 
-// Tone per public status enum. Anything unknown falls back to neutral so the
-// page never crashes on a status it hasn't seen before.
-const STATUS_TONE: Record<string, { dot: string; chip: string }> = {
-  pending: { dot: "bg-neutral-400", chip: "bg-neutral-100 text-neutral-700" },
-  picked_up: { dot: "bg-blue-500", chip: "bg-blue-50 text-blue-700" },
-  in_transit: { dot: "bg-blue-500", chip: "bg-blue-50 text-blue-700" },
-  customs: { dot: "bg-amber-500", chip: "bg-amber-50 text-amber-700" },
-  out_for_delivery: { dot: "bg-orange-500", chip: "bg-orange-50 text-orange-700" },
-  delivered: { dot: "bg-green-600", chip: "bg-green-50 text-green-700" },
-  delayed: { dot: "bg-amber-500", chip: "bg-amber-50 text-amber-700" },
-  failed_delivery: { dot: "bg-red-500", chip: "bg-red-50 text-red-700" },
-  returned: { dot: "bg-neutral-500", chip: "bg-neutral-100 text-neutral-700" },
-  cancelled: { dot: "bg-red-500", chip: "bg-red-50 text-red-700" },
-};
-
-function toneFor(status: string) {
-  return STATUS_TONE[status] ?? { dot: "bg-neutral-400", chip: "bg-neutral-100 text-neutral-700" };
-}
-
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -101,6 +82,32 @@ function formatDate(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function eventDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function eventTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+function statusExplanation(event: TrackingEvent): string {
+  if (event.message?.trim()) return event.message;
+  const status = event.status.toLowerCase();
+  if (status.includes("confirm")) return "Your shipment has been registered and the logistics team is preparing the next step.";
+  if (status.includes("collect") || status.includes("pickup")) return "The cargo has been collected and is now in the care of the logistics team.";
+  if (status.includes("warehouse") || status.includes("received")) return "The cargo has been received and checked at the handling facility.";
+  if (status.includes("custom")) return "The shipment is going through the required customs process.";
+  if (status.includes("transit") || status.includes("depart")) return "The shipment is moving between its origin and destination.";
+  if (status.includes("delivery") && !status.includes("delivered")) return "The shipment is with the local delivery team and heading to its final destination.";
+  if (status.includes("delivered")) return "The shipment has reached its final destination.";
+  if (status.includes("delay") || status.includes("exception")) return "The shipment needs attention. Open this update for the latest available information.";
+  return "This update records the latest confirmed activity for your shipment.";
 }
 
 function getCode(): string {
@@ -124,6 +131,7 @@ export default function TrackPage() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [requestMessage, setRequestMessage] = useState<string | null>(null);
+  const [openEvent, setOpenEvent] = useState<number | null>(0);
 
   const submitRequest = async () => {
     if (!action || (action === "reschedule" && !requestedDate)) return;
@@ -214,7 +222,7 @@ export default function TrackPage() {
         )}
 
         {!loading && data && (
-          <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_18px_60px_rgba(0,0,0,0.08)] overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-black/[0.06] shadow-[0_16px_48px_rgba(0,0,0,0.07)] overflow-hidden">
             {/* Header */}
             <div className="px-6 sm:px-9 pt-8 pb-7 border-b border-neutral-100">
               <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-3">
@@ -224,7 +232,7 @@ export default function TrackPage() {
                 {data.trackingId}
               </p>
               <div className="flex items-center gap-3.5">
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white ${toneFor(data.currentStatus).dot}`}>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white" style={{backgroundColor:data.business?.primaryColor || "#171717"}}>
                   {(() => { const Icon = iconForStep(data.currentStatus, data.statusLabel); return <Icon className="h-5 w-5" />; })()}
                 </span>
                 <h1 style={serif} className="text-[28px] sm:text-[40px] leading-[1.08] tracking-[-0.01em]">
@@ -244,102 +252,36 @@ export default function TrackPage() {
               {data.estimatedDeliveryDate && (
                 <div className="mt-5 flex items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3"><CalendarDays className="h-5 w-5 text-neutral-500"/><div><p className="text-xs text-neutral-500">Estimated delivery</p><p className="text-sm font-semibold">{formatDate(data.estimatedDeliveryDate)}</p></div></div>
               )}
+              <p className="mt-5 max-w-xl text-sm leading-6 text-neutral-600">
+                {data.events[0] ? statusExplanation(data.events[0]) : "Your shipment has been registered. New updates will appear here as they are confirmed."}
+              </p>
             </div>
 
-            {/* Transport-aware journey checklist (logistics orders only) */}
-            {data.flow && data.flow.length > 0 && (
-              <div className="px-6 sm:px-9 py-7 border-b border-neutral-100">
-                <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-5">
-                  Journey
-                </p>
-                <ol className="relative">
-                  {data.flow.map((step, i) => {
-                    const isLast = i === data.flow!.length - 1;
-                    const Icon = iconForStep(step.status, step.label);
-                    const done = step.state === "completed";
-                    const current = step.state === "current";
-                    return (
-                      <li key={step.status} className="relative pl-12 pb-6 last:pb-0">
-                        {!isLast && (
-                          <span
-                            className={`absolute left-[17px] top-9 bottom-0 w-0.5 ${done ? "bg-green-500" : "bg-neutral-200"}`}
-                          />
-                        )}
-                        <span
-                          className={`absolute left-0 top-0 grid h-9 w-9 place-items-center rounded-full transition-colors ${
-                            done
-                              ? "bg-green-600 text-white"
-                              : current
-                                ? "border-2 border-green-600 bg-green-50 text-green-700"
-                                : "border-2 border-neutral-200 bg-white text-neutral-300"
-                          }`}
-                        >
-                          {done ? <Check className="h-4 w-4" /> : <Icon className="h-[18px] w-[18px]" />}
-                          {current && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />}
-                        </span>
-                        <div className="pt-1.5">
-                          <span
-                            className={`text-[15px] ${
-                              current
-                                ? "font-semibold text-neutral-900"
-                                : done
-                                  ? "text-neutral-700"
-                                  : "text-neutral-400"
-                            }`}
-                          >
-                            {step.label}
-                          </span>
-                          {current && (
-                            <span style={mono} className="ml-2 align-middle text-[10px] tracking-[0.15em] uppercase text-green-700">
-                              Now
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            )}
-
-            {/* Timeline */}
+            {/* One interactive journey replaces the old duplicate checklist + history. */}
             <div className="px-6 sm:px-9 py-7">
-              <p style={mono} className="text-[11px] tracking-[0.22em] text-neutral-400 uppercase mb-5">
-                History
-              </p>
+              <div className="mb-5 flex items-end justify-between gap-4"><div><p style={mono} className="text-[11px] tracking-[0.2em] text-neutral-400 uppercase">Shipment journey</p><h2 className="mt-1 text-lg font-semibold">Updates from the logistics team</h2></div><span className="text-xs text-neutral-400">Select an update for details</span></div>
               {data.events.length === 0 ? (
                 <p className="text-sm text-neutral-500">No updates yet. Check back soon.</p>
               ) : (
-                <ol className="relative">
+                <ol className="space-y-2">
                   {data.events.map((e, i) => {
-                    const tone = toneFor(e.status);
-                    const isLast = i === data.events.length - 1;
+                    const Icon = iconForStep(e.status, e.label);
+                    const expanded = openEvent === i;
                     return (
-                      <li key={`${e.at}-${i}`} className="relative pl-7 pb-7 last:pb-0">
-                        {!isLast && (
-                          <span className="absolute left-[5px] top-3 bottom-0 w-px bg-neutral-200" />
-                        )}
-                        <span className={`absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full ${tone.dot}`} />
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-neutral-900">{e.label}</span>
-                          <span style={mono} className="text-[11px] text-neutral-400">
-                            {formatDateTime(e.at)}
-                          </span>
-                        </div>
-                        {e.location && (
-                          <p className="mt-0.5 text-sm text-neutral-500">{e.location}</p>
-                        )}
-                        {e.exceptionType && (
-                          <p className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{shipmentExceptionLabel(e.exceptionType)}</p>
-                        )}
-                        {e.message && (
-                          <p className="mt-1 text-sm text-neutral-600">{e.message}</p>
-                        )}
+                      <li key={`${e.at}-${i}`} className={`overflow-hidden rounded-2xl border transition-colors ${expanded ? "border-neutral-300 bg-neutral-50" : "border-neutral-200 bg-white hover:bg-neutral-50"}`}>
+                        <button type="button" aria-expanded={expanded} onClick={()=>setOpenEvent(expanded?null:i)} className="flex w-full items-center gap-3 p-4 text-left">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{backgroundColor:i===0?(data.business?.primaryColor || "#171717"):"#a3a3a3"}}><Icon className="h-4.5 w-4.5"/></span>
+                          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-neutral-900">{e.label}</span><span className="mt-0.5 block text-xs text-neutral-500">{eventDate(e.at)} · {eventTime(e.at)}</span></span>
+                          {i===0 && <span className="hidden sm:inline rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">Latest</span>}
+                          <ChevronDown className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${expanded?"rotate-180":""}`}/>
+                        </button>
+                        {expanded && <div className="border-t border-neutral-200 px-4 pb-4 pt-3 sm:pl-[68px]"><p className="text-sm leading-6 text-neutral-600">{statusExplanation(e)}</p>{e.location&&<p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-neutral-500"><MapPin className="h-3.5 w-3.5"/>{e.location}</p>}{e.exceptionType&&<p className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{shipmentExceptionLabel(e.exceptionType)}</p>}</div>}
                       </li>
                     );
                   })}
                 </ol>
               )}
+              {data.flow?.find(step=>step.state==="upcoming") && <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 px-4 py-3"><p className="text-xs font-medium uppercase tracking-wider text-neutral-400">What happens next</p><p className="mt-1 text-sm font-semibold text-neutral-700">{data.flow.find(step=>step.state==="upcoming")?.label}</p></div>}
             </div>
 
             {(data.selfService.canCancel || data.selfService.canReschedule || data.business?.phone || data.business?.email) && (

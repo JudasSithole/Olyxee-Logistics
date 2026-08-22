@@ -16,7 +16,7 @@ import {
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
-import { generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
+import { companyAcronym, generateId, generateTrackingId, resolveTrackingPrefix } from "../lib/id";
 import { sendStatusEmail, buildEmailBody, sendInvoiceEmail } from "../lib/email";
 import { getMonthlyEmailUsage } from "../lib/email-usage";
 import { effectiveEmailLimit } from "../lib/plan-enforcement";
@@ -47,17 +47,6 @@ import {
 // mentions logistics — the UI stores the label "Logistics Company".
 export function isLogisticsBusiness(industry: string | null | undefined): boolean {
   return !!industry && industry.toLowerCase().includes("logistics");
-}
-
-export function companyAcronym(name: string | null | undefined): string {
-  const ignored = new Set(["PTY", "LTD", "LIMITED", "INC", "LLC", "COMPANY", "CO"]);
-  const words = (name ?? "")
-    .toUpperCase()
-    .match(/[A-Z0-9]+/g)
-    ?.filter(word => !ignored.has(word)) ?? [];
-  if (words.length >= 2) return words.slice(0, 4).map(word => word[0]).join("");
-  if (words.length === 1) return words[0].slice(0, 3).padEnd(3, "X");
-  return "JOB";
 }
 
 const router = Router();

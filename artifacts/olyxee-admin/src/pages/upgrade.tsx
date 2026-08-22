@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowRight,
+  ArrowLeft,
   ArrowUpCircle,
   AlertTriangle,
   BarChart3,
@@ -114,8 +115,8 @@ const FeatureIcon = ({ label, muted }: { label: string; muted?: boolean }) => {
   const Icon = featureIcon(label);
   return (
     <span
-      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${
-        muted ? "bg-primary/10 text-primary" : "bg-muted text-foreground/70"
+      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${
+        muted ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-700"
       }`}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -161,7 +162,7 @@ const FEATURE_GROUPS = [
     ["Landed-cost estimates", true, true],
     ["Freight-rate and quote support", true, true],
   ]},
-  { title: "AI & automation", comingSoon: true, rows: [
+  { title: "AI & automation", rows: [
     ["AI Assistant Agent", false, "soon"],
     ["Email integration with actions", false, "soon"],
     ["Automatic document handling", false, "soon"],
@@ -171,11 +172,11 @@ const FEATURE_GROUPS = [
     ["AI call agent", false, "soon"],
     ["Orgni Intelligence", false, "soon"],
   ]},
-  { title: "Portal & channels", comingSoon: true, rows: [
+  { title: "Portal & channels", rows: [
     ["Customer self-service portal", false, "soon"],
     ["SMS shipment notifications", false, "soon"],
   ]},
-  { title: "Integrations", comingSoon: true, rows: [
+  { title: "Integrations", rows: [
     ["Carrier integrations", false, "soon"],
     ["Customs integrations", false, "soon"],
     ["Freight-system integrations", false, "soon"],
@@ -188,16 +189,16 @@ const FEATURE_GROUPS = [
 
 function ComingSoonBadge() {
   return (
-    <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-      Coming soon
+    <span className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
+      Planned
     </span>
   );
 }
 
 function FeatureValue({ value }: { value: boolean | string }) {
-  if (value === true) return <Check className="mx-auto h-4 w-4 text-emerald-600" aria-label="Included" />;
+  if (value === true) return <Check className="mx-auto h-4 w-4 text-neutral-900" aria-label="Included" />;
   if (value === false) return <Minus className="mx-auto h-4 w-4 text-muted-foreground/40" aria-label="Not included" />;
-  if (value === "soon") return <ComingSoonBadge />;
+  if (value === "soon") return <Clock className="mx-auto h-4 w-4 text-neutral-500" aria-label="Planned" />;
   return <span className="text-xs font-medium">{value}</span>;
 }
 
@@ -278,8 +279,18 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 pb-12">
-      <header className="pt-1 text-center">
+    <main className="min-h-screen bg-neutral-100 px-4 py-5 text-neutral-950 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-5xl space-y-8">
+        <Button
+          type="button"
+          variant="ghost"
+          className="-ml-2 w-fit text-neutral-600 hover:bg-neutral-200 hover:text-neutral-950"
+          onClick={() => navigate(isAuthed ? "/dashboard" : "/")}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {isAuthed ? "Back to system" : "Back to home"}
+        </Button>
+        <header className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">Choose how you run freight</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">Starter manages the job. Scale automates the work around it.</p>
       </header>
@@ -298,13 +309,13 @@ export default function UpgradePage() {
             <Card
               key={id}
               data-testid={`plan-${id}`}
-              className={`relative flex flex-col rounded-3xl p-6 shadow-sm ${id === "business" ? "border-primary/35 bg-primary/[0.025]" : "border-border/70"}`}
+              className={`relative flex flex-col rounded-3xl bg-white p-6 shadow-sm ${id === "business" ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"}`}
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-xl font-bold">{p.name}</h2>
                   {id === "business" && (
-                    <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">Recommended</span>
+                    <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">Recommended</span>
                   )}
                 </div>
                 <p className="mt-3 min-h-12 text-lg font-semibold leading-snug">{id === "business" ? "Automate the work around every shipment." : "Run your freight jobs in one place."}</p>
@@ -319,18 +330,19 @@ export default function UpgradePage() {
                   )}
                 </div>
                 {id === "business" && (
-                  <p className="mt-2 text-xs font-medium text-primary">Billing starts {SCALE_BILLING_START_LABEL}</p>
+                  <p className="mt-2 text-xs font-medium text-neutral-700">Billing starts {SCALE_BILLING_START_LABEL}</p>
                 )}
               </div>
 
               <p className="mt-5 text-sm font-semibold text-foreground">
                 {id === "business" ? "Everything in Starter, plus" : "Included"}
               </p>
+              {id === "business" ? <div className="mt-3"><ComingSoonBadge /></div> : null}
               <ul className="mt-4 space-y-3">
                 {(id === "business" ? SCALE_CORE : STARTER_CORE).map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>{feature}</span>{id === "business" ? <ComingSoonBadge /> : null}</span>
+                  <li key={feature} className="flex items-center gap-3 text-sm">
+                    <FeatureIcon label={feature} muted={id === "business"} />
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -345,7 +357,7 @@ export default function UpgradePage() {
                 // Scale isn't available to join yet - show a blurred "Upgrade"
                 // so it reads as the next step, but clearly not active.
                 <>
-                  <Button className="w-full select-none opacity-70 blur-[1.5px] pointer-events-none" variant="default" disabled tabIndex={-1} aria-hidden data-testid={`button-choose-${id}`}>
+                  <Button className="w-full select-none bg-neutral-950 text-white opacity-70 blur-[1.5px] pointer-events-none" variant="default" disabled tabIndex={-1} aria-hidden data-testid={`button-choose-${id}`}>
                     Upgrade <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <p className="mt-2 text-center text-xs text-muted-foreground">Available from {SCALE_BILLING_START_LABEL}</p>
@@ -356,9 +368,9 @@ export default function UpgradePage() {
         })}
       </div>
 
-      <details className="group overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+      <details open className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
-          <div><h2 className="text-sm font-semibold">See all features</h2><p className="mt-0.5 text-xs text-muted-foreground">Open the detailed Starter and Scale comparison.</p></div>
+          <div><h2 className="text-sm font-semibold">Full plan comparison</h2><p className="mt-0.5 text-xs text-muted-foreground">Included, planned and unavailable features at a glance.</p></div>
           <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="overflow-x-auto">
@@ -377,13 +389,12 @@ export default function UpgradePage() {
                   <tr className="border-b border-border bg-muted/15">
                     <td colSpan={3} className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {group.title}
-                      {"comingSoon" in group && group.comingSoon ? <span className="ml-2 normal-case"><ComingSoonBadge /></span> : null}
                     </td>
                   </tr>
                   {group.rows.map(row => (
                     <tr key={row[0]} className="border-b border-border/60 last:border-0">
                       <td className="px-6 py-3">
-                        <span className="text-sm">{row[0]}</span>
+                        <span className="flex items-center gap-3 text-sm"><FeatureIcon label={row[0]} /><span>{row[0]}</span></span>
                       </td>
                       <td className="px-4 py-3 text-center"><FeatureValue value={row[1]}/></td>
                       <td className="px-4 py-3 text-center"><FeatureValue value={row[2]}/></td>
@@ -401,6 +412,7 @@ export default function UpgradePage() {
         <span>{plans.business.name} billing starts {SCALE_BILLING_START_LABEL}</span>
         <span>Change or cancel any time</span>
       </div>
-    </div>
+      </div>
+    </main>
   );
 }

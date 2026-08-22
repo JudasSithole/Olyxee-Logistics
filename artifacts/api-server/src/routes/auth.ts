@@ -9,7 +9,7 @@ import {
   businessesTable,
   passwordResetTokensTable,
 } from "@workspace/db";
-import { generateId } from "../lib/id";
+import { companyAcronym, generateId } from "../lib/id";
 import {
   SESSION_COOKIE,
   signSession,
@@ -221,6 +221,7 @@ router.post("/auth/signup", async (req, res) => {
         slug,
         websiteUrl: "",
         supportEmail: email,
+        trackingIdPrefix: companyAcronym(businessName),
       });
       await tx.insert(usersTable).values({
         id: userId,

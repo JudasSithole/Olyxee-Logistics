@@ -44,6 +44,7 @@ vi.mock("../lib/id", () => ({
   generateId: () => `test-id-${++idCounter}`,
   generateTrackingId: () => `OLY-AAA-BBBB`,
   resolveTrackingPrefix: () => "OLY",
+  companyAcronym: (name: string) => name.includes("Freight Solutions Logistics") ? "FSL" : "JOB",
 }));
 
 vi.mock("../lib/email", () => ({
