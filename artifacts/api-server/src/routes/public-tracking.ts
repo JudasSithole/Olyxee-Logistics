@@ -7,6 +7,8 @@ import { generateId } from "../lib/id";
 import {
   logisticsFlow,
   logisticsStatusLabel,
+  normalizeLogisticsStatus,
+  isLogisticsTerminal,
   TRANSPORT_MODE_LABELS,
   isTransportMode,
 } from "@workspace/order-statuses";
@@ -46,7 +48,7 @@ const ServiceRequestBody = z.object({
 });
 
 function isSelfServiceClosed(status: string) {
-  return ["DELIVERED_COLLECTED", "DELIVERED", "CANCELLED", "RETURNED", "Delivered", "Cancelled", "Returned"].includes(status);
+  return isLogisticsTerminal(status) || ["RETURNED", "Delivered", "Cancelled", "Returned"].includes(status);
 }
 
 // Map internal status labels (free-form, defined in lib/order-statuses) to the
@@ -143,7 +145,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
     const flowStatuses = internalFlow?.filter((status) => status !== "PENDING_TRACKING_NUMBER") ?? null;
     const publicCurrentStatus = order.currentStatus === "PENDING_TRACKING_NUMBER"
       ? "ORDER_CONFIRMED"
-      : order.currentStatus;
+      : mode ? normalizeLogisticsStatus(order.currentStatus) : order.currentStatus;
     let flow: { status: string; label: string; state: string }[] | undefined;
     if (flowStatuses) {
       const idx = flowStatuses.indexOf(publicCurrentStatus);
@@ -188,6 +190,7 @@ router.get("/public/track/:trackingId", async (req, res) => {
         name: business.invoiceLegalName || business.name,
         phone: business.invoicePhone || business.phone || null,
         email: business.invoiceEmail || business.supportEmail || null,
+        address: business.invoiceAddress || business.location || null,
         // Public tracking is part of the SaaS workspace brand, so always use
         // the current Branding logo first. Keep the older invoice logo only as
         // a migration fallback for tenants that have not saved Branding yet.
@@ -199,9 +202,9 @@ router.get("/public/track/:trackingId", async (req, res) => {
         canReschedule: !isSelfServiceClosed(order.currentStatus),
       },
       events: events.filter((e) => e.status !== "PENDING_TRACKING_NUMBER").map((e) => {
-        const status = flowStatuses ? e.status : publicStatusFor(e.status);
+        const status = flowStatuses ? normalizeLogisticsStatus(e.status) : publicStatusFor(e.status);
         const label = flowStatuses
-          ? logisticsStatusLabel(e.status)
+          ? logisticsStatusLabel(status)
           : e.status && e.status.trim().length > 0
             ? e.status
             : STATUS_DISPLAY[publicStatusFor(e.status)] ?? publicStatusFor(e.status);

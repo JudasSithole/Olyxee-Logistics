@@ -44,32 +44,29 @@ describe("shipment flows (physical movement only — no billing/payment)", () =>
       "VAT_DUTY_PAID",
       "UNDERGOING_CUSTOMS_CLEARANCE",
       "CUSTOMS_CLEARANCE_COMPLETED",
-      "READY_FOR_COLLECTION_DELIVERY",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED_COLLECTED",
+      "DELIVERED_READY_FOR_COLLECTION",
     ]);
     // AIR never uses sea/vessel stages.
-    for (const s of ["LOADING", "DEPARTED_IN_TRANSIT"]) {
+    for (const s of ["LOADING", "DEPARTED", "MID_OCEAN_TRANSIT"]) {
       expect(LOGISTICS_STATUS_FLOWS.AIR).not.toContain(s);
     }
   });
 
-  it("SEA flow adds Loading + Departed/In Transit in place of the AIR leg", () => {
+  it("SEA flow adds Loading, Departed, and Mid-Ocean Transit", () => {
     expect(LOGISTICS_STATUS_FLOWS.SEA).toEqual([
       "ORDER_CONFIRMED",
       "COLLECTED_FROM_SUPPLIER",
       "RECEIVED_AT_WAREHOUSE",
       "PREPARING_FOR_SHIPMENT",
       "LOADING",
-      "DEPARTED_IN_TRANSIT",
+      "DEPARTED",
+      "MID_OCEAN_TRANSIT",
       "ARRIVED_AT_DESTINATION",
       "AWAITING_VAT_DUTY_PAYMENT",
       "VAT_DUTY_PAID",
       "UNDERGOING_CUSTOMS_CLEARANCE",
       "CUSTOMS_CLEARANCE_COMPLETED",
-      "READY_FOR_COLLECTION_DELIVERY",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED_COLLECTED",
+      "DELIVERED_READY_FOR_COLLECTION",
     ]);
     expect(LOGISTICS_STATUS_FLOWS.SEA).not.toContain("IN_TRANSIT");
   });
@@ -97,31 +94,30 @@ describe("next status + terminal", () => {
   it("suggests the next stage in order", () => {
     expect(nextLogisticsStatus("AIR", "ORDER_CONFIRMED")).toBe("COLLECTED_FROM_SUPPLIER");
     expect(nextLogisticsStatus("AIR", "ARRIVED_AT_DESTINATION")).toBe("AWAITING_VAT_DUTY_PAYMENT");
-    expect(nextLogisticsStatus("SEA", "LOADING")).toBe("DEPARTED_IN_TRANSIT");
+    expect(nextLogisticsStatus("SEA", "LOADING")).toBe("DEPARTED");
     expect(nextLogisticsStatus("SEA", "VAT_DUTY_PAID")).toBe("UNDERGOING_CUSTOMS_CLEARANCE");
   });
 
-  it("DELIVERED_COLLECTED is terminal", () => {
+  it("Delivered / Ready for Collection is terminal", () => {
+    expect(isLogisticsTerminal("DELIVERED_READY_FOR_COLLECTION")).toBe(true);
     expect(isLogisticsTerminal("DELIVERED_COLLECTED")).toBe(true);
-    expect(nextLogisticsStatus("AIR", "DELIVERED_COLLECTED")).toBeNull();
-    expect(isLogisticsTerminal("OUT_FOR_DELIVERY")).toBe(false);
+    expect(nextLogisticsStatus("AIR", "DELIVERED_READY_FOR_COLLECTION")).toBeNull();
     expect(isLogisticsTerminal("ORDER_CONFIRMED")).toBe(false);
   });
 
   it("remainingLogisticsStatuses returns later stages only", () => {
-    expect(remainingLogisticsStatuses("AIR", "READY_FOR_COLLECTION_DELIVERY")).toEqual([
-      "OUT_FOR_DELIVERY",
-      "DELIVERED_COLLECTED",
+    expect(remainingLogisticsStatuses("AIR", "CUSTOMS_CLEARANCE_COMPLETED")).toEqual([
+      "DELIVERED_READY_FOR_COLLECTION",
     ]);
-    expect(remainingLogisticsStatuses("AIR", "DELIVERED_COLLECTED")).toEqual([]);
+    expect(remainingLogisticsStatuses("AIR", "DELIVERED_READY_FOR_COLLECTION")).toEqual([]);
   });
 });
 
 describe("legacy status compatibility", () => {
   it("maps retired codes to their closest current stage (forward, never back)", () => {
     expect(normalizeLogisticsStatus("RECEIVED_FROM_SUPPLIER")).toBe("RECEIVED_AT_WAREHOUSE");
-    expect(normalizeLogisticsStatus("VESSEL_DEPARTED")).toBe("DEPARTED_IN_TRANSIT");
-    expect(normalizeLogisticsStatus("DELIVERED")).toBe("DELIVERED_COLLECTED");
+    expect(normalizeLogisticsStatus("VESSEL_DEPARTED")).toBe("DEPARTED");
+    expect(normalizeLogisticsStatus("DELIVERED")).toBe("DELIVERED_READY_FOR_COLLECTION");
     // A current code is returned unchanged.
     expect(normalizeLogisticsStatus("IN_TRANSIT")).toBe("IN_TRANSIT");
   });

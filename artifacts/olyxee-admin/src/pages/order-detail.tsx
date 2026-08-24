@@ -108,26 +108,52 @@ function StatusPicker({
   onSelect: (s: string) => void;
   transportMode?: string | null;
 }) {
-  // Transport-aware orders follow their mode's fixed flow: the next stage is
-  // primary, later stages are offered as "skip ahead" options (e.g. combining
-  // steps), and generic exception statuses don't apply.
+  // Keep the full forward workflow available without rendering a large card
+  // for every stage. Past stages remain hidden because the API never permits a
+  // shipment to move backwards.
+  if (transportMode) {
+    const steps = remainingLogisticsStatuses(transportMode, currentStatus);
+    const recommended = nextLogisticsStatus(transportMode, currentStatus);
+    if (!recommended || steps.length === 0) return null;
+
+    return (
+      <div className="space-y-2">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Recommended next</p>
+        <div className="flex flex-wrap gap-2">
+          {steps.map((step, index) => {
+            const isSelected = selected === step;
+            const config = getStatusVisual(step);
+            return (
+              <button
+                key={step}
+                type="button"
+                onClick={() => onSelect(isSelected ? "" : step)}
+                className={`rounded-full border px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  isSelected
+                    ? "border-foreground bg-foreground text-background"
+                    : index === 0
+                      ? `${config.border} ${config.bg} ${config.iconColor} shadow-sm ring-1 ring-current/10`
+                      : `${config.border} ${config.bg} ${config.iconColor} hover:brightness-95`
+                }`}
+              >
+                {config.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy orders without a transport mode keep their smaller branching
+  // workflow, because those statuses are not part of the Air/Sea sequence.
   let primaryStep: string;
   let exceptionSteps: string[];
   let exceptionsHeading = "Exceptions";
-  if (transportMode) {
-    const next = nextLogisticsStatus(transportMode, currentStatus);
-    if (!next) return null;
-    primaryStep = next;
-    exceptionSteps = remainingLogisticsStatuses(transportMode, currentStatus).filter(
-      (s) => s !== next,
-    ).slice(0, 2);
-    exceptionsHeading = "Other next steps";
-  } else {
-    const choices = statusChoices(currentStatus);
-    if (!choices) return null;
-    primaryStep = choices.primary;
-    exceptionSteps = choices.exceptions;
-  }
+  const choices = statusChoices(currentStatus);
+  if (!choices) return null;
+  primaryStep = choices.primary;
+  exceptionSteps = choices.exceptions;
 
   const renderButton = (step: string, isPrimary: boolean) => {
     const cfg = getStatusVisual(step);
@@ -228,7 +254,6 @@ export default function OrderDetailPage() {
 
   const [statusForm, setStatusForm] = useState({
     status: "",
-    location: "",
     exceptionType: "" as ShipmentExceptionType | "",
     customerExplanation: "",
     notifyCustomer: true,
@@ -251,7 +276,7 @@ export default function OrderDetailPage() {
   const invoiceStatus = (order as (typeof order & { invoice_status?: string | null }))?.invoice_status ?? null;
   const isPostpaid = order?.billing_type === "POSTPAID";
   const companyName = business?.name ?? "Company";
-  const isDelivered = order?.current_status === "DELIVERED_COLLECTED" || order?.current_status === "DELIVERED";
+  const isDelivered = order ? isLogisticsTerminal(order.current_status) && order.current_status !== "CANCELLED" : false;
   // Billing status is tracked separately from the shipment status. Prefer the
   // stored billing_status; fall back to deriving from the invoice for legacy
   // Jobs whose column wasn't backfilled.
@@ -308,7 +333,6 @@ export default function OrderDetailPage() {
         orderId: id!,
         businessId: user!.businessId,
         status: statusForm.status,
-        location: statusForm.location || undefined,
         exceptionType: statusForm.exceptionType || undefined,
         message: statusForm.exceptionType ? statusForm.customerExplanation || undefined : undefined,
         notifyCustomer: statusForm.notifyCustomer,
@@ -328,7 +352,7 @@ export default function OrderDetailPage() {
           } else {
             toast.success(`Status updated to "${statusForm.status}". Customer will be notified.`);
           }
-          setStatusForm({ status: "", location: "", exceptionType: "", customerExplanation: "", notifyCustomer: true, skipReason: "" });
+          setStatusForm({ status: "", exceptionType: "", customerExplanation: "", notifyCustomer: true, skipReason: "" });
           refetch();
         },
         onError: () => toast.error("Failed to update status"),
@@ -397,7 +421,7 @@ export default function OrderDetailPage() {
   const selectedForwardIndex = order.transport_mode && statusForm.status
     ? remainingLogisticsStatuses(order.transport_mode, order.current_status).indexOf(statusForm.status)
     : -1;
-  const skipsMultipleStages = selectedForwardIndex > 1;
+  const skipsMultipleStages = selectedForwardIndex > 0;
   return (
     <div className="space-y-6 max-w-6xl pb-8">
 
@@ -525,7 +549,7 @@ export default function OrderDetailPage() {
                   {/* Status selection */}
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Select Next Status
+                      Choose shipment status
                     </Label>
                     <StatusPicker
                       currentStatus={order.current_status}
@@ -540,21 +564,7 @@ export default function OrderDetailPage() {
                     )}
                   </div>
 
-                  {/* Location */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-normal text-muted-foreground">
-                      Location{" "}
-                      <span className="text-muted-foreground/60">(optional - shown in timeline)</span>
-                    </Label>
-                    <Input
-                      value={statusForm.location}
-                      onChange={e => setStatusForm(f => ({ ...f, location: e.target.value }))}
-                      placeholder="e.g. Johannesburg Hub"
-                    />
-                  </div>
-
-                  {/* Optional exception context. Normal updates remain a
-                      status + optional location + submit flow. */}
+                  {/* Optional exception context. */}
                   <div className="space-y-1.5">
                     <Label className="text-xs font-normal text-muted-foreground">Issue / Reason <span className="text-muted-foreground/60">(optional)</span></Label>
                     <select

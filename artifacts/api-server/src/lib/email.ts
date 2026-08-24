@@ -22,6 +22,8 @@ export interface SendStatusEmailParams {
   trackingLink: string;
   businessName: string;
   supportEmail: string;
+  businessPhone?: string | null;
+  businessAddress?: string | null;
   // Company-defined Job Number (e.g. CFS-0024), shown to the customer alongside
   // the tracking ID. Optional so older callers/tests still compile.
   jobNumber?: string | null;
@@ -57,6 +59,10 @@ function renderFooterNote(template: string | null | undefined): string {
 // Status copy is now sourced from @workspace/order-statuses so the admin
 // preview and the actual outgoing email cannot drift.
 const copyFor = statusCopy;
+
+function isFinalCollectionStatus(status: string): boolean {
+  return status === "DELIVERED_READY_FOR_COLLECTION" || status === "Delivered / Ready for Collection";
+}
 
 // Only allow safe URL schemes through to the email so a malicious
 // `websiteUrl` (e.g. `javascript:`) can't end up as a clickable link in
@@ -111,6 +117,15 @@ function buildText(p: SendStatusEmailParams): string {
   if (safeLink) {
     lines.push("", "View full tracking:", safeLink);
   }
+  if (isFinalCollectionStatus(p.status)) {
+    const contactDetails = [p.businessName, p.businessAddress, p.businessPhone, p.supportEmail]
+      .map((value) => value?.trim())
+      .filter((value): value is string => !!value);
+    if (contactDetails.length > 0) {
+      lines.push("", "Collection / Contact Details", ...contactDetails);
+    }
+    lines.push("", "Please contact us if you need any assistance with collection.");
+  }
   if (footerNote) {
     lines.push("", footerNote);
   }
@@ -128,6 +143,8 @@ function buildHtml(p: SendStatusEmailParams): string {
   const safeStatus = escapeHtml(p.status);
   const safeMessage = p.statusMessage?.trim() ? escapeHtml(p.statusMessage.trim()) : "";
   const safeSupport = p.supportEmail ? escapeHtml(p.supportEmail) : "";
+  const safePhone = p.businessPhone?.trim() ? escapeHtml(p.businessPhone.trim()) : "";
+  const safeAddress = p.businessAddress?.trim() ? escapeHtml(p.businessAddress.trim()) : "";
   // Only http(s) URLs survive `safeTrackingLink`; anything else becomes "".
   const validLink = safeTrackingLink(p.trackingLink);
   const safeLink = validLink ? escapeHtml(validLink) : "";
@@ -176,6 +193,17 @@ function buildHtml(p: SendStatusEmailParams): string {
       <td style="padding:22px 0 0;">
         <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">A note from our team</p>
         <p style="margin:0;font-size:14px;color:#374151;white-space:pre-wrap;">${safeMessage}</p>
+      </td>
+    </tr>` : ""}
+
+    ${isFinalCollectionStatus(p.status) ? `
+    <tr>
+      <td style="padding:22px 0 0;">
+        <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;font-weight:bold;">Collection / Contact Details</p>
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">
+          <strong>${safeBusiness}</strong>${safeAddress ? `<br />${safeAddress}` : ""}${safePhone ? `<br />${safePhone}` : ""}${safeSupport ? `<br /><a href="mailto:${safeSupport}" style="color:#1a1a1a;">${safeSupport}</a>` : ""}
+        </p>
+        <p style="margin:10px 0 0;font-size:14px;color:#374151;">Please contact us if you need any assistance with collection.</p>
       </td>
     </tr>` : ""}
 

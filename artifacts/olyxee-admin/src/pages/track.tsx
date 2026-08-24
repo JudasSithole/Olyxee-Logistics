@@ -59,7 +59,7 @@ interface TrackingResponse {
   estimatedDeliveryDate: string | null;
   lastUpdated: string;
   events: TrackingEvent[];
-  business: { name: string; phone: string | null; email: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+  business: { name: string; phone: string | null; email: string | null; address: string | null; logoUrl: string | null; primaryColor: string | null } | null;
   selfService: { canCancel: boolean; canReschedule: boolean };
 }
 
@@ -250,6 +250,16 @@ export default function TrackPage() {
               )}
               {data.estimatedDeliveryDate && (
                 <div className="mt-5 flex items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3"><CalendarDays className="h-5 w-5 text-neutral-500"/><div><p className="text-xs text-neutral-500">Estimated delivery</p><p className="text-sm font-semibold">{formatDate(data.estimatedDeliveryDate)}</p></div></div>
+              )}
+              {data.currentStatus === "DELIVERED_READY_FOR_COLLECTION" && data.business && (data.business.address || data.business.phone || data.business.email) && (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-800">Collection / contact details</p>
+                  <div className="mt-3 space-y-2 text-sm text-neutral-700">
+                    {data.business.address && <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"/><span>{data.business.address}</span></p>}
+                    {data.business.phone && <a className="flex items-center gap-2 hover:underline" href={`tel:${data.business.phone}`}><Phone className="h-4 w-4 shrink-0 text-emerald-700"/>{data.business.phone}</a>}
+                    {data.business.email && <a className="flex items-center gap-2 hover:underline" href={`mailto:${data.business.email}`}><Mail className="h-4 w-4 shrink-0 text-emerald-700"/>{data.business.email}</a>}
+                  </div>
+                </div>
               )}
             </div>
 

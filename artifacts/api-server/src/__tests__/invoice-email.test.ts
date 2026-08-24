@@ -9,7 +9,7 @@ vi.mock("resend", () => ({
   },
 }));
 
-import { sendInvoiceEmail, type SendInvoiceEmailParams } from "../lib/email";
+import { sendInvoiceEmail, sendStatusEmail, type SendInvoiceEmailParams } from "../lib/email";
 
 const invoice: SendInvoiceEmailParams = {
   customerEmail: "customer@example.com", customerName: "Thabo Nkosi",
@@ -67,5 +67,28 @@ describe("invoice email delivery", () => {
     const payload = mocks.send.mock.calls[0][0];
     expect(payload).not.toHaveProperty("replyTo");
     expect(payload.attachments[0].content.toString("latin1")).toContain("/Subtype /Image");
+  });
+
+  it("includes available tenant collection details in the final status email", async () => {
+    const result = await sendStatusEmail({
+      customerEmail: "customer@example.com",
+      customerName: "Thabo Nkosi",
+      trackingId: "ACM-001-2026",
+      status: "Delivered / Ready for Collection",
+      statusMessage: null,
+      trackingLink: "https://logistics.example.com/track?code=ACM-001-2026",
+      businessName: "Acme Freight",
+      businessAddress: "12 Cargo Road, Johannesburg",
+      businessPhone: "+27 11 555 0100",
+      supportEmail: "help@acmefreight.test",
+    });
+
+    expect(result.success).toBe(true);
+    const payload = mocks.send.mock.calls[0][0];
+    expect(payload.subject).toContain("Your shipment is ready for collection");
+    expect(payload.html).toContain("Collection / Contact Details");
+    expect(payload.html).toContain("12 Cargo Road, Johannesburg");
+    expect(payload.html).toContain("+27 11 555 0100");
+    expect(payload.html).toContain("help@acmefreight.test");
   });
 });

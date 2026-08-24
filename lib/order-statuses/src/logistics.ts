@@ -37,9 +37,7 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
     "VAT_DUTY_PAID",
     "UNDERGOING_CUSTOMS_CLEARANCE",
     "CUSTOMS_CLEARANCE_COMPLETED",
-    "READY_FOR_COLLECTION_DELIVERY",
-    "OUT_FOR_DELIVERY",
-    "DELIVERED_COLLECTED",
+    "DELIVERED_READY_FOR_COLLECTION",
   ],
   SEA: [
     "ORDER_CONFIRMED",
@@ -47,15 +45,14 @@ export const LOGISTICS_STATUS_FLOWS: Record<TransportMode, readonly string[]> = 
     "RECEIVED_AT_WAREHOUSE",
     "PREPARING_FOR_SHIPMENT",
     "LOADING",
-    "DEPARTED_IN_TRANSIT",
+    "DEPARTED",
+    "MID_OCEAN_TRANSIT",
     "ARRIVED_AT_DESTINATION",
     "AWAITING_VAT_DUTY_PAYMENT",
     "VAT_DUTY_PAID",
     "UNDERGOING_CUSTOMS_CLEARANCE",
     "CUSTOMS_CLEARANCE_COMPLETED",
-    "READY_FOR_COLLECTION_DELIVERY",
-    "OUT_FOR_DELIVERY",
-    "DELIVERED_COLLECTED",
+    "DELIVERED_READY_FOR_COLLECTION",
   ],
 };
 
@@ -71,12 +68,15 @@ export const LEGACY_STATUS_MAP: Record<string, string> = {
   RECEIVED_FROM_SUPPLIER: "RECEIVED_AT_WAREHOUSE",
   EXPORT_CUSTOMS_CLEARED: "PREPARING_FOR_SHIPMENT",
   LOADED_ONTO_VESSEL: "LOADING",
-  VESSEL_DEPARTED: "DEPARTED_IN_TRANSIT",
-  MID_OCEAN_TRANSIT: "DEPARTED_IN_TRANSIT",
-  APPROACHING_DESTINATION_PORT: "DEPARTED_IN_TRANSIT",
+  VESSEL_DEPARTED: "DEPARTED",
+  DEPARTED_IN_TRANSIT: "MID_OCEAN_TRANSIT",
+  APPROACHING_DESTINATION_PORT: "MID_OCEAN_TRANSIT",
   VESSEL_ARRIVED: "ARRIVED_AT_DESTINATION",
   IMPORT_CUSTOMS_CLEARANCE: "UNDERGOING_CUSTOMS_CLEARANCE",
-  DELIVERED: "DELIVERED_COLLECTED",
+  READY_FOR_COLLECTION_DELIVERY: "DELIVERED_READY_FOR_COLLECTION",
+  OUT_FOR_DELIVERY: "DELIVERED_READY_FOR_COLLECTION",
+  DELIVERED_COLLECTED: "DELIVERED_READY_FOR_COLLECTION",
+  DELIVERED: "DELIVERED_READY_FOR_COLLECTION",
 };
 
 /** Resolve a (possibly legacy) status to its position in the current flow. */
@@ -92,6 +92,7 @@ export const LOGISTICS_STATUS_LABELS: Record<string, string> = {
   RECEIVED_AT_WAREHOUSE: "Shipment Received at Warehouse",
   PREPARING_FOR_SHIPMENT: "Preparing for Shipment",
   LOADING: "Loading",
+  DEPARTED: "Departed",
   DEPARTED_IN_TRANSIT: "Departed / In Transit",
   IN_TRANSIT: "In Transit",
   ARRIVED_AT_DESTINATION: "Arrived at Destination",
@@ -99,6 +100,7 @@ export const LOGISTICS_STATUS_LABELS: Record<string, string> = {
   VAT_DUTY_PAID: "VAT & Duty Paid",
   UNDERGOING_CUSTOMS_CLEARANCE: "Shipment Undergoing Customs Clearance",
   CUSTOMS_CLEARANCE_COMPLETED: "Customs Clearance Completed",
+  DELIVERED_READY_FOR_COLLECTION: "Delivered / Ready for Collection",
   READY_FOR_COLLECTION_DELIVERY: "Ready for Collection / Delivery",
   OUT_FOR_DELIVERY: "Out for Delivery",
   DELIVERED_COLLECTED: "Delivered / Collected",
@@ -147,7 +149,7 @@ export function isStatusValidForMode(mode: string, status: string): boolean {
 /** Terminal check: DELIVERED_COLLECTED and CANCELLED end a shipment (legacy
  * DELIVERED kept for existing orders). */
 export function isLogisticsTerminal(status: string): boolean {
-  return status === "DELIVERED_COLLECTED" || status === CANCELLED_STATUS || status === "DELIVERED";
+  return normalizeLogisticsStatus(status) === "DELIVERED_READY_FOR_COLLECTION" || status === CANCELLED_STATUS;
 }
 
 /**
@@ -205,12 +207,14 @@ export const LOGISTICS_STATUS_COPY: Record<string, LogisticsStatusCopy> = {
   PREPARING_FOR_SHIPMENT:        { headline: "Preparing your shipment",              intro: "Your goods are being packed and made ready to travel.",                                         accent: "#0ea5e9", tone: "neutral" },
   LOADING:                       { headline: "Loading your shipment",                intro: "Your cargo is being loaded, ready to depart.",                                                  accent: "#2563eb", tone: "positive" },
   DEPARTED_IN_TRANSIT:           { headline: "Your shipment is on its way",          intro: "Your cargo has departed and is in transit to the destination.",                                 accent: "#2563eb", tone: "positive" },
+  DEPARTED:                      { headline: "Your shipment has departed",           intro: "Your cargo has departed the origin port and started its sea journey.",                          accent: "#2563eb", tone: "positive" },
   IN_TRANSIT:                    { headline: "Your shipment is on its way",          intro: "Your cargo is in transit to the destination and will arrive soon.",                             accent: "#2563eb", tone: "positive" },
   ARRIVED_AT_DESTINATION:        { headline: "Arrived at the destination",           intro: "Your shipment has reached the destination and will begin customs clearance shortly.",           accent: "#16a34a", tone: "positive" },
   AWAITING_VAT_DUTY_PAYMENT:     { headline: "Awaiting VAT & duty payment",          intro: "Your shipment is held pending VAT and duty owed to customs. We'll let you know as soon as it's settled.", accent: "#d97706", tone: "warning" },
   VAT_DUTY_PAID:                 { headline: "VAT & duty settled",                   intro: "The VAT and duty on your shipment have been paid — customs clearance can now go ahead.",         accent: "#0ea5e9", tone: "positive" },
   UNDERGOING_CUSTOMS_CLEARANCE:  { headline: "Clearing customs",                     intro: "Your shipment is being cleared through customs at the destination.",                            accent: "#d97706", tone: "neutral" },
   CUSTOMS_CLEARANCE_COMPLETED:   { headline: "Customs cleared",                      intro: "Your shipment has cleared customs and is ready for the final leg.",                             accent: "#16a34a", tone: "positive" },
+  DELIVERED_READY_FOR_COLLECTION:{ headline: "Your shipment is ready for collection", intro: "Your shipment has reached its final stage and is now delivered / ready for collection.",          accent: "#16a34a", tone: "positive" },
   READY_FOR_COLLECTION_DELIVERY: { headline: "Ready for collection or delivery",     intro: "Your shipment is ready — we'll arrange delivery, or you can collect it.",                       accent: "#16a34a", tone: "positive" },
   OUT_FOR_DELIVERY:              { headline: "Out for delivery",                     intro: "Your shipment is on its way to you today — it's nearly there.",                                 accent: "#ea580c", tone: "positive" },
   DELIVERED_COLLECTED:           { headline: "Delivered — thank you",                intro: "Your shipment has been delivered/collected. We really appreciate your business and look forward to helping again.", accent: "#16a34a", tone: "positive" },
