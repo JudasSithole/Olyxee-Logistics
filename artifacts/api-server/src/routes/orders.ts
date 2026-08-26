@@ -51,7 +51,16 @@ export function isLogisticsBusiness(industry: string | null | undefined): boolea
 
 const router = Router();
 const SupplierTrackingBody = z.object({ supplierTrackingNumber: z.string().trim().min(2).max(200) });
-const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
+const ShipmentBoxBody = z.object({
+  weightKg: z.number().positive().max(100000),
+  lengthCm: z.number().positive().max(100000).optional(),
+  widthCm: z.number().positive().max(100000).optional(),
+  heightCm: z.number().positive().max(100000).optional(),
+}).refine(box => {
+  const count = [box.lengthCm, box.widthCm, box.heightCm].filter(value => value !== undefined).length;
+  return count === 0 || count === 3;
+}, "Add all three dimensions, or leave all three blank.");
+const UpdateOrderBody = z.object({ orderReference:z.string().max(200).nullable().optional(), description:z.string().max(5000).nullable().optional(), cargoType:z.string().max(500).nullable().optional(), serviceRequired:z.string().max(500).nullable().optional(), origin:z.string().max(500).nullable().optional(), destination:z.string().max(500).nullable().optional(), weight:z.string().max(200).nullable().optional(), dimensions:z.string().max(200).nullable().optional(), shipmentBoxes:z.array(ShipmentBoxBody).min(1).max(200).nullable().optional(), estimatedDeliveryDate:z.string().max(100).nullable().optional() });
 
 // Create-Job body. Replaces the generated CreateOrderBody (which had drifted
 // from openapi.yaml) so we can add jobNumber + billingType and enforce the
@@ -66,6 +75,7 @@ const CreateJobBody = z
     cargoType: z.string().min(1),
     serviceRequired: z.string().min(1),
     weight: z.string().min(1),
+    shipmentBoxes: z.array(ShipmentBoxBody).min(1).max(200).optional(),
     orderReference: z.string().max(200).optional(),
     description: z.string().max(5000).optional(),
     estimatedDeliveryDate: z.string().max(100).optional(),
@@ -157,6 +167,19 @@ function buildTrackingLink(_websiteUrl: string, trackingId: string): string {
   // customer never needs to know Olyxee powers it. (_websiteUrl kept for
   // signature compatibility with existing call sites.)
   return `${HOSTED_TRACKING_BASE}/track?code=${trackingId}`;
+}
+
+function buildBusinessTrackingLink(pageUrl: string | null | undefined, trackingId: string): string | undefined {
+  const raw = pageUrl?.trim();
+  if (!raw) return undefined;
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+    url.searchParams.set("code", trackingId);
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function serializeOrder(o: typeof ordersTable.$inferSelect) {
@@ -397,6 +420,7 @@ router.post("/orders", requireAuth, async (req, res) => {
             destination: parse.data.destination ?? null,
             weight: parse.data.weight ?? null,
             dimensions: parse.data.dimensions ?? null,
+            shipmentBoxes: parse.data.shipmentBoxes ?? null,
             estimatedDeliveryDate: parse.data.estimatedDeliveryDate ?? null,
           })
           .returning();
@@ -817,6 +841,7 @@ router.post("/orders/:orderId/status", requireAuth, async (req, res) => {
         status: order.transportMode ? logisticsStatusLabel(status) : status,
         statusMessage: message ?? null,
         trackingLink,
+        businessTrackingLink: buildBusinessTrackingLink(business.customerTrackingPageUrl, order.trackingId),
         timeline,
         businessName: business.name,
         supportEmail: business.supportEmail,
@@ -1103,6 +1128,7 @@ router.post("/orders/:orderId/resend-email", requireAuth, async (req, res) => {
         : order.currentStatus,
       statusMessage: null,
       trackingLink,
+      businessTrackingLink: buildBusinessTrackingLink(business.customerTrackingPageUrl, order.trackingId),
       businessName: business.name,
       supportEmail: business.supportEmail,
       businessPhone: business.invoicePhone || business.phone,

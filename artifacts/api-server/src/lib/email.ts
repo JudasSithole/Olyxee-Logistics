@@ -20,6 +20,7 @@ export interface SendStatusEmailParams {
   status: string;
   statusMessage: string | null;
   trackingLink: string;
+  businessTrackingLink?: string | null;
   businessName: string;
   supportEmail: string;
   businessPhone?: string | null;
@@ -117,6 +118,10 @@ function buildText(p: SendStatusEmailParams): string {
   if (safeLink) {
     lines.push("", "View full tracking:", safeLink);
   }
+  const safeBusinessTrackingLink = safeTrackingLink(p.businessTrackingLink ?? "");
+  if (safeBusinessTrackingLink) {
+    lines.push("", `Or view this shipment on ${p.businessName}'s website:`, safeBusinessTrackingLink);
+  }
   if (isFinalCollectionStatus(p.status)) {
     const contactDetails = [p.businessName, p.businessAddress, p.businessPhone, p.supportEmail]
       .map((value) => value?.trim())
@@ -148,6 +153,8 @@ function buildHtml(p: SendStatusEmailParams): string {
   // Only http(s) URLs survive `safeTrackingLink`; anything else becomes "".
   const validLink = safeTrackingLink(p.trackingLink);
   const safeLink = validLink ? escapeHtml(validLink) : "";
+  const validBusinessLink = safeTrackingLink(p.businessTrackingLink ?? "");
+  const safeBusinessLink = validBusinessLink ? escapeHtml(validBusinessLink) : "";
 
   // Customizable copy - placeholders substituted before escaping so admins
   // can edit wording in Settings without writing HTML.
@@ -217,6 +224,7 @@ function buildHtml(p: SendStatusEmailParams): string {
         ${safeLink ? `
         <p style="margin:0;"><a href="${safeLink}" style="display:inline-block;padding:11px 22px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">Track your shipment</a></p>
         <p style="margin:10px 0 0;font-size:12px;color:#6b7280;word-break:break-all;">Or open: <a href="${safeLink}" style="color:#374151;">${safeLink}</a></p>` : ""}
+        ${safeBusinessLink ? `<p style="margin:12px 0 0;font-size:13px;"><a href="${safeBusinessLink}" style="color:#374151;text-decoration:underline;">View tracking on ${safeBusiness}</a></p>` : ""}
         </td></tr></table>
       </td>
     </tr>

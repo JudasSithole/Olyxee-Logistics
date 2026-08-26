@@ -23,6 +23,7 @@ export interface Business {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  customerTrackingPageUrl?: string | null;
   /** Maximum status emails this business may send per calendar month. */
   monthlyEmailLimit?: number;
   /** Status emails actually sent this calendar month. */

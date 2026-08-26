@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -259,6 +259,15 @@ export default function OrderDetailPage() {
     notifyCustomer: true,
     skipReason: "",
   });
+
+  useEffect(() => {
+    if (!order || isLogisticsTerminal(order.current_status) || isTerminal(order.current_status)) return;
+    const recommended = order.transport_mode
+      ? nextLogisticsStatus(order.transport_mode, order.current_status)
+      : statusChoices(order.current_status)?.primary;
+    if (!recommended) return;
+    setStatusForm((current) => current.status ? current : { ...current, status: recommended });
+  }, [order?.current_status, order?.transport_mode]);
   const [supplierTracking, setSupplierTracking] = useState("");
   const [savingSupplierTracking, setSavingSupplierTracking] = useState(false);
   const [invoiceSubtotal, setInvoiceSubtotal] = useState("");
@@ -493,7 +502,7 @@ export default function OrderDetailPage() {
         </div>
         <div className="grid border-t border-border/60 sm:grid-cols-2 lg:grid-cols-4">
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r lg:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ReceiptText className="h-4 w-4"/>Billing</div><p className={`mt-2 text-sm font-semibold ${billingStatus === "PAID" ? "text-emerald-700" : billingStatus === "AWAITING_PAYMENT" ? "text-amber-700" : "text-foreground"}`}>{isPostpaid ? "POSTPAID" : "PREPAID"} · {billingLabel}</p><p className="mt-0.5 text-xs text-muted-foreground">{isPostpaid ? "Invoiced after delivery" : "Payment before shipment"}</p>{order.invoice_id && <Link href={`/invoices/${order.invoice_id}`} className="mt-1 inline-block text-xs text-primary hover:underline">View invoice</Link>}</div>
-          <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment"}</p></div>
+          <div className="p-4 sm:p-5 border-b border-border/60 lg:border-b-0 lg:border-r"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Package className="h-4 w-4"/>Shipment</div><p className="mt-2 text-sm font-semibold">{order.transport_mode ? logisticsStatusLabel(order.current_status) : order.current_status}</p><p className="mt-1 text-xs text-muted-foreground">{order.shipment_boxes?.length ? `${order.shipment_boxes.length} ${order.shipment_boxes.length === 1 ? "box" : "boxes"} · ${order.weight || "Weight pending"}` : (shipmentUpdatesUnlocked ? "Updates available" : paymentConfirmed ? "Waiting for warehouse" : "Starts after payment")}</p></div>
           <div className="p-4 sm:p-5 border-b border-border/60 sm:border-r sm:border-b-0"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><MapPin className="h-4 w-4"/>Route</div><p className="mt-2 truncate text-sm font-semibold">{order.origin || "Origin not added"} → {order.destination || "Destination not added"}</p>{order.estimated_delivery_date && <p className="mt-1 text-xs text-muted-foreground">ETA {displayDate(order.estimated_delivery_date, "MMM d, yyyy")}</p>}</div>
           <div className="p-4 sm:p-5"><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><User className="h-4 w-4"/>Customer</div>{order.customers&&<button type="button" onClick={openCustomerEdit} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><Edit className="h-3 w-3"/>Edit</button>}</div>{order.customers ? <><Link href={`/customers/${order.customers.id}`} className="mt-2 flex items-center gap-1 text-sm font-semibold hover:text-primary">{order.customers.full_name}<ExternalLink className="h-3 w-3"/></Link><p className="mt-1 truncate text-xs text-muted-foreground">{order.customers.company_name || order.customers.email}</p></> : <p className="mt-2 text-sm text-muted-foreground">No customer linked</p>}</div>
         </div>
@@ -761,6 +770,14 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
+              {order.shipment_boxes?.length ? (
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <div className="mb-2 flex items-center justify-between"><p className="font-semibold">Shipment pieces</p><span className="text-muted-foreground">{order.weight}</span></div>
+                  <div className="divide-y">
+                    {order.shipment_boxes.map((box, index) => <div key={index} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"><span className="font-medium">Box {index + 1}</span><span className="text-right text-muted-foreground">{box.weightKg} kg{box.lengthCm && box.widthCm && box.heightCm ? ` · ${box.lengthCm} × ${box.widthCm} × ${box.heightCm} cm` : ""}</span></div>)}
+                  </div>
+                </div>
+              ) : null}
               {order.description && (
                 <div>
                   <p className="text-muted-foreground uppercase font-medium mb-0.5">Description</p>

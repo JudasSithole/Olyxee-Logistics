@@ -30,6 +30,8 @@ export const businessesTable = pgTable("businesses", {
   // public endpoints (currently /api/public/track/:id) cross-origin. Lets each
   // tenant whitelist their own customer site without redeploying the API.
   allowedOrigins: text("allowed_origins"),
+  // Optional tenant-owned page containing the Olyxee tracking plugin.
+  customerTrackingPageUrl: text("customer_tracking_page_url"),
   // Maximum number of customer status-update emails this business may send per
   // calendar month. Once reached, the API stops sending and surfaces an
   // "upgrade" prompt. Raising this value (manually) is how a business is

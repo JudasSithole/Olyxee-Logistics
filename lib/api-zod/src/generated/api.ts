@@ -42,6 +42,7 @@ export const GetBusinessResponse = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "customerTrackingPageUrl": zod.string().nullish(),
   "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
   "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
@@ -78,6 +79,7 @@ export const UpdateBusinessBody = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "customerTrackingPageUrl": zod.string().nullish(),
   "businessLogoUrl": zod.string().nullish(),
   "invoiceLegalName": zod.string().nullish(),
   "invoiceRegistrationNumber": zod.string().nullish(),
@@ -108,6 +110,7 @@ export const UpdateBusinessResponse = zod.object({
   "emailFooterNote": zod.string().nullish(),
   "trackingIdPrefix": zod.string().nullish(),
   "allowedOrigins": zod.string().nullish(),
+  "customerTrackingPageUrl": zod.string().nullish(),
   "monthlyEmailLimit": zod.number().optional().describe('Maximum status emails this business may send per calendar month.'),
   "emailUsageThisMonth": zod.number().optional().describe('Status emails actually sent this calendar month.'),
   "onboardingCompleted": zod.boolean(),
@@ -803,5 +806,4 @@ export const SendInvoiceParams = zod.object({
 export const MarkInvoicePaidParams = zod.object({
   "invoiceId": zod.coerce.string()
 })
-
 

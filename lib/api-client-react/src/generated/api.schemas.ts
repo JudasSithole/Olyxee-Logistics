@@ -61,6 +61,7 @@ export interface Business {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  customerTrackingPageUrl?: string | null;
   /** Maximum status emails this business may send per calendar month. */
   monthlyEmailLimit?: number;
   /** Status emails actually sent this calendar month. */
@@ -96,6 +97,18 @@ export interface BusinessUpdate {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  customerTrackingPageUrl?: string | null;
+  businessLogoUrl?: string | null;
+  invoiceLegalName?: string | null;
+  invoiceRegistrationNumber?: string | null;
+  invoiceTaxNumber?: string | null;
+  invoiceAddress?: string | null;
+  invoiceEmail?: string | null;
+  invoicePhone?: string | null;
+  invoiceLogoUrl?: string | null;
+  invoicePaymentDetails?: string | null;
+  invoicePaymentTerms?: string | null;
+  invoiceFooterNote?: string | null;
   primaryBrandColour?: string | null;
   onboardingCompleted?: boolean;
 }

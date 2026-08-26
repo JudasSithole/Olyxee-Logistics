@@ -38,6 +38,7 @@ export interface Database {
           email_footer_note: string | null;
           tracking_id_prefix: string | null;
           allowed_origins: string | null;
+          customer_tracking_page_url: string | null;
           notify_on_status_change: boolean;
           notification_email: boolean;
           notification_sms: boolean;
@@ -93,6 +94,7 @@ export interface Database {
           email_footer_note?: string | null;
           tracking_id_prefix?: string | null;
           allowed_origins?: string | null;
+          customer_tracking_page_url?: string | null;
           notify_on_status_change?: boolean;
           notification_email?: boolean;
           notification_sms?: boolean;
@@ -184,6 +186,7 @@ export interface Database {
           destination: string | null;
           weight: string | null;
           dimensions: string | null;
+          shipment_boxes: Array<{ weightKg: number; lengthCm?: number; widthCm?: number; heightCm?: number }> | null;
           current_step_position: number;
           description: string | null;
           estimated_completion: string | null;
@@ -215,6 +218,7 @@ export interface Database {
           destination?: string | null;
           weight?: string | null;
           dimensions?: string | null;
+          shipment_boxes?: Array<{ weightKg: number; lengthCm?: number; widthCm?: number; heightCm?: number }> | null;
           current_step_position?: number;
           description?: string | null;
           estimated_completion?: string | null;

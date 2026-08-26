@@ -745,6 +745,14 @@ paths:
       responses: { "200": { description: Invoice marked paid } }
 components:
   schemas:
+    ShipmentBox:
+      type: object
+      required: [weightKg]
+      properties:
+        weightKg: { type: number, minimum: 0.01 }
+        lengthCm: { type: number, minimum: 0.01 }
+        widthCm: { type: number, minimum: 0.01 }
+        heightCm: { type: number, minimum: 0.01 }
     SupplierTrackingInput:
       type: object
       required: [supplierTrackingNumber]
@@ -806,6 +814,9 @@ components:
           type: string
           nullable: true
         allowedOrigins:
+          type: string
+          nullable: true
+        customerTrackingPageUrl:
           type: string
           nullable: true
         monthlyEmailLimit:
@@ -894,6 +905,42 @@ components:
           type: string
           nullable: true
         allowedOrigins:
+          type: string
+          nullable: true
+        customerTrackingPageUrl:
+          type: string
+          nullable: true
+        businessLogoUrl:
+          type: string
+          nullable: true
+        invoiceLegalName:
+          type: string
+          nullable: true
+        invoiceRegistrationNumber:
+          type: string
+          nullable: true
+        invoiceTaxNumber:
+          type: string
+          nullable: true
+        invoiceAddress:
+          type: string
+          nullable: true
+        invoiceEmail:
+          type: string
+          nullable: true
+        invoicePhone:
+          type: string
+          nullable: true
+        invoiceLogoUrl:
+          type: string
+          nullable: true
+        invoicePaymentDetails:
+          type: string
+          nullable: true
+        invoicePaymentTerms:
+          type: string
+          nullable: true
+        invoiceFooterNote:
           type: string
           nullable: true
         primaryBrandColour:
@@ -1120,6 +1167,11 @@ components:
         destination: { type: string, nullable: true }
         weight: { type: string, nullable: true }
         dimensions: { type: string, nullable: true }
+        shipmentBoxes:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ShipmentBox"
         estimatedDeliveryDate:
           type: string
         createdAt:
@@ -1194,6 +1246,11 @@ components:
         destination: { type: string, nullable: true }
         weight: { type: string, nullable: true }
         dimensions: { type: string, nullable: true }
+        shipmentBoxes:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ShipmentBox"
         estimatedDeliveryDate:
           type: string
         trackingLink:

@@ -125,6 +125,7 @@ interface ApiOrder {
   destination?: string | null;
   weight?: string | null;
   dimensions?: string | null;
+  shipmentBoxes?: Array<{ weightKg: number; lengthCm?: number; widthCm?: number; heightCm?: number }> | null;
 }
 
 function mapOrder(o: ApiOrder, businessId?: string): Order {
@@ -150,6 +151,7 @@ function mapOrder(o: ApiOrder, businessId?: string): Order {
     destination: o.destination ?? null,
     weight: o.weight ?? null,
     dimensions: o.dimensions ?? null,
+    shipment_boxes: o.shipmentBoxes ?? null,
     current_step_position: o.currentStepPosition ?? 0,
     description: o.description ?? null,
     estimated_completion: estimated,
@@ -204,6 +206,7 @@ interface ApiBusiness {
   emailFooterNote?: string | null;
   trackingIdPrefix?: string | null;
   allowedOrigins?: string | null;
+  customerTrackingPageUrl?: string | null;
   monthlyEmailLimit?: number;
   emailUsageThisMonth?: number;
   onboardingCompleted: boolean;
@@ -245,6 +248,7 @@ function mapBusiness(b: ApiBusiness): Business {
     email_footer_note: b.emailFooterNote ?? null,
     tracking_id_prefix: b.trackingIdPrefix ?? null,
     allowed_origins: b.allowedOrigins ?? null,
+    customer_tracking_page_url: b.customerTrackingPageUrl ?? null,
     notify_on_status_change: true,
     notification_email: true,
     notification_sms: false,
@@ -377,6 +381,7 @@ export function useUpdateBusiness() {
       if (updates.email_footer_note !== undefined) body.emailFooterNote = updates.email_footer_note;
       if (updates.tracking_id_prefix !== undefined) body.trackingIdPrefix = updates.tracking_id_prefix;
       if (updates.allowed_origins !== undefined) body.allowedOrigins = updates.allowed_origins;
+      if (updates.customer_tracking_page_url !== undefined) body.customerTrackingPageUrl = updates.customer_tracking_page_url;
       if (updates.business_logo_url !== undefined) body.businessLogoUrl = updates.business_logo_url;
       if (updates.primary_brand_colour !== undefined) body.primaryBrandColour = updates.primary_brand_colour;
       if (updates.invoice_legal_name !== undefined) body.invoiceLegalName = updates.invoice_legal_name;
@@ -619,6 +624,7 @@ export function useCreateOrder() {
           destination: (input as { destination?: string }).destination ?? undefined,
           weight: (input as { weight?: string }).weight ?? undefined,
           dimensions: (input as { dimensions?: string }).dimensions ?? undefined,
+          shipmentBoxes: (input as { shipment_boxes?: Array<{ weightKg: number; lengthCm?: number; widthCm?: number; heightCm?: number }> }).shipment_boxes ?? undefined,
           // PREPAID sends the accepted amount; POSTPAID omits it (invoiced later).
           invoiceSubtotal: input.invoice_subtotal || undefined,
           invoiceAdditionalCharges: input.invoice_additional_charges || undefined,

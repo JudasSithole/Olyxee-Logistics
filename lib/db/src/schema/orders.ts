@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, foreignKey, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, foreignKey, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -25,6 +25,13 @@ export const ORDER_STATUSES = [
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export type ShipmentBox = {
+  weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+};
 
 export const ordersTable = pgTable(
   "orders",
@@ -63,6 +70,9 @@ export const ordersTable = pgTable(
     destination: text("destination"),
     weight: text("weight"),
     dimensions: text("dimensions"),
+    // Structured pieces for multi-box shipments. Nullable so every existing
+    // order continues to use the legacy weight/dimensions fields unchanged.
+    shipmentBoxes: jsonb("shipment_boxes").$type<ShipmentBox[]>(),
     estimatedDeliveryDate: text("estimated_delivery_date"),
     // Actual delivered/collected timestamp, set when the Job reaches its
     // terminal AIR/SEA status (DELIVERED_COLLECTED / legacy DELIVERED). Distinct

@@ -1404,6 +1404,7 @@ function TrackingCustomizationSection() {
   // ── Saved server fields ──
   const [prefix, setPrefix] = useState("");
   const [origins, setOrigins] = useState("");
+  const [trackingPageUrl, setTrackingPageUrl] = useState("");
   const [loaded, setLoaded] = useState(false);
   // ── Which platform the site is built with (local choice, not persisted) ──
   const [platform, setPlatform] = useState<WebsitePlatform | null>(null);
@@ -1433,6 +1434,7 @@ function TrackingCustomizationSection() {
       // Pre-fill with the saved prefix, or the auto value from the company name.
       setPrefix(business.tracking_id_prefix ?? derivedPrefix);
       setOrigins(business.allowed_origins ?? "");
+      setTrackingPageUrl(business.customer_tracking_page_url ?? "");
       setLoaded(true);
     }
   }, [business, loaded, derivedPrefix]);
@@ -1446,6 +1448,7 @@ function TrackingCustomizationSection() {
   // "dirty" until the business actually changes it.
   const prefixDirty = loaded && prefix !== (savedPrefix || derivedPrefix);
   const originsDirty = loaded && origins.trim() !== (business?.allowed_origins ?? "");
+  const trackingPageDirty = loaded && trackingPageUrl.trim() !== (business?.customer_tracking_page_url ?? "");
 
   // Where the customer's OWN site lives (their tracking page + track links).
   const siteOrigin = useMemo(() => {
@@ -1493,7 +1496,16 @@ function TrackingCustomizationSection() {
 
   const trackBase = siteOrigin || "https://yourwebsite.co.za";
   const customerLink = `${trackBase}/track?code=${cleanId}`;
-  const wpCustomerLink = `${trackBase}/track/?code=${cleanId}`;
+  const wpCustomerLink = useMemo(() => {
+    const raw = trackingPageUrl.trim() || `${trackBase}/track-shipment/`;
+    try {
+      const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      url.searchParams.set("code", cleanId);
+      return url.toString();
+    } catch {
+      return `${trackBase}/track-shipment/?code=${encodeURIComponent(cleanId)}`;
+    }
+  }, [trackingPageUrl, trackBase, cleanId]);
   const pluginUrl = `${import.meta.env.BASE_URL}olyxee-tracking.zip`;
   const guideUrl = `${import.meta.env.BASE_URL}website-tracking.md`;
   const shortcode = "[olyxee_tracking]";
@@ -1531,6 +1543,30 @@ function TrackingCustomizationSection() {
           refetch();
         },
         onError: () => toast.error("Could not save authorised websites"),
+      },
+    );
+  };
+
+  const saveTrackingPage = () => {
+    const raw = trackingPageUrl.trim();
+    if (raw) {
+      try {
+        const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+        if (!/^https?:$/.test(parsed.protocol)) throw new Error("Invalid protocol");
+      } catch {
+        toast.error("Enter a valid tracking page URL");
+        return;
+      }
+    }
+    updateMutation.mutate(
+      { id: user!.businessId, customer_tracking_page_url: raw || null },
+      {
+        onSuccess: (b) => {
+          toast.success("Customer tracking page saved");
+          setTrackingPageUrl(b.customer_tracking_page_url ?? "");
+          refetch();
+        },
+        onError: () => toast.error("Could not save the tracking page"),
       },
     );
   };
@@ -1694,6 +1730,19 @@ function TrackingCustomizationSection() {
             subtitle="Link customers to that page with their tracking number. The shipment loads automatically - no typing needed."
             last
           >
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={trackingPageUrl}
+                onChange={(event) => setTrackingPageUrl(event.target.value)}
+                placeholder={`${trackBase}/track-shipment/`}
+                aria-label="Customer tracking page URL"
+                className="h-11 flex-1"
+              />
+              <Button size="sm" onClick={saveTrackingPage} disabled={!trackingPageDirty || saving} className="h-11 gap-1.5">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Save page
+              </Button>
+            </div>
             <div className="rounded-xl border border-border/70 bg-muted/25 p-3.5">
               <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
                 <Link2 className="h-3.5 w-3.5" /> Your track link

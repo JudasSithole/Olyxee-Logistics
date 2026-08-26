@@ -77,6 +77,7 @@ describe("invoice email delivery", () => {
       status: "Delivered / Ready for Collection",
       statusMessage: null,
       trackingLink: "https://logistics.example.com/track?code=ACM-001-2026",
+      businessTrackingLink: "https://acmefreight.test/track-shipment/?code=ACM-001-2026",
       businessName: "Acme Freight",
       businessAddress: "12 Cargo Road, Johannesburg",
       businessPhone: "+27 11 555 0100",
@@ -90,5 +91,7 @@ describe("invoice email delivery", () => {
     expect(payload.html).toContain("12 Cargo Road, Johannesburg");
     expect(payload.html).toContain("+27 11 555 0100");
     expect(payload.html).toContain("help@acmefreight.test");
+    expect(payload.html).toContain("View tracking on Acme Freight");
+    expect(payload.html).toContain("https://acmefreight.test/track-shipment/?code=ACM-001-2026");
   });
 });

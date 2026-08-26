@@ -41,6 +41,7 @@ const DEMO_BUSINESS = {
   emailFooterNote: null,
   trackingIdPrefix: "TRK",
   allowedOrigins: null,
+  customerTrackingPageUrl: null,
   monthlyEmailLimit: 500,
   emailUsageThisMonth: 0,
   onboardingCompleted: true,
@@ -83,6 +84,7 @@ function serialize(
     emailFooterNote: business.emailFooterNote,
     trackingIdPrefix: business.trackingIdPrefix,
     allowedOrigins: business.allowedOrigins,
+    customerTrackingPageUrl: business.customerTrackingPageUrl,
     monthlyEmailLimit: business.monthlyEmailLimit,
     emailUsageThisMonth,
     onboardingCompleted: business.onboardingCompleted,
@@ -222,6 +224,18 @@ router.put("/business", requireAuth, async (req, res) => {
               return list.length > 0 ? list.join(",") : null;
             })()
           : existing.allowedOrigins,
+        customerTrackingPageUrl: "customerTrackingPageUrl" in parse.data
+          ? (() => {
+              const raw = parse.data.customerTrackingPageUrl?.trim() ?? "";
+              if (!raw) return null;
+              try {
+                const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+                return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+              } catch {
+                return null;
+              }
+            })()
+          : existing.customerTrackingPageUrl,
         businessLogoUrl: "businessLogoUrl" in parse.data
           ? parse.data.businessLogoUrl ?? null : existing.businessLogoUrl,
         primaryBrandColour: "primaryBrandColour" in parse.data

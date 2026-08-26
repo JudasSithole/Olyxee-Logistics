@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { StatusBadge } from "@/components/status-badge";
-import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, ClipboardCheck, Filter, Plane, RotateCcw, Ship, Truck } from "lucide-react";
+import { Plus, Search, Package, Check, ChevronsUpDown, ArrowRight, ClipboardCheck, Copy, Filter, Plane, RotateCcw, Ship, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { format, isValid } from "date-fns";
 import { ORDER_STATUSES, TRANSPORT_MODES, TRANSPORT_MODE_LABELS, type TransportMode } from "@/lib/order-statuses";
@@ -61,10 +61,11 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
-    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "",
-    dimensionLength: "", dimensionWidth: "", dimensionHeight: "", dimensionUnit: "cm",
+    cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa",
     invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
   }));
+  const emptyBox = () => ({ weight: "", length: "", width: "", height: "" });
+  const [boxes, setBoxes] = useState([emptyBox()]);
   const createMutation = useCreateOrder();
   // Server-side customer search so every customer is reachable, not just the
   // most recent page. The picker debounces typing before hitting the API.
@@ -97,10 +98,10 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
-        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa", weight: "",
-        dimensionLength: "", dimensionWidth: "", dimensionHeight: "", dimensionUnit: "cm",
+        cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa",
         invoiceSubtotal: "", invoiceAdditionalCharges: "0", jobCost: "",
       });
+      setBoxes([emptyBox()]);
       setSelectedCustomer(null);
       setCustomerSearch("");
       setDebouncedSearch("");
@@ -114,14 +115,24 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
   }, [open]);
 
   const isPrepaid = form.billingType === "PREPAID";
-  const hasAnyDimension = !!(form.dimensionLength || form.dimensionWidth || form.dimensionHeight);
-  const dimensionsComplete = !hasAnyDimension || !!(form.dimensionLength && form.dimensionWidth && form.dimensionHeight);
-  const formattedDimensions = dimensionsComplete && hasAnyDimension
-    ? `${form.dimensionLength} × ${form.dimensionWidth} × ${form.dimensionHeight} ${form.dimensionUnit}`
-    : undefined;
+  const boxesValid = boxes.every(box => {
+    const dimensions = [box.length, box.width, box.height];
+    const dimensionCount = dimensions.filter(Boolean).length;
+    return Number(box.weight) > 0 && (dimensionCount === 0 || dimensionCount === 3);
+  });
+  const shipmentBoxes = boxesValid ? boxes.map(box => ({
+    weightKg: Number(box.weight),
+    ...(box.length && box.width && box.height ? {
+      lengthCm: Number(box.length), widthCm: Number(box.width), heightCm: Number(box.height),
+    } : {}),
+  })) : [];
+  const totalWeight = shipmentBoxes.reduce((sum, box) => sum + box.weightKg, 0);
+  const formattedDimensions = shipmentBoxes.length === 1 && shipmentBoxes[0].lengthCm
+    ? `${shipmentBoxes[0].lengthCm} × ${shipmentBoxes[0].widthCm} × ${shipmentBoxes[0].heightCm} cm`
+    : `${shipmentBoxes.length} boxes`;
   // Per-step completeness so "Next" only enables once the step is valid.
   const step1Ok = !!form.customerId;
-  const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && !!form.weight.trim() && dimensionsComplete;
+  const step2Ok = !!form.transportMode && !!form.origin.trim() && !!form.destination.trim() && !!form.cargoType.trim() && !!form.serviceRequired.trim() && boxesValid;
   const step3Ok = !!form.jobNumber.trim() && (!isPrepaid || !!form.invoiceSubtotal);
   const STEP_LABELS = ["Customer", "Shipment", "Billing"];
   const STEP_SUBTITLES = ["Who is this Job for?", "Where's it going and what's inside?", "Reference and how it's billed"];
@@ -153,8 +164,9 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         service_required: form.serviceRequired || undefined,
         origin: form.origin || undefined,
         destination: form.destination || undefined,
-        weight: form.weight || undefined,
+        weight: `${Number(totalWeight.toFixed(2))} kg`,
         dimensions: formattedDimensions,
+        shipment_boxes: shipmentBoxes,
         transport_mode: form.transportMode,
         // PREPAID invoices at creation; POSTPAID is invoiced after delivery.
         invoice_subtotal: isPrepaid ? form.invoiceSubtotal : undefined,
@@ -273,7 +285,6 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 ["destination", "Destination", "South Africa"],
                 ["cargoType", "Cargo / invoice item", "e.g. Handbags"],
                 ["serviceRequired", "Service required", "e.g. Customs & tax"],
-                ["weight", "Weight", "e.g. 1.5 kg"],
               ] as const).map(([key, label, ph]) => (
                 <div key={key} className="space-y-2">
                   <Label className="text-[13px] font-medium text-muted-foreground">{label}</Label>
@@ -281,28 +292,24 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                 </div>
               ))}
             </div>
-            <div className="space-y-2.5 rounded-2xl border border-border/70 bg-muted/20 p-4">
-              <div>
-                <Label className="text-[13px] font-medium">Package dimensions <span className="font-normal text-muted-foreground">(optional)</span></Label>
-                <p className="mt-1 text-xs text-muted-foreground">Enter the package size as Length × Width × Height.</p>
+            <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div><Label className="text-[13px] font-medium">Boxes</Label><p className="mt-1 text-xs text-muted-foreground">Add each piece. Dimensions are optional and use centimetres.</p></div>
+                <div className="shrink-0 text-right"><p className="text-sm font-semibold">{boxes.length} {boxes.length === 1 ? "box" : "boxes"}</p><p className="text-xs text-muted-foreground">{boxesValid ? `${Number(totalWeight.toFixed(2))} kg total` : "Add weights"}</p></div>
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_90px]">
-                {([['dimensionLength','Length'],['dimensionWidth','Width'],['dimensionHeight','Height']] as const).map(([key,label]) => (
-                  <div key={key} className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">{label}</Label>
-                    <Input type="number" min="0" step="0.01" inputMode="decimal" value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder="0" className={field} />
-                  </div>
-                ))}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground">Unit</Label>
-                  <Select value={form.dimensionUnit} onValueChange={value => setForm(f => ({ ...f, dimensionUnit: value }))}>
-                    <SelectTrigger className={field}><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="cm">cm</SelectItem><SelectItem value="m">m</SelectItem><SelectItem value="in">in</SelectItem></SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2.5">
+                {boxes.map((box, index) => {
+                  const dimensionCount = [box.length, box.width, box.height].filter(Boolean).length;
+                  return <div key={index} className="rounded-xl border bg-background p-3">
+                    <div className="mb-2.5 flex items-center justify-between"><span className="text-xs font-semibold">Box {index + 1}</span><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={`Duplicate box ${index + 1}`} onClick={() => setBoxes(current => [...current.slice(0,index+1), {...box}, ...current.slice(index+1)])}><Copy className="h-3.5 w-3.5" /></Button>{boxes.length > 1 && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" aria-label={`Remove box ${index + 1}`} onClick={() => setBoxes(current => current.filter((_,i)=>i!==index))}><Trash2 className="h-3.5 w-3.5" /></Button>}</div></div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {([['weight','Weight (kg)'],['length','Length (cm)'],['width','Width (cm)'],['height','Height (cm)']] as const).map(([key,label]) => <div key={key} className="space-y-1"><Label className="text-[10px] text-muted-foreground">{label}</Label><Input type="number" min="0" step="0.01" inputMode="decimal" value={box[key]} onChange={e=>setBoxes(current=>current.map((item,i)=>i===index?{...item,[key]:e.target.value}:item))} placeholder="0" className="h-9 rounded-lg" /></div>)}
+                    </div>
+                    {dimensionCount > 0 && dimensionCount < 3 && <p className="mt-2 text-xs font-medium text-amber-700">Complete all three dimensions, or clear them.</p>}
+                  </div>;
+                })}
               </div>
-              {!dimensionsComplete && <p className="text-xs font-medium text-amber-700">Add all three measurements, or leave all three blank.</p>}
-              {formattedDimensions && <p className="text-xs text-muted-foreground">Saved as <span className="font-medium text-foreground">{formattedDimensions}</span></p>}
+              <Button type="button" variant="outline" className="h-9 w-full rounded-xl border-dashed" onClick={() => setBoxes(current=>[...current,emptyBox()])}><Plus className="mr-2 h-3.5 w-3.5" />Add another box</Button>
             </div>
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-muted-foreground">Handling notes (optional)</Label>
