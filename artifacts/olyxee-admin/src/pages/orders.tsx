@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,7 +57,6 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
     customerId: "",
     jobNumber: "",
     billingType: "PREPAID" as "PREPAID" | "POSTPAID",
-    description: "",
     estimatedDeliveryDate: "",
     transportMode: "",
     cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa",
@@ -95,7 +93,6 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         customerId: "",
         jobNumber: "",
         billingType: "PREPAID",
-        description: "",
         estimatedDeliveryDate: "",
         transportMode: "",
         cargoType: "", serviceRequired: "", origin: "China", destination: "South Africa",
@@ -158,7 +155,6 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
         customer_id: form.customerId,
         job_number: form.jobNumber.trim(),
         billing_type: form.billingType,
-        description: form.description || undefined,
         estimated_completion: form.estimatedDeliveryDate || undefined,
         cargo_type: form.cargoType || undefined,
         service_required: form.serviceRequired || undefined,
@@ -302,18 +298,30 @@ function CreateOrderDialog({ onSuccess, businessId }: { onSuccess: () => void; b
                   const dimensionCount = [box.length, box.width, box.height].filter(Boolean).length;
                   return <div key={index} className="rounded-xl border bg-background p-3">
                     <div className="mb-2.5 flex items-center justify-between"><span className="text-xs font-semibold">Box {index + 1}</span><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={`Duplicate box ${index + 1}`} onClick={() => setBoxes(current => [...current.slice(0,index+1), {...box}, ...current.slice(index+1)])}><Copy className="h-3.5 w-3.5" /></Button>{boxes.length > 1 && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" aria-label={`Remove box ${index + 1}`} onClick={() => setBoxes(current => current.filter((_,i)=>i!==index))}><Trash2 className="h-3.5 w-3.5" /></Button>}</div></div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {([['weight','Weight (kg)'],['length','Length (cm)'],['width','Width (cm)'],['height','Height (cm)']] as const).map(([key,label]) => <div key={key} className="space-y-1"><Label className="text-[10px] text-muted-foreground">{label}</Label><Input type="number" min="0" step="0.01" inputMode="decimal" value={box[key]} onChange={e=>setBoxes(current=>current.map((item,i)=>i===index?{...item,[key]:e.target.value}:item))} placeholder="0" className="h-9 rounded-lg" /></div>)}
+                    <div className="grid gap-3 sm:grid-cols-[112px_1fr] sm:items-center">
+                      <div className="hidden rounded-xl bg-muted/40 px-3 py-2.5 sm:block" aria-hidden="true">
+                        <svg viewBox="0 0 104 72" className="mx-auto h-[66px] w-[96px] overflow-visible fill-none text-foreground/45" role="img">
+                          <path d="M22 22 49 9l34 15-28 14-33-16Z" className="fill-primary/10 stroke-current" strokeWidth="1.6" strokeLinejoin="round" />
+                          <path d="M22 22v32l33 13V38L22 22Z" className="fill-primary/[0.06] stroke-current" strokeWidth="1.6" strokeLinejoin="round" />
+                          <path d="M55 38v29l28-16V24L55 38Z" className="fill-primary/[0.12] stroke-current" strokeWidth="1.6" strokeLinejoin="round" />
+                          <path d="M16 21v34M12 25l4-4 4 4M12 51l4 4 4-4" className="stroke-muted-foreground" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M24 62l30 11M27 59l-3 3 1 4M51 69l3 4-5 1" className="stroke-muted-foreground" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M62 69 87 55M63 65l-1 4 4 1M83 54l4 1-1 4" className="stroke-muted-foreground" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          <text x="7" y="40" className="fill-muted-foreground text-[8px] font-semibold">H</text>
+                          <text x="35" y="69" className="fill-muted-foreground text-[8px] font-semibold">L</text>
+                          <text x="76" y="67" className="fill-muted-foreground text-[8px] font-semibold">W</text>
+                        </svg>
+                        <p className="mt-1 text-center text-[9px] leading-3 text-muted-foreground">Measure the outside</p>
+                      </div>
+                      <div className="grid min-w-0 grid-cols-2 gap-2.5">
+                        {([['weight','Weight','kg'],['length','Length','cm'],['width','Width','cm'],['height','Height','cm']] as const).map(([key,label,unit]) => <div key={key} className="min-w-0 space-y-1"><Label className="text-[10px] text-muted-foreground">{label}</Label><div className="relative min-w-0"><Input aria-label={`${label} in ${unit}`} type="number" min="0" step="0.01" inputMode="decimal" value={box[key]} onChange={e=>setBoxes(current=>current.map((item,i)=>i===index?{...item,[key]:e.target.value}:item))} placeholder="0" className="h-10 min-w-0 rounded-lg pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" /><span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-medium text-muted-foreground">{unit}</span></div></div>)}
+                      </div>
                     </div>
                     {dimensionCount > 0 && dimensionCount < 3 && <p className="mt-2 text-xs font-medium text-amber-700">Complete all three dimensions, or clear them.</p>}
                   </div>;
                 })}
               </div>
               <Button type="button" variant="outline" className="h-9 w-full rounded-xl border-dashed" onClick={() => setBoxes(current=>[...current,emptyBox()])}><Plus className="mr-2 h-3.5 w-3.5" />Add another box</Button>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-muted-foreground">Handling notes (optional)</Label>
-              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Quantity, packaging, fragile handling…" className="rounded-xl border-transparent bg-muted/50 focus-visible:border-border focus-visible:bg-background focus-visible:ring-0" />
             </div>
           </div>
           )}
