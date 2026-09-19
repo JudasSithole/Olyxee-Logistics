@@ -314,10 +314,13 @@ router.put("/business", requireAuth, async (req, res) => {
 
 // Hard-delete the current user's business and every row that belongs to it.
 // Irreversible. We block the demo account so the public demo can't be wiped.
-// Non-charging plan selection during the rollout period. Businesses may join
-// Scale before the billing start date without any payment (billing begins
-// 30 September 2026 and is handled by the billing routes after that date), or
-// move to Free at any time. No money is ever processed here.
+// Non-charging plan selection during the rollout period ONLY. Businesses may
+// join Scale or Starter before the billing start date without any payment.
+// Once billing is live (isScaleBillingLive(), 30 September 2026), BOTH plans
+// require real checkout (POST /billing/initialize) instead — this applies
+// uniformly whether it's a business's first plan selection off "beta" or a
+// downgrade from an already-paid plan back to Starter. No money is ever
+// processed here.
 router.post("/business/select-plan", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId as string;
@@ -330,10 +333,13 @@ router.post("/business/select-plan", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Plan must be free or business" });
       return;
     }
-    if (plan === "business" && isScaleBillingLive()) {
-      // Once billing is live, joining Scale must go through checkout.
+    if (isScaleBillingLive()) {
+      // Once billing is live, joining ANY paid plan — Starter or Scale, first
+      // selection or a downgrade — must go through checkout rather than this
+      // free self-selection path. Closes the gap where Starter could always
+      // be self-selected for R0 even after it became a chargeable plan.
       res.status(400).json({
-        error: `${getPlan("business").name} now requires checkout — billing started on ${SCALE_BILLING_START_LABEL}.`,
+        error: `${getPlan(plan).name} now requires checkout — billing started on ${SCALE_BILLING_START_LABEL}.`,
       });
       return;
     }
