@@ -2,8 +2,56 @@ import { Router } from "express";
 import { db, ordersTable, emailNotificationsTable, customersTable, callRecordsTable, invoicesTable, jobCostsTable } from "@workspace/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
+import { CANCELLED_STATUS, isLogisticsTerminal, normalizeLogisticsStatus } from "@workspace/order-statuses";
 
 const router = Router();
+
+// Shipment-stage bucket for one order's `currentStatus`, aware of BOTH status
+// vocabularies in play (see lib/order-statuses):
+//   - Legacy/generic orders (no transportMode): the original closed set of
+//     ORDER_STATUSES strings ("Order received", "Processing", …).
+//   - AIR/SEA orders (transportMode set — mandatory for every order created
+//     today): the transport-aware LOGISTICS_STATUS_FLOWS codes, normalized
+//     through the same `normalizeLogisticsStatus`/`isLogisticsTerminal`
+//     helpers the public tracking page and Finance module already use, so a
+//     legacy logistics code (e.g. "VESSEL_DEPARTED") and its current
+//     equivalent ("DEPARTED") land in the same bucket instead of the current
+//     status being compared against a hardcoded legacy-only string list that
+//     the new codes can never match.
+//
+// NOTE: AIR/SEA shipments have no "delayed" status in the flow — a delay is
+// recorded as a tracking-event exception (exceptionType on tracking_events),
+// not a currentStatus value, so it cannot be classified as "delayed" here.
+// Reflecting AIR/SEA delays in this KPI would need a query against
+// tracking_events and a design decision on what "currently delayed" means;
+// that's out of scope for this fix and is called out separately.
+type StageBucket = "active" | "delayed" | "delivered" | "cancelled";
+
+function stageBucketFor(order: { currentStatus: string; transportMode: string | null }): StageBucket | null {
+  if (order.transportMode) {
+    if (order.currentStatus === CANCELLED_STATUS) return "cancelled";
+    if (isLogisticsTerminal(order.currentStatus)) return "delivered";
+    return "active";
+  }
+  switch (order.currentStatus) {
+    case "Order received":
+    case "Processing":
+    case "In transit":
+    case "Out for delivery":
+      return "active";
+    case "Delayed":
+      return "delayed";
+    case "Delivered":
+      return "delivered";
+    case "Cancelled":
+    case "Failed delivery":
+      return "cancelled";
+    default:
+      // e.g. "Created" — matches the original code's behaviour of leaving
+      // this status out of all four buckets.
+      return null;
+  }
+}
 
 router.get("/dashboard/summary", requireAuth, async (req, res) => {
   try {
@@ -49,12 +97,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       db.select().from(jobCostsTable).where(eq(jobCostsTable.businessId, businessId)),
     ]);
 
-    const activeStatuses = [
-      "Order received",
-      "Processing",
-      "In transit",
-      "Out for delivery",
-    ];
+    const stageBuckets = orders.map((o) => stageBucketFor(o));
 
     const rankCounts = (values: Array<string | null | undefined>) => {
       const counts = new Map<string, number>();
@@ -111,12 +154,10 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
 
     const summary = {
       totalOrders: orders.length,
-      activeDeliveries: orders.filter((o) => activeStatuses.includes(o.currentStatus)).length,
-      delayedOrders: orders.filter((o) => o.currentStatus === "Delayed").length,
-      deliveredOrders: orders.filter((o) => o.currentStatus === "Delivered").length,
-      cancelledOrders: orders.filter((o) =>
-        ["Cancelled", "Failed delivery"].includes(o.currentStatus),
-      ).length,
+      activeDeliveries: stageBuckets.filter((b) => b === "active").length,
+      delayedOrders: stageBuckets.filter((b) => b === "delayed").length,
+      deliveredOrders: stageBuckets.filter((b) => b === "delivered").length,
+      cancelledOrders: stageBuckets.filter((b) => b === "cancelled").length,
       emailsSentToday: emailsToday.length,
       escalatedCallsToday: escalatedToday[0]?.count ?? 0,
       callsToday: callsToday[0]?.count ?? 0,
@@ -124,7 +165,9 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       ordersAwaitingSupplierTracking: orders.filter((o) => !!o.transportMode && !o.supplierTrackingNumber).length,
       airOrders: orders.filter((o) => o.transportMode === "AIR").length,
       seaOrders: orders.filter((o) => o.transportMode === "SEA").length,
-      delayedOrStuckShipments: orders.filter((o) => o.currentStatus === "Delayed" || o.currentStatus === "DELAYED").length,
+      // Same "delayed" caveat as stageBucketFor: this can only ever reflect
+      // legacy/generic orders today, since AIR/SEA delay isn't a status.
+      delayedOrStuckShipments: stageBuckets.filter((b) => b === "delayed").length,
       paidRevenue,
       topProduct: topProduct ? { name: topProduct[0], orderCount: topProduct[1] } : null,
       productBreakdown: rankedProducts.slice(0, 5).map(([name, orderCount]) => ({ name, orderCount })),
@@ -197,14 +240,26 @@ router.get("/dashboard/status-breakdown", requireAuth, async (req, res) => {
   try {
     const businessId = (req as any).businessId;
 
-    const breakdown = await db
-      .select({
-        status: ordersTable.currentStatus,
-        count: sql<number>`count(*)::int`,
-      })
+    // Grouped in application code (not SQL) so AIR/SEA orders can be
+    // normalized through normalizeLogisticsStatus first — otherwise a legacy
+    // logistics code (e.g. "VESSEL_DEPARTED") and its current equivalent
+    // ("DEPARTED") would group into separate rows for the same real stage.
+    // Legacy/generic orders (no transportMode) are grouped by their raw
+    // status as before; normalizeLogisticsStatus is a no-op for those
+    // strings since they're not keys in LEGACY_STATUS_MAP.
+    const rows = await db
+      .select({ currentStatus: ordersTable.currentStatus, transportMode: ordersTable.transportMode })
       .from(ordersTable)
-      .where(eq(ordersTable.businessId, businessId))
-      .groupBy(ordersTable.currentStatus);
+      .where(eq(ordersTable.businessId, businessId));
+
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      const status = row.transportMode
+        ? normalizeLogisticsStatus(row.currentStatus)
+        : row.currentStatus;
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+    const breakdown = [...counts.entries()].map(([status, count]) => ({ status, count }));
 
     res.json(breakdown);
   } catch (err) {

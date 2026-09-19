@@ -44,8 +44,21 @@ const InitBody = z.object({
 // Shared activation rules for initialize, verify, AND the webhook: only an
 // active paid plan may be charged/activated, and never before the billing
 // start date.
+//
+// "beta" is never purchasable (it's the default unbilled state, not a plan a
+// business selects). Every other valid, active plan — including "free"
+// (Starter, R89/month) — can be charged.
+//
+// OPEN QUESTION (flagged, not resolved here): the date gate below is
+// `isScaleBillingLive()` / `SCALE_BILLING_START`, which is named and
+// documented (lib/plans/src/index.ts) specifically for the Scale tier's 30
+// September 2026 start. There is no separate "Starter billing start" date
+// anywhere in the codebase, so this reuses the same gate for Starter rather
+// than guessing a different rule. If Starter should actually be chargeable
+// immediately (or on a different date), a dedicated constant should replace
+// this reuse — confirm with product before relying on it.
 function isPlanActivatable(planId: string): boolean {
-  if (!isValidPlanId(planId) || planId === "beta" || planId === "free") return false;
+  if (!isValidPlanId(planId) || planId === "beta") return false;
   if (getPlan(planId).active === false) return false;
   return isScaleBillingLive();
 }
@@ -79,14 +92,15 @@ router.post("/billing/initialize", requireAuth, async (req: Request, res: Respon
     if (
       !isValidPlanId(planId) ||
       planId === "beta" ||
-      planId === "free" ||
       getPlan(planId).active === false
     ) {
       res.status(400).json({ error: "Plan is not purchasable" });
       return;
     }
-    // Rollout period: businesses may join Scale, but no subscription charge may
-    // be processed before the billing start date.
+    // Rollout period: businesses may join a paid plan, but no subscription
+    // charge may be processed before the billing start date. See the
+    // OPEN QUESTION note on isPlanActivatable() above — this date is
+    // Scale-specific in name/docs and is being reused for Starter for now.
     if (!isScaleBillingLive()) {
       res.status(400).json({
         error: `Billing for this plan begins on ${SCALE_BILLING_START_LABEL}. No charge can be processed before then.`,
