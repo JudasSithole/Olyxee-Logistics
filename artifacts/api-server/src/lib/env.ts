@@ -42,6 +42,17 @@ const RECOMMENDED: EnvCheck[] = [
     description:
       "Verified sender address on your own domain (e.g. notifications@yourdomain.com). Required for outbound email; the business name is used as the display name and the business's support email as Reply-To.",
   },
+  {
+    name: "SMSPORTAL_CLIENT_ID",
+    required: false,
+    description:
+      "SMSPortal REST API Client ID (https://smsportal.com). SMS is also gated behind featureFlags.smsNotifications - credentials alone never enable sending.",
+  },
+  {
+    name: "SMSPORTAL_API_SECRET",
+    required: false,
+    description: "SMSPortal REST API Secret, paired with SMSPORTAL_CLIENT_ID.",
+  },
 ];
 
 export function validateEnv(): void {
